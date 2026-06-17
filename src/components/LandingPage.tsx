@@ -16,6 +16,9 @@ interface Point3D {
   tz: number; // 旋轉後 z
   type: 'land' | 'tree_trunk' | 'tree_branch' | 'tree_leaf' | 'star';
   continentId: number; // 屬於哪個大陸板塊 (0-4), star 為 -1
+  size?: number;         // 星星專用：大小 (px)
+  twinkleSpeed?: number; // 星星專用：閃爍速度
+  phaseOffset?: number;  // 星星專用：閃爍相位偏移
 }
 
 // 連線定義
@@ -397,19 +400,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成背景星塵
     const stars: Point3D[] = [];
-    for (let i = 0; i < 150; i++) {
+    const numStars = 280; // 增加星星數量至 280，使夜空不再空泛，點綴繁星
+    for (let i = 0; i < numStars; i++) {
       const theta = (Math.random() - 0.5) * Math.PI;
       const phi = Math.random() * Math.PI * 2;
-      const starR = 500 + Math.random() * 300;
+      const starR = 500 + Math.random() * 350; // 擴大分佈範圍
       const x = starR * Math.cos(theta) * Math.sin(phi);
       const y = starR * Math.sin(theta);
       const z = starR * Math.cos(theta) * Math.cos(phi);
+
+      // 為每顆星星量身定做大小、閃爍速度與起始相位，營造自然的呼吸感
+      const size = 0.8 + Math.random() * 1.4; // 0.8px ~ 2.2px 大小錯落
+      const twinkleSpeed = 0.0012 + Math.random() * 0.0018; // 不同的呼吸頻率
+      const phaseOffset = Math.random() * Math.PI * 2; // 隨機初始相位，防止集體同步閃爍
+
       stars.push({
         id: -1 - i,
         x, y, z,
         tx: x, ty: y, tz: z,
         type: 'star',
-        continentId: -1
+        continentId: -1,
+        size,
+        twinkleSpeed,
+        phaseOffset
       });
     }
 
@@ -459,9 +472,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const sy = (height / 2) + star.y * scale;
 
         if (sx >= 0 && sx <= width && sy >= 0 && sy <= height && z1 < 300) {
-          const brightness = (0.12 + (Math.sin(Date.now() * 0.0012 + star.x) * 0.08)) * globalBreathe;
+          const baseSpeed = star.twinkleSpeed || 0.0018;
+          const phase = star.phaseOffset || 0;
+          const starSize = star.size || 1.2;
+
+          // 讓亮度的閃爍區間更廣 (0.15 到 0.52)，使星光點點非常清晰且有呼吸感
+          const twinkle = 0.33 + Math.sin(Date.now() * baseSpeed + phase) * 0.19;
+          const brightness = twinkle * globalBreathe;
+          
           ctx.fillStyle = `rgba(255, 255, 255, ${brightness.toFixed(3)})`;
-          ctx.fillRect(sx, sy, 1.2, 1.2);
+          ctx.fillRect(sx - starSize / 2, sy - starSize / 2, starSize, starSize);
         }
       });
 
