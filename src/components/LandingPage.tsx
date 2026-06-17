@@ -37,6 +37,12 @@ interface Triangle3D {
   continentId: number;
 }
 
+// 大陸板塊外框定義
+interface ContinentBoundary {
+  continentId: number;
+  pointIds: number[];
+}
+
 // 洋流路徑與粒子定義
 interface CurrentPath {
   points: { x: number; y: number; z: number; tx: number; ty: number; tz: number }[];
@@ -124,6 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const points: Point3D[] = [];
     const connections: Connection[] = [];
     const triangles: Triangle3D[] = [];
+    const continentBoundaries: ContinentBoundary[] = [];
     let pointIdCounter = 0;
 
     // 用於點的離散化分箱批處理（減少 Draw Calls，提升 FPS）
@@ -167,6 +174,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         };
         points.push(pt);
         landPoints.push(pt);
+      }
+
+      const centerX = R * Math.cos(continent.lat) * Math.sin(continent.lon);
+      const centerY = R * Math.sin(continent.lat);
+      const centerZ = R * Math.cos(continent.lat) * Math.cos(continent.lon);
+      const centerLen = Math.hypot(centerX, centerY, centerZ) || 1;
+      const normalX = centerX / centerLen;
+      const normalY = centerY / centerLen;
+      const normalZ = centerZ / centerLen;
+
+      let tangentX = -normalZ;
+      let tangentY = 0;
+      let tangentZ = normalX;
+      const tangentLen = Math.hypot(tangentX, tangentY, tangentZ) || 1;
+      tangentX /= tangentLen;
+      tangentZ /= tangentLen;
+
+      const bitangentX = normalY * tangentZ - normalZ * tangentY;
+      const bitangentY = normalZ * tangentX - normalX * tangentZ;
+      const bitangentZ = normalX * tangentY - normalY * tangentX;
+
+      const boundaryBins: { point: Point3D; radius: number }[] = [];
+      const boundaryBinCount = 28;
+      landPoints.forEach((pt) => {
+        const dx = pt.x - centerX;
+        const dy = pt.y - centerY;
+        const dz = pt.z - centerZ;
+        const localX = dx * tangentX + dy * tangentY + dz * tangentZ;
+        const localY = dx * bitangentX + dy * bitangentY + dz * bitangentZ;
+        const angle = Math.atan2(localY, localX);
+        const normalized = (angle + Math.PI * 2) % (Math.PI * 2);
+        const bin = Math.floor((normalized / (Math.PI * 2)) * boundaryBinCount);
+        const radius = Math.hypot(localX, localY);
+
+        if (!boundaryBins[bin] || radius > boundaryBins[bin].radius) {
+          boundaryBins[bin] = { point: pt, radius };
+        }
+      });
+
+      const boundaryPointIds = boundaryBins
+        .filter(Boolean)
+        .map((entry) => entry.point.id)
+        .filter((id, index, arr) => arr.indexOf(id) === index);
+
+      if (boundaryPointIds.length >= 5) {
+        continentBoundaries.push({
+          continentId: continent.id,
+          pointIds: boundaryPointIds
+        });
       }
 
       // 大陸內部的點進行距離檢測連線 (臨界值 30)
@@ -666,6 +722,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       if (hasActiveFaces) {
         ctx.fillStyle = `rgba(255, 255, 255, ${(0.08 * globalBreathe).toFixed(3)})`;
         ctx.fill(activeFacePath);
+      }
+
+      // 【大陸板塊外框】：在地表外圍再描一圈，讓每個板塊的邊界更有存在感
+      const activeBoundaryPath = new Path2D();
+      const inactiveBoundaryPath = new Path2D();
+      let hasActiveBoundary = false;
+      let hasInactiveBoundary = false;
+
+      continentBoundaries.forEach((boundary) => {
+        const boundaryPoints = boundary.pointIds.map((id) => points[id]).filter(Boolean);
+
+        if (boundaryPoints.length < 3) return;
+
+        const path = state.activeContinents[boundary.continentId] ? activeBoundaryPath : inactiveBoundaryPath;
+        const isActive = state.activeContinents[boundary.continentId];
+
+        for (let i = 0; i < boundaryPoints.length; i++) {
+          const p1 = boundaryPoints[i];
+          const p2 = boundaryPoints[(i + 1) % boundaryPoints.length];
+          const avgTz = (p1.tz + p2.tz) / 2;
+          const opacity = getOpacity(avgTz);
+
+          if (opacity < 0.12 || avgTz > 55) continue;
+
+          const scale1 = D / (D + p1.tz);
+          const scale2 = D / (D + p2.tz);
+          const x1 = centerX + p1.tx * scale1 * state.zoom;
+          const y1 = centerY + p1.ty * scale1 * state.zoom;
+          const x2 = centerX + p2.tx * scale2 * state.zoom;
+          const y2 = centerY + p2.ty * scale2 * state.zoom;
+
+          path.moveTo(x1, y1);
+          path.lineTo(x2, y2);
+          if (isActive) hasActiveBoundary = true;
+          else hasInactiveBoundary = true;
+        }
+      });
+
+      if (hasInactiveBoundary) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.12 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 2.2 * zoomWidthScale;
+        ctx.stroke(inactiveBoundaryPath);
+
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.32 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.8 * zoomWidthScale;
+        ctx.stroke(inactiveBoundaryPath);
+      }
+
+      if (hasActiveBoundary) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.24 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 3.4 * zoomWidthScale;
+        ctx.stroke(activeBoundaryPath);
+
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.7 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 1.15 * zoomWidthScale;
+        ctx.stroke(activeBoundaryPath);
       }
 
       // C. 繪製連接線
