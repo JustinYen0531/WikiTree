@@ -40,7 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // 用於 Canvas 繪圖循環的 mutable references
   const stateRef = useRef({
     zoom: 2.5,
-    rx: 0.32, // 繞 X 軸旋轉 (稍微傾斜，使地表樹木更具立體感)
+    rx: 0.32, // 繞 X 軸旋轉
     ry: 0.8,  // 繞 Y 軸旋轉
     isDragging: false,
     startX: 0,
@@ -108,24 +108,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const connections: Connection[] = [];
     let pointIdCounter = 0;
 
-    // 定義 5 個板塊中心 (經度 phi, 緯度 theta)
+    // 定義 5 個板塊中心 (經度 phi, 緯度 theta)，分別對應政大學院
     const continentsData = [
-      { id: 0, lat: 0.4, lon: 1.2 },    // 亞洲板塊
-      { id: 1, lat: 0.1, lon: -0.2 },   // 歐非板塊
-      { id: 2, lat: -0.2, lon: -1.8 },  // 美洲板塊
-      { id: 3, lat: -0.4, lon: 2.2 },   // 澳洲板塊
-      { id: 4, lat: -1.2, lon: 0 }      // 南極板塊
+      { id: 0, lat: 0.45, lon: 1.2, nameZh: '商學院', nameEn: 'COMMERCE' },
+      { id: 1, lat: 0.1, lon: -0.2, nameZh: '社科院', nameEn: 'SOCIAL SCI' },
+      { id: 2, lat: -0.15, lon: -1.75, nameZh: '文學院', nameEn: 'LIBERAL ARTS' },
+      { id: 3, lat: -0.4, lon: 2.15, nameZh: '傳播學院', nameEn: 'COMMUNICATION' },
+      { id: 4, lat: -1.1, lon: 0.1, nameZh: '理與資訊', nameEn: 'SCIENCE & IT' }
     ];
 
-    // 生成陸地表面點
+    // 生成陸地表面點與密集樹木
     continentsData.forEach((continent) => {
-      const numPoints = 90 + Math.floor(Math.random() * 30); // 每個板塊約 90-120 個點
+      // 大幅增加陸地表面點數量以支撐更密集的森林 (130-160 個點)
+      const numPoints = 130 + Math.floor(Math.random() * 30);
       const landPoints: Point3D[] = [];
 
       for (let i = 0; i < numPoints; i++) {
-        // 使用多個隨機數加總以形成高斯分佈，讓點集聚在中心附近
-        const dLat = (Math.random() + Math.random() + Math.random() - 1.5) * 0.35;
-        const dLon = (Math.random() + Math.random() + Math.random() - 1.5) * 0.45;
+        const dLat = (Math.random() + Math.random() + Math.random() - 1.5) * 0.38;
+        const dLon = (Math.random() + Math.random() + Math.random() - 1.5) * 0.48;
         
         const theta = continent.lat + dLat;
         const phi = continent.lon + dLon;
@@ -145,14 +145,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         landPoints.push(pt);
       }
 
-      // 大陸內部的點進行距離檢測連線 (Plexus Grid)
+      // 大陸內部的點進行距離檢測連線，臨界值設為 26 以防點增多時連線過於雜亂，保持精緻幾何感
       for (let i = 0; i < landPoints.length; i++) {
         for (let j = i + 1; j < landPoints.length; j++) {
           const p1 = landPoints[i];
           const p2 = landPoints[j];
           const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-          // 若距離小於設定閾值，則連線
-          if (dist < 32) {
+          if (dist < 26) {
             connections.push({
               p1: p1.id,
               p2: p2.id,
@@ -163,20 +162,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 在每個板塊上「種植」6 - 8 棵節點樹
-      const numTrees = 6 + Math.floor(Math.random() * 3);
+      // 顯著增加樹木數量：每個板塊種植 16 - 22 棵節點樹，地平線會排滿茂密的樹木森林！
+      const numTrees = 16 + Math.floor(Math.random() * 7);
       for (let t = 0; t < numTrees; t++) {
-        // 隨機選一個陸地表面點作為樹根
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
         
-        // 法向量 (從球心向外延伸)
         const nx = rootPt.x / R;
         const ny = rootPt.y / R;
         const nz = rootPt.z / R;
 
-        const treeHeight = 22 + Math.random() * 12;
+        const treeHeight = 20 + Math.random() * 12;
 
-        // 樹幹頂點 (Trunk tip)
+        // 樹幹頂點
         const tx = rootPt.x + nx * treeHeight;
         const ty = rootPt.y + ny * treeHeight;
         const tz = rootPt.z + nz * treeHeight;
@@ -196,7 +193,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           continentId: continent.id
         });
 
-        // 尋找與法線垂直的局部坐標軸，用於樹枝偏轉
+        // 局部垂直坐標軸，用於樹枝偏轉
         let ux = -ny;
         let uy = nx;
         let uz = 0;
@@ -206,19 +203,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         } else {
           ux /= uLen; uy /= uLen;
         }
-        // 叉積得到另一個垂直向量
         const vx = ny * uz - nz * uy;
         const vy = nz * ux - nx * uz;
         const vz = nx * uy - ny * ux;
 
-        // 生成 3 根主樹枝 (Branches)
+        // 生成 3 根主樹枝
         const numBranches = 3;
         for (let b = 0; b < numBranches; b++) {
-          const angle = (b * Math.PI * 2) / numBranches + (Math.random() - 0.5) * 0.5;
-          const branchSpread = 0.45; // 偏轉程度
+          const angle = (b * Math.PI * 2) / numBranches + (Math.random() - 0.5) * 0.4;
+          const branchSpread = 0.45;
           const branchLength = treeHeight * 0.65;
 
-          // 樹枝方向向量
           const bx_dir = nx + (ux * Math.cos(angle) + vx * Math.sin(angle)) * branchSpread;
           const by_dir = ny + (uy * Math.cos(angle) + vy * Math.sin(angle)) * branchSpread;
           const bz_dir = nz + (uz * Math.cos(angle) + vz * Math.sin(angle)) * branchSpread;
@@ -243,7 +238,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             continentId: continent.id
           });
 
-          // 每根主樹枝發射 2 個葉子節點 (Leaves/Tips)
+          // 每根主樹枝發射 2 個葉子節點
           const numLeaves = 2;
           for (let l = 0; l < numLeaves; l++) {
             const leafAngle = angle + (l === 0 ? -0.4 : 0.4) + (Math.random() - 0.5) * 0.2;
@@ -278,7 +273,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       }
     });
 
-    // 生成背景星塵 (不隨球自轉，提供太空深度感)
+    // 生成背景星塵
     const stars: Point3D[] = [];
     for (let i = 0; i < 200; i++) {
       const theta = (Math.random() - 0.5) * Math.PI;
@@ -330,7 +325,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         
         const scale = D / (D + z1);
         const sx = centerX + x1 * scale;
-        // 背景星塵亦隨地平線稍微往下偏移，以保持天空的完整性
         const sy = (height / 2) + star.y * scale;
 
         if (sx >= 0 && sx <= width && sy >= 0 && sy <= height && z1 < 300) {
@@ -385,12 +379,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const y2_scr = centerY + p2.ty * scale2 * state.zoom;
 
         const isContinentActive = state.activeContinents[conn.continentId];
-
-        ctx.beginPath();
-        ctx.moveTo(x1_scr, y1_scr);
-        ctx.lineTo(x2_scr, y2_scr);
-
-        // 依縮放比例調整線寬，避免放大時線條過細
         const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
 
         if (conn.type === 'tree') {
@@ -453,7 +441,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       });
 
-      // E. 行星大氣層發光圓環 (隨著地平線下移)
+      // E. 行星大氣層發光圓環
       ctx.beginPath();
       const radius = R * state.zoom;
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -468,6 +456,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       
       ctx.fillStyle = gradient;
       ctx.fill();
+
+      // F. 繪製 3D 學院資訊標籤 (Leader Lines & 3D Labels)
+      continentsData.forEach((continent) => {
+        // 計算學院板塊中心在當前旋轉下的 3D 坐標
+        const cosY = Math.cos(state.ry);
+        const sinY = Math.sin(state.ry);
+        const cosX = Math.cos(state.rx);
+        const sinX = Math.sin(state.rx);
+
+        // 學院中心原本 3D 位置
+        const cx_orig = R * Math.cos(continent.lat) * Math.sin(continent.lon);
+        const cy_orig = R * Math.sin(continent.lat);
+        const cz_orig = R * Math.cos(continent.lat) * Math.cos(continent.lon);
+
+        // 旋轉計算
+        const cx_1 = cx_orig * cosY - cz_orig * sinY;
+        const cz_1 = cx_orig * sinY + cz_orig * cosY;
+        const cy_2 = cy_orig * cosX - cz_1 * sinX;
+        const cz_2 = cy_orig * sinX + cz_1 * cosX;
+
+        // 只在前半球 (相機可視範圍) 繪製，避免背面標籤穿透
+        const opacity = getOpacity(cz_2);
+        if (opacity <= 0.1) return;
+
+        const scale = D / (D + cz_2);
+        const scrX = centerX + cx_1 * scale * state.zoom;
+        const scrY = centerY + cy_2 * scale * state.zoom;
+
+        const isContinentActive = state.activeContinents[continent.id];
+        const labelOpacity = isContinentActive ? opacity * 0.9 : opacity * 0.35;
+
+        // 引導線繪製：決定引導線折線朝左或朝右延伸 (依投影後在畫面左右半邊而定，平衡排版)
+        const dirX = cx_1 > 0 ? -1 : 1; 
+
+        ctx.beginPath();
+        ctx.moveTo(scrX, scrY);
+        // 拉出一條向上的精美科技斜引線
+        ctx.lineTo(scrX + 15 * dirX, scrY - 15);
+        ctx.lineTo(scrX + 70 * dirX, scrY - 15);
+        ctx.strokeStyle = isContinentActive 
+          ? `rgba(255, 255, 255, ${labelOpacity})`
+          : `rgba(255, 255, 255, ${opacity * 0.15})`;
+        ctx.lineWidth = isContinentActive ? 1.0 : 0.6;
+        ctx.stroke();
+
+        // 標籤文字繪製 (使用與 CSS 同步的 Roboto Mono + Monospace 中英混合排版)
+        ctx.textAlign = dirX > 0 ? 'left' : 'right';
+        const textOffset = dirX > 0 ? 20 : -20;
+
+        // 第一行：學院中文名稱
+        ctx.fillStyle = `rgba(255, 255, 255, ${isContinentActive ? opacity * 0.95 : opacity * 0.4})`;
+        ctx.font = `500 11px "Roboto Mono", "PingFang TC", "Microsoft JhengHei", sans-serif`;
+        ctx.fillText(continent.nameZh, scrX + textOffset, scrY - 20);
+
+        // 第二行：英文學院簡寫
+        ctx.fillStyle = `rgba(255, 255, 255, ${isContinentActive ? opacity * 0.6 : opacity * 0.22})`;
+        ctx.font = `400 8px "Roboto Mono", monospace`;
+        ctx.fillText(continent.nameEn, scrX + textOffset, scrY - 7);
+      });
 
       // 呼叫下一幀
       animationFrameId = requestAnimationFrame(render);
@@ -490,12 +537,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       const dx = e.clientX - state.startX;
       const dy = e.clientY - state.startY;
 
-      // 當處於大地平線（大 Zoom）視角時，減緩旋轉靈敏度以進行精細拖曳
       const dragSensitivity = state.zoom > 2.0 ? 0.002 : 0.004;
       state.ry += dx * dragSensitivity;
       state.rx += dy * dragSensitivity;
 
-      // 限制 X 軸旋轉以防球體翻轉
       state.rx = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, state.rx));
 
       state.startX = e.clientX;
@@ -506,7 +551,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       stateRef.current.isDragging = false;
     };
 
-    // 處理滾輪無級縮放，上限調整至 8.0X 以便深入地表細節
+    // 處理滾輪無級縮放
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       setZoom((prev) => {
@@ -526,7 +571,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       const centerX = width / 2;
       const D = 600;
 
-      // 計算與 render 相同的動態 centerY，以保證射線檢測命中精準
       let centerY = height / 2;
       if (state.zoom > 1.0) {
         const t = Math.min(1.0, (state.zoom - 1.0) / 3.0);
@@ -550,7 +594,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       });
 
-      // 大縮放比例時，寬鬆碰撞檢測範圍
       const clickTolerance = 18 * state.zoom;
       if (closestPt && minDist < Math.max(18, Math.min(45, clickTolerance))) {
         const cId = (closestPt as Point3D).continentId;
@@ -747,7 +790,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           gap: '24px',
           pointerEvents: 'auto',
           textAlign: 'center',
-          marginTop: '-60px' // 微調向上挪動，避開下方龐大的地平線，使構圖更完美
+          marginTop: '-60px'
         }}>
           {/* WikiTree 大標題 */}
           <h1 style={{
