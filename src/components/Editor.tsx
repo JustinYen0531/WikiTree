@@ -20,8 +20,14 @@ interface EditorProps {
   onChange: (value: string) => void;
   onSave: () => void;
   isSaved: boolean;
-  viewMode: 'edit' | 'preview' | 'split';
-  setViewMode: (mode: 'edit' | 'preview' | 'split') => void;
+  viewMode: 'wysiwyg' | 'source' | 'split';
+  setViewMode: (mode: 'wysiwyg' | 'source' | 'split') => void;
+}
+
+interface Block {
+  id: string;
+  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'paragraph';
+  raw: string;
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -38,14 +44,126 @@ export const Editor: React.FC<EditorProps> = ({
   const [slashCoords, setSlashCoords] = useState({ top: 0, left: 0 });
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
 
+  // WYSIWYG block states
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [focusedBlockIndex, setFocusedBlockIndex] = useState<number | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
-  // Custom parser to handle Obsidian/GitHub style callouts
+  // Parse raw markdown string into blocks
+  const parseMarkdownToBlocks = (markdown: string): Block[] => {
+    if (!markdown) {
+      return [{ id: 'init-block', type: 'paragraph', raw: '' }];
+    }
+    const lines = markdown.split('\n');
+    const parsedBlocks: Block[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Code blocks
+      if (line.trim().startsWith('```')) {
+        let rawCode = line;
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          rawCode += '\n' + lines[i];
+          i++;
+        }
+        if (i < lines.length) {
+          rawCode += '\n' + lines[i];
+          i++;
+        }
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'code', raw: rawCode });
+        continue;
+      }
+
+      // Callouts / Blockquotes
+      if (line.trim().startsWith('>')) {
+        let rawCallout = line;
+        i++;
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          rawCallout += '\n' + lines[i];
+          i++;
+        }
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'callout', raw: rawCallout });
+        continue;
+      }
+
+      // Tables
+      if (line.trim().startsWith('|')) {
+        let rawTable = line;
+        i++;
+        while (i < lines.length && lines[i].trim().startsWith('|')) {
+          rawTable += '\n' + lines[i];
+          i++;
+        }
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'table', raw: rawTable });
+        continue;
+      }
+
+      // Headers
+      if (line.startsWith('# ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header1', raw: line });
+        i++;
+        continue;
+      }
+      if (line.startsWith('## ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header2', raw: line });
+        i++;
+        continue;
+      }
+      if (line.startsWith('### ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header3', raw: line });
+        i++;
+        continue;
+      }
+
+      // Todo List
+      if (line.trim().startsWith('- [ ]') || line.trim().startsWith('- [x]')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'todo', raw: line });
+        i++;
+        continue;
+      }
+
+      // Default: Paragraph
+      parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'paragraph', raw: line });
+      i++;
+    }
+
+    return parsedBlocks;
+  };
+
+  const blocksToMarkdown = (blockArr: Block[]): string => {
+    return blockArr.map(b => b.raw).join('\n');
+  };
+
+  // Sync prop changes to local blocks, but ONLY when not editing or if external change occurs
+  useEffect(() => {
+    const currentMd = blocksToMarkdown(blocks);
+    if (content !== currentMd) {
+      setBlocks(parseMarkdownToBlocks(content));
+    }
+  }, [content]);
+
+  // Save blocks back to content
+  const updateContentFromBlocks = (newBlocks: Block[]) => {
+    setBlocks(newBlocks);
+    onChange(blocksToMarkdown(newBlocks));
+  };
+
+  // Auto-focus active block in WYSIWYG mode
+  useEffect(() => {
+    if (focusedBlockIndex !== null && blockRefs.current[focusedBlockIndex]) {
+      blockRefs.current[focusedBlockIndex]?.focus();
+    }
+  }, [focusedBlockIndex]);
+
+  // Custom parser to handle Obsidian/GitHub style callouts for full preview pane
   const parseMarkdown = async (mdText: string) => {
     let processed = mdText;
-    
-    // We can do line-by-line parsing for blockquotes to build nice callouts.
     const lines = mdText.split('\n');
     let inBlockquote = false;
     let currentCalloutType = '';
@@ -66,7 +184,6 @@ export const Editor: React.FC<EditorProps> = ({
         currentCalloutContent.push(contentLine);
       } else {
         if (inBlockquote) {
-          // Wrap callout block in custom HTML
           let emoji = '💡';
           let className = 'note';
           if (['TIP', 'SUCCESS'].includes(currentCalloutType)) {
@@ -93,7 +210,6 @@ export const Editor: React.FC<EditorProps> = ({
       }
     }
     
-    // Catch trailing open blockquote
     if (inBlockquote) {
       let emoji = '💡';
       let className = 'note';
@@ -131,8 +247,34 @@ export const Editor: React.FC<EditorProps> = ({
     parseMarkdown(content);
   }, [content]);
 
-  // Insert markdown tag at cursor
+  // Insert markdown tag at cursor (for Source / Split mode)
   const insertMarkdown = (before: string, after: string = '') => {
+    if (viewMode === 'wysiwyg') {
+      if (focusedBlockIndex !== null) {
+        const textarea = blockRefs.current[focusedBlockIndex];
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end);
+        const replacement = before + selected + after;
+        const newValue = text.substring(0, start) + replacement + text.substring(end);
+        handleBlockChange(focusedBlockIndex, newValue);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
+        }, 0);
+      } else {
+        // Append to the last block
+        const newBlocks = [...blocks];
+        const lastIndex = newBlocks.length - 1;
+        newBlocks[lastIndex].raw += before + after;
+        updateContentFromBlocks(newBlocks);
+        setFocusedBlockIndex(lastIndex);
+      }
+      return;
+    }
+
     const textarea = textareaRef.current;
     if (!textarea) return;
 
@@ -146,14 +288,13 @@ export const Editor: React.FC<EditorProps> = ({
     const newValue = text.substring(0, start) + replacement + text.substring(end);
     onChange(newValue);
 
-    // Reset cursor
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + before.length, start + before.length + selected.length);
     }, 0);
   };
 
-  // Slash commands data in Traditional Chinese
+  // Slash commands
   const slashCommands = [
     { label: '大標題', desc: '大型區塊標題 (H1)', before: '# ', after: '', icon: 'H1' },
     { label: '中標題', desc: '中型區塊標題 (H2)', before: '## ', after: '', icon: 'H2' },
@@ -170,9 +311,8 @@ export const Editor: React.FC<EditorProps> = ({
     c.desc.toLowerCase().includes(slashQuery.toLowerCase())
   );
 
-  // Handle keys in textarea
+  // Keyboard navigation for textareas
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Save shortcut: Ctrl+S or Cmd+S
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       onSave();
@@ -197,11 +337,137 @@ export const Editor: React.FC<EditorProps> = ({
     }
   };
 
+  const handleBlockKeyDown = (index: number, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const value = textarea.value;
+    const selectionStart = textarea.selectionStart;
+
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      onSave();
+      return;
+    }
+
+    if (showSlashMenu) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSlashIndex(prev => (prev + 1) % filteredCommands.length);
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSlashIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[selectedSlashIndex]) {
+          executeBlockSlashCommand(index, filteredCommands[selectedSlashIndex]);
+        }
+        return;
+      } else if (e.key === 'Escape') {
+        setShowSlashMenu(false);
+        return;
+      }
+    }
+
+    // 1. Enter Key: Split block
+    if (e.key === 'Enter') {
+      if (e.shiftKey || blocks[index].type === 'code') {
+        return; 
+      }
+      
+      e.preventDefault();
+      const textBefore = value.substring(0, selectionStart);
+      const textAfter = value.substring(selectionStart);
+      
+      const newBlocks = [...blocks];
+      newBlocks[index].raw = textBefore;
+      
+      // Inherit prefixes
+      let newRaw = textAfter;
+      let newType: Block['type'] = 'paragraph';
+      
+      if (blocks[index].type === 'todo') {
+        newRaw = '- [ ] ' + textAfter;
+        newType = 'todo';
+      } else if (blocks[index].raw.startsWith('- ')) {
+        newRaw = '- ' + textAfter;
+      } else if (blocks[index].raw.startsWith('> ')) {
+        newRaw = '> ' + textAfter;
+        newType = 'callout';
+      }
+
+      newBlocks.splice(index + 1, 0, {
+        id: Math.random().toString(36).substr(2, 9),
+        type: newType,
+        raw: newRaw
+      });
+      
+      updateContentFromBlocks(newBlocks);
+      setFocusedBlockIndex(index + 1);
+      return;
+    }
+
+    // 2. Backspace Key: Merge block
+    if (e.key === 'Backspace' && selectionStart === 0) {
+      e.preventDefault();
+      if (index === 0) return;
+
+      const prevBlock = blocks[index - 1];
+      const prevLength = prevBlock.raw.length;
+      const currentRaw = value;
+
+      const newBlocks = [...blocks];
+      newBlocks[index - 1].raw = prevBlock.raw + currentRaw;
+      newBlocks.splice(index, 1);
+      
+      updateContentFromBlocks(newBlocks);
+      setFocusedBlockIndex(index - 1);
+      
+      setTimeout(() => {
+        const ta = blockRefs.current[index - 1];
+        if (ta) {
+          ta.setSelectionRange(prevLength, prevLength);
+        }
+      }, 0);
+      return;
+    }
+
+    // 3. Arrow Up
+    if (e.key === 'ArrowUp' && selectionStart === 0) {
+      e.preventDefault();
+      if (index > 0) {
+        setFocusedBlockIndex(index - 1);
+        setTimeout(() => {
+          const ta = blockRefs.current[index - 1];
+          if (ta) {
+            const len = ta.value.length;
+            ta.setSelectionRange(len, len);
+          }
+        }, 0);
+      }
+      return;
+    }
+
+    // 4. Arrow Down
+    if (e.key === 'ArrowDown' && selectionStart === value.length) {
+      e.preventDefault();
+      if (index < blocks.length - 1) {
+        setFocusedBlockIndex(index + 1);
+        setTimeout(() => {
+          const ta = blockRefs.current[index + 1];
+          if (ta) {
+            ta.setSelectionRange(0, 0);
+          }
+        }, 0);
+      }
+      return;
+    }
+  };
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     onChange(value);
 
-    // Slash command trigger check
     const selectionEnd = e.target.selectionEnd;
     const textBeforeCursor = value.substring(0, selectionEnd);
     const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
@@ -209,7 +475,6 @@ export const Editor: React.FC<EditorProps> = ({
     if (lastSlashIdx !== -1 && lastSlashIdx >= textBeforeCursor.lastIndexOf('\n')) {
       const query = textBeforeCursor.substring(lastSlashIdx + 1);
       if (!query.includes(' ')) {
-        // Show slash menu at cursor coordinates
         setSlashQuery(query);
         setShowSlashMenu(true);
         setSelectedSlashIndex(0);
@@ -232,6 +497,48 @@ export const Editor: React.FC<EditorProps> = ({
     setShowSlashMenu(false);
   };
 
+  const handleBlockChange = (index: number, val: string) => {
+    const newBlocks = [...blocks];
+    newBlocks[index].raw = val;
+    
+    if (val.startsWith('# ')) newBlocks[index].type = 'header1';
+    else if (val.startsWith('## ')) newBlocks[index].type = 'header2';
+    else if (val.startsWith('### ')) newBlocks[index].type = 'header3';
+    else if (val.trim().startsWith('- [ ]') || val.trim().startsWith('- [x]')) newBlocks[index].type = 'todo';
+    else if (val.trim().startsWith('```')) newBlocks[index].type = 'code';
+    else if (val.trim().startsWith('>')) newBlocks[index].type = 'callout';
+    else if (val.trim().startsWith('|')) newBlocks[index].type = 'table';
+    else newBlocks[index].type = 'paragraph';
+
+    updateContentFromBlocks(newBlocks);
+
+    // Slash command trigger check
+    const selectionEnd = blockRefs.current[index]?.selectionEnd || 0;
+    const textBeforeCursor = val.substring(0, selectionEnd);
+    const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
+
+    if (lastSlashIdx !== -1 && lastSlashIdx >= textBeforeCursor.lastIndexOf('\n')) {
+      const query = textBeforeCursor.substring(lastSlashIdx + 1);
+      if (!query.includes(' ')) {
+        setSlashQuery(query);
+        setShowSlashMenu(true);
+        setSelectedSlashIndex(0);
+        
+        const ta = blockRefs.current[index];
+        if (ta) {
+          const rect = ta.getBoundingClientRect();
+          const parentRect = ta.offsetParent?.getBoundingClientRect();
+          setSlashCoords({
+            top: rect.top - (parentRect?.top || 0) + 24,
+            left: Math.min(rect.width - 200, selectionEnd * 8 + 10)
+          });
+        }
+        return;
+      }
+    }
+    setShowSlashMenu(false);
+  };
+
   const executeSlashCommand = (cmd: typeof slashCommands[0]) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -239,16 +546,13 @@ export const Editor: React.FC<EditorProps> = ({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
-
     const textBeforeCursor = text.substring(0, start);
     const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
 
-    // Replace the slash and the query with the command text
     const newValue = text.substring(0, lastSlashIdx) + cmd.before + text.substring(end);
     onChange(newValue);
     setShowSlashMenu(false);
 
-    // Focus and position cursor
     setTimeout(() => {
       textarea.focus();
       const newPos = lastSlashIdx + cmd.before.length;
@@ -256,7 +560,117 @@ export const Editor: React.FC<EditorProps> = ({
     }, 0);
   };
 
-  // Close slash menu on click outside
+  const executeBlockSlashCommand = (index: number, cmd: typeof slashCommands[0]) => {
+    const textarea = blockRefs.current[index];
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const textBeforeCursor = text.substring(0, start);
+    const lastSlashIdx = textBeforeCursor.lastIndexOf('/');
+
+    const newRaw = text.substring(0, lastSlashIdx) + cmd.before + text.substring(end);
+    
+    const newBlocks = [...blocks];
+    newBlocks[index].raw = newRaw;
+    
+    if (cmd.before.startsWith('# ')) newBlocks[index].type = 'header1';
+    else if (cmd.before.startsWith('## ')) newBlocks[index].type = 'header2';
+    else if (cmd.before.startsWith('### ')) newBlocks[index].type = 'header3';
+    else if (cmd.before.startsWith('- [ ]')) newBlocks[index].type = 'todo';
+    else if (cmd.before.startsWith('```')) newBlocks[index].type = 'code';
+    else if (cmd.before.startsWith('>')) newBlocks[index].type = 'callout';
+    else if (cmd.before.startsWith('|')) newBlocks[index].type = 'table';
+    
+    updateContentFromBlocks(newBlocks);
+    setShowSlashMenu(false);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = lastSlashIdx + cmd.before.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
+  const handleCheckboxToggle = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newBlocks = [...blocks];
+    const raw = newBlocks[index].raw;
+    if (raw.includes('- [ ]')) {
+      newBlocks[index].raw = raw.replace('- [ ]', '- [x]');
+    } else if (raw.includes('- [x]')) {
+      newBlocks[index].raw = raw.replace('- [x]', '- [ ]');
+    }
+    updateContentFromBlocks(newBlocks);
+  };
+
+  // Render block content to beautiful HTML
+  const renderBlockToHtml = (block: Block): string => {
+    if (!block.raw.trim()) {
+      return `<p class="wysiwyg-placeholder" style="color: var(--text-secondary); opacity: 0.5; font-style: italic;">點擊此處輸入文字...</p>`;
+    }
+
+    let processed = block.raw;
+    
+    // Support Notion Callout rendering within blocks
+    if (block.type === 'callout') {
+      const lines = block.raw.split('\n');
+      let emoji = '💡';
+      let className = 'note';
+      let calloutType = 'NOTE';
+      
+      const firstLine = lines[0] || '';
+      const match = firstLine.match(/^>\s*\[!(NOTE|INFO|TIP|SUCCESS|IMPORTANT|WARNING|CAUTION|DANGER|ALERT)\](.*)/i);
+      
+      if (match) {
+        calloutType = match[1].toUpperCase();
+        const firstLineContent = match[2].trim();
+        const otherLines = lines.slice(1).map(l => l.replace(/^>\s?/, '').trim());
+        const calloutContent = firstLineContent ? [firstLineContent, ...otherLines] : otherLines;
+        
+        if (['TIP', 'SUCCESS'].includes(calloutType)) {
+          emoji = '✨';
+          className = 'success';
+        } else if (['IMPORTANT', 'WARNING', 'CAUTION'].includes(calloutType)) {
+          emoji = '⚠️';
+          className = 'warning';
+        } else if (['DANGER', 'ALERT'].includes(calloutType)) {
+          emoji = '🛑';
+          className = 'danger';
+        }
+        
+        return `<div class="callout-block ${className}">
+          <span class="callout-icon">${emoji}</span>
+          <div class="callout-content">
+            <strong>${calloutType}</strong><br/>
+            ${calloutContent.join('<br/>')}
+          </div>
+        </div>`;
+      }
+    }
+
+    try {
+      return marked.parse(processed) as string;
+    } catch (e) {
+      return `<p>${block.raw}</p>`;
+    }
+  };
+
+  const getBlockFontSize = (type: Block['type']) => {
+    switch (type) {
+      case 'header1': return '28px';
+      case 'header2': return '22px';
+      case 'header3': return '18px';
+      default: return '15px';
+    }
+  };
+
+  const getBlockFontWeight = (type: Block['type']) => {
+    if (type.startsWith('header')) return '700';
+    return '400';
+  };
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (slashMenuRef.current && !slashMenuRef.current.contains(e.target as Node)) {
@@ -290,58 +704,168 @@ export const Editor: React.FC<EditorProps> = ({
             {isSaved ? '已儲存至本地' : '未儲存變更 (Ctrl+S)'}
           </span>
           <button 
-            className={`theme-toggle-btn ${viewMode === 'edit' ? 'active' : ''}`}
-            onClick={() => setViewMode('edit')}
-            title="編輯模式"
-            style={{ backgroundColor: viewMode === 'edit' ? 'var(--border-color)' : 'transparent', padding: '4px' }}
+            className={`theme-toggle-btn ${viewMode === 'wysiwyg' ? 'active' : ''}`}
+            onClick={() => setViewMode('wysiwyg')}
+            title="即時網頁編輯 (Live Edit)"
+            style={{ backgroundColor: viewMode === 'wysiwyg' ? 'var(--border-color)' : 'transparent', padding: '4px' }}
+          >
+            <Sparkles size={15} />
+          </button>
+          <button 
+            className={`theme-toggle-btn ${viewMode === 'source' ? 'active' : ''}`}
+            onClick={() => setViewMode('source')}
+            title="原始碼模式 (Source)"
+            style={{ backgroundColor: viewMode === 'source' ? 'var(--border-color)' : 'transparent', padding: '4px' }}
           >
             <Edit3 size={15} />
           </button>
           <button 
             className={`theme-toggle-btn ${viewMode === 'split' ? 'active' : ''}`}
             onClick={() => setViewMode('split')}
-            title="雙欄模式"
+            title="雙欄模式 (Split)"
             style={{ backgroundColor: viewMode === 'split' ? 'var(--border-color)' : 'transparent', padding: '4px' }}
           >
             <Columns size={15} />
           </button>
-          <button 
-            className={`theme-toggle-btn ${viewMode === 'preview' ? 'active' : ''}`}
-            onClick={() => setViewMode('preview')}
-            title="預覽模式"
-            style={{ backgroundColor: viewMode === 'preview' ? 'var(--border-color)' : 'transparent', padding: '4px' }}
-          >
-            <Eye size={15} />
-          </button>
         </div>
       </div>
 
-      {/* Editor + Preview Split Workspace */}
-      <div className="editor-panel">
-        {/* Editor Area */}
-        {(viewMode === 'edit' || viewMode === 'split') && (
-          <div className="editor-pane" style={{ flex: 1 }}>
-            <textarea
-              ref={textareaRef}
-              className="markdown-textarea"
-              value={content}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              placeholder="開始撰寫筆記... (輸入 '/' 喚出 Notion 快選指令)"
-            />
+      {/* Editor Main Canvas */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        {viewMode === 'wysiwyg' ? (
+          /* NOTION-STYLE INLINE WYSIWYG EDITOR */
+          <div 
+            className="wysiwyg-editor-canvas"
+            onClick={() => {
+              if (blocks.length > 0) {
+                setFocusedBlockIndex(blocks.length - 1);
+              }
+            }}
+            style={{ 
+              flex: 1, 
+              padding: '40px 60px', 
+              overflowY: 'auto', 
+              backgroundColor: 'var(--bg-primary)',
+              cursor: 'text'
+            }}
+          >
+            <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {blocks.map((block, index) => {
+                const isFocused = focusedBlockIndex === index;
 
-            {/* Notion style Slash Suggestion Popover */}
+                return (
+                  <div 
+                    key={block.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFocusedBlockIndex(index);
+                    }}
+                    style={{
+                      position: 'relative',
+                      minHeight: '26px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s',
+                    }}
+                  >
+                    {isFocused ? (
+                      <textarea
+                        ref={(el) => { blockRefs.current[index] = el; }}
+                        value={block.raw}
+                        onChange={(e) => handleBlockChange(index, e.target.value)}
+                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                        onBlur={() => {
+                          // Clean up slash menu if active
+                          setTimeout(() => {
+                            if (focusedBlockIndex === index) {
+                              setFocusedBlockIndex(null);
+                              setShowSlashMenu(false);
+                            }
+                          }, 180);
+                        }}
+                        rows={block.raw.split('\n').length}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          outline: 'none',
+                          resize: 'none',
+                          background: 'transparent',
+                          fontFamily: block.type === 'code' ? 'monospace' : 'inherit',
+                          fontSize: getBlockFontSize(block.type),
+                          fontWeight: getBlockFontWeight(block.type),
+                          color: 'var(--text-primary)',
+                          padding: '4px 0',
+                          margin: 0,
+                          lineHeight: '1.6',
+                        }}
+                      />
+                    ) : (
+                      <div 
+                        style={{
+                          fontSize: getBlockFontSize(block.type),
+                          fontWeight: getBlockFontWeight(block.type),
+                          color: 'var(--text-primary)',
+                          lineHeight: '1.6',
+                          padding: '4px 0',
+                          position: 'relative'
+                        }}
+                      >
+                        {block.type === 'todo' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={block.raw.includes('- [x]')}
+                              onClick={(e) => handleCheckboxToggle(index, e)}
+                              onChange={() => {}}
+                              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                            />
+                            <span 
+                              style={{ 
+                                textDecoration: block.raw.includes('- [x]') ? 'line-through' : 'none',
+                                opacity: block.raw.includes('- [x]') ? 0.5 : 1
+                              }}
+                              dangerouslySetInnerHTML={{ 
+                                __html: renderBlockToHtml({
+                                  ...block,
+                                  raw: block.raw.replace(/^-\s*\[[ x]\]\s*/i, '')
+                                }) 
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div 
+                            className="rendered-wysiwyg-block"
+                            dangerouslySetInnerHTML={{ __html: renderBlockToHtml(block) }} 
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Slash Popover Suggestion in WYSIWYG mode */}
             {showSlashMenu && filteredCommands.length > 0 && (
               <div 
                 ref={slashMenuRef}
                 className="slash-suggestions"
-                style={{ top: `${slashCoords.top}px`, left: `${slashCoords.left}px` }}
+                style={{ 
+                  position: 'absolute',
+                  top: `${slashCoords.top}px`, 
+                  left: `${slashCoords.left}px`,
+                  zIndex: 9999
+                }}
               >
                 {filteredCommands.map((cmd, idx) => (
                   <div
                     key={cmd.label}
                     className={`slash-item ${idx === selectedSlashIndex ? 'selected' : ''}`}
-                    onClick={() => executeSlashCommand(cmd)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (focusedBlockIndex !== null) {
+                        executeBlockSlashCommand(focusedBlockIndex, cmd);
+                      }
+                    }}
                   >
                     <div style={{ fontWeight: '600', padding: '2px 6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', fontSize: '11px' }}>
                       {cmd.icon}
@@ -355,17 +879,56 @@ export const Editor: React.FC<EditorProps> = ({
               </div>
             )}
           </div>
-        )}
+        ) : (
+          /* ORIGINAL TEXT AREA PANELS (SOURCE & SPLIT) */
+          <div className="editor-panel" style={{ flex: 1, display: 'flex' }}>
+            {(viewMode === 'source' || viewMode === 'split') && (
+              <div className="editor-pane" style={{ flex: 1 }}>
+                <textarea
+                  ref={textareaRef}
+                  className="markdown-textarea"
+                  value={content}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="開始撰寫筆記... (輸入 '/' 喚出 Notion 快選指令)"
+                />
 
-        {/* Preview Area */}
-        {(viewMode === 'preview' || viewMode === 'split') && (
-          <div className="preview-pane" style={{ flex: 1 }}>
-            <div className="preview-pane-inner">
-              <div 
-                className="rendered-markdown" 
-                dangerouslySetInnerHTML={{ __html: htmlContent }}
-              />
-            </div>
+                {showSlashMenu && filteredCommands.length > 0 && (
+                  <div 
+                    ref={slashMenuRef}
+                    className="slash-suggestions"
+                    style={{ top: `${slashCoords.top}px`, left: `${slashCoords.left}px` }}
+                  >
+                    {filteredCommands.map((cmd, idx) => (
+                      <div
+                        key={cmd.label}
+                        className={`slash-item ${idx === selectedSlashIndex ? 'selected' : ''}`}
+                        onClick={() => executeSlashCommand(cmd)}
+                      >
+                        <div style={{ fontWeight: '600', padding: '2px 6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', fontSize: '11px' }}>
+                          {cmd.icon}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '500' }}>{cmd.label}</div>
+                          <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>{cmd.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {viewMode === 'split' && (
+              <div className="preview-pane" style={{ flex: 1 }}>
+                <div className="preview-pane-inner">
+                  <div 
+                    className="rendered-markdown" 
+                    dangerouslySetInnerHTML={{ __html: htmlContent }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -174,7 +174,7 @@ function App() {
   const [sidebarTab, setSidebarTab] = useState<'files' | 'history' | 'publish' | 'antigravity'>('files');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('split');
+  const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Snapshots (VCS) state
