@@ -32,15 +32,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // 狀態追蹤
-  const [zoom, setZoom] = useState<number>(1.0);
+  // 狀態追蹤：初始 zoom 為 2.5X，呈現巨大的地平線視角
+  const [zoom, setZoom] = useState<number>(2.5);
   const [activeContinents, setActiveContinents] = useState<boolean[]>([true, false, true, false, false]);
   const [currentTime, setCurrentTime] = useState<string>('');
   
   // 用於 Canvas 繪圖循環的 mutable references
   const stateRef = useRef({
-    zoom: 1.0,
-    rx: 0.25, // 繞 X 軸旋轉
+    zoom: 2.5,
+    rx: 0.32, // 繞 X 軸旋轉 (稍微傾斜，使地表樹木更具立體感)
     ry: 0.8,  // 繞 Y 軸旋轉
     isDragging: false,
     startX: 0,
@@ -103,7 +103,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     window.addEventListener('resize', resizeCanvas);
 
     // 1. 初始化 3D 點與連線
-    const R = 180; // 球體半徑
+    const R = 180; // 球體基本半徑
     const points: Point3D[] = [];
     const connections: Connection[] = [];
     let pointIdCounter = 0;
@@ -119,7 +119,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成陸地表面點
     continentsData.forEach((continent) => {
-      const numPoints = 80 + Math.floor(Math.random() * 40); // 每個板塊 80-120 個點
+      const numPoints = 90 + Math.floor(Math.random() * 30); // 每個板塊約 90-120 個點
       const landPoints: Point3D[] = [];
 
       for (let i = 0; i < numPoints; i++) {
@@ -164,7 +164,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       }
 
       // 在每個板塊上「種植」6 - 8 棵節點樹
-      const numTrees = 5 + Math.floor(Math.random() * 3);
+      const numTrees = 6 + Math.floor(Math.random() * 3);
       for (let t = 0; t < numTrees; t++) {
         // 隨機選一個陸地表面點作為樹根
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
@@ -280,10 +280,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成背景星塵 (不隨球自轉，提供太空深度感)
     const stars: Point3D[] = [];
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 200; i++) {
       const theta = (Math.random() - 0.5) * Math.PI;
       const phi = Math.random() * Math.PI * 2;
-      const starR = 500 + Math.random() * 300;
+      const starR = 500 + Math.random() * 400;
       const x = starR * Math.cos(theta) * Math.sin(phi);
       const y = starR * Math.sin(theta);
       const z = starR * Math.cos(theta) * Math.cos(phi);
@@ -302,8 +302,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       
       // 自動緩慢旋轉 (當沒有拖曳時)
       if (!state.isDragging) {
-        state.ry += 0.0008;
-        state.rx = 0.2 + Math.sin(Date.now() * 0.0001) * 0.05;
+        state.ry += 0.0006;
+        state.rx = 0.28 + Math.sin(Date.now() * 0.00008) * 0.04;
       }
 
       state.pulseProgress = (state.pulseProgress + 0.03) % (Math.PI * 2);
@@ -313,22 +313,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.fillRect(0, 0, width, height);
 
       const centerX = width / 2;
-      const centerY = height / 2;
-      const D = 600; // 視距 (Perspective camera distance)
+      const D = 600; // 視距
 
-      // A. 投影計算背景星塵 (保持靜止或極緩慢滾動)
+      // 動態計算地球中心 centerY：當 zoom 變大時，地球向下移動，在畫面下方形成地平線邊緣
+      let centerY = height / 2;
+      if (state.zoom > 1.0) {
+        const t = Math.min(1.0, (state.zoom - 1.0) / 3.0); // zoom 介於 1.0X 到 4.0X 間過渡
+        centerY = (height / 2) * (1.0 - t) + (height * 0.96) * t;
+      }
+
+      // A. 投影計算背景星塵
       stars.forEach((star) => {
-        // 讓背景星塵有極其微弱的慢速移動
-        const slowRy = state.ry * 0.05;
+        const slowRy = state.ry * 0.03;
         const x1 = star.x * Math.cos(slowRy) - star.z * Math.sin(slowRy);
         const z1 = star.x * Math.sin(slowRy) + star.z * Math.cos(slowRy);
         
         const scale = D / (D + z1);
         const sx = centerX + x1 * scale;
-        const sy = centerY + star.y * scale;
+        // 背景星塵亦隨地平線稍微往下偏移，以保持天空的完整性
+        const sy = (height / 2) + star.y * scale;
 
         if (sx >= 0 && sx <= width && sy >= 0 && sy <= height && z1 < 300) {
-          const brightness = 0.15 + (Math.sin(Date.now() * 0.002 + star.x) * 0.08);
+          const brightness = 0.12 + (Math.sin(Date.now() * 0.0015 + star.x) * 0.08);
           ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
           ctx.fillRect(sx, sy, 1.2, 1.2);
         }
@@ -336,13 +342,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       // B. 旋轉並投影地球上所有的 3D 點
       points.forEach((p) => {
-        // 繞 Y 軸旋轉 ry
         const cosY = Math.cos(state.ry);
         const sinY = Math.sin(state.ry);
         let x1 = p.x * cosY - p.z * sinY;
         let z1 = p.x * sinY + p.z * cosY;
 
-        // 繞 X 軸旋轉 rx
         const cosX = Math.cos(state.rx);
         const sinX = Math.sin(state.rx);
         let y2 = p.y * cosX - z1 * sinX;
@@ -353,11 +357,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         p.tz = z2;
       });
 
-      // 篩選出前半球 (向光面 / 靠近相機面) 與後半球
-      // 我們只繪製 tz < 80 像素的點，tz > 0 為背面，tz < 0 為正面
+      // 篩選出前半球 (向光面) 與後半球
       const getOpacity = (tz: number) => {
-        const fadeStart = -80;
-        const fadeEnd = 120;
+        const fadeStart = -100;
+        const fadeEnd = 140;
         if (tz < fadeStart) return 1.0;
         if (tz > fadeEnd) return 0.0;
         return 1.0 - (tz - fadeStart) / (fadeEnd - fadeStart);
@@ -368,11 +371,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const p1 = points[conn.p1];
         const p2 = points[conn.p2];
 
-        // 取得兩點投影後的深度，並計算平均深度
         const avgTz = (p1.tz + p2.tz) / 2;
         const opacity = getOpacity(avgTz);
 
-        if (opacity <= 0.01) return; // 背面消隱
+        if (opacity <= 0.01) return;
 
         const scale1 = D / (D + p1.tz);
         const scale2 = D / (D + p2.tz);
@@ -388,24 +390,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.moveTo(x1_scr, y1_scr);
         ctx.lineTo(x2_scr, y2_scr);
 
+        // 依縮放比例調整線寬，避免放大時線條過細
+        const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
+
         if (conn.type === 'tree') {
-          // 繪製樹的線條：Active 大陸發光，Inactive 大陸半透明
           if (isContinentActive) {
             const pulse = 0.75 + Math.sin(Date.now() * 0.006 + conn.p1) * 0.25;
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.85 * pulse})`;
-            ctx.lineWidth = 1.0;
+            ctx.lineWidth = 1.0 * zoomWidthScale;
           } else {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.15})`;
-            ctx.lineWidth = 0.6;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.18})`;
+            ctx.lineWidth = 0.6 * zoomWidthScale;
           }
         } else {
-          // 繪製陸地格線
           if (isContinentActive) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.35})`;
-            ctx.lineWidth = 0.55;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.38})`;
+            ctx.lineWidth = 0.55 * zoomWidthScale;
           } else {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.08})`;
-            ctx.lineWidth = 0.4;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.09})`;
+            ctx.lineWidth = 0.4 * zoomWidthScale;
           }
         }
         ctx.stroke();
@@ -421,44 +424,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const py = centerY + p.ty * scale * state.zoom;
 
         const isContinentActive = state.activeContinents[p.continentId];
+        const zoomDotScale = Math.max(1.0, Math.sqrt(state.zoom) * 0.85);
 
         if (p.type === 'tree_leaf') {
-          // 樹葉/樹梢末端節點：發光大圓點
           const radius = isContinentActive ? (2.2 + Math.sin(Date.now() * 0.005 + p.id) * 0.8) : 1.2;
           ctx.beginPath();
-          ctx.arc(px, py, radius * state.zoom, 0, Math.PI * 2);
+          ctx.arc(px, py, radius * state.zoom * 0.6, 0, Math.PI * 2);
           
           if (isContinentActive) {
             ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.95})`;
             ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 6;
+            ctx.shadowBlur = 6 * zoomDotScale;
           } else {
             ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.35})`;
           }
           ctx.fill();
-          ctx.shadowBlur = 0; // 重設 shadowBlur 以免影響效能
+          ctx.shadowBlur = 0;
         } else if (p.type === 'tree_trunk' || p.type === 'tree_branch') {
-          // 樹幹節點
           ctx.beginPath();
-          ctx.arc(px, py, (isContinentActive ? 1.0 : 0.6) * state.zoom, 0, Math.PI * 2);
+          ctx.arc(px, py, (isContinentActive ? 1.0 : 0.6) * state.zoom * 0.7, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.6 : 0.2)})`;
           ctx.fill();
         } else {
-          // 普通陸地格點
           ctx.beginPath();
-          ctx.arc(px, py, (isContinentActive ? 0.8 : 0.5) * state.zoom, 0, Math.PI * 2);
+          ctx.arc(px, py, (isContinentActive ? 0.8 : 0.5) * state.zoom * 0.7, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.4 : 0.12)})`;
           ctx.fill();
         }
       });
 
-      // E. 行星大氣層發光圓環 (Planet Atmospheric Ring)
+      // E. 行星大氣層發光圓環 (隨著地平線下移)
       ctx.beginPath();
       const radius = R * state.zoom;
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
       
       const gradient = ctx.createRadialGradient(
-        centerX, centerY, radius * 0.92,
+        centerX, centerY, radius * 0.93,
         centerX, centerY, radius * 1.05
       );
       gradient.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
@@ -489,8 +490,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       const dx = e.clientX - state.startX;
       const dy = e.clientY - state.startY;
 
-      state.ry += dx * 0.004;
-      state.rx += dy * 0.004;
+      // 當處於大地平線（大 Zoom）視角時，減緩旋轉靈敏度以進行精細拖曳
+      const dragSensitivity = state.zoom > 2.0 ? 0.002 : 0.004;
+      state.ry += dx * dragSensitivity;
+      state.rx += dy * dragSensitivity;
 
       // 限制 X 軸旋轉以防球體翻轉
       state.rx = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, state.rx));
@@ -503,12 +506,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       stateRef.current.isDragging = false;
     };
 
-    // 處理滾輪無級縮放
+    // 處理滾輪無級縮放，上限調整至 8.0X 以便深入地表細節
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       setZoom((prev) => {
-        const next = prev - e.deltaY * 0.001;
-        return Math.max(0.6, Math.min(3.5, next));
+        const next = prev - e.deltaY * 0.0016;
+        return Math.max(0.6, Math.min(8.0, next));
       });
     };
 
@@ -516,21 +519,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const handleClick = (e: MouseEvent) => {
       const state = stateRef.current;
       
-      // 計算滑鼠在 Canvas 上的相對坐標
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
       const centerX = width / 2;
-      const centerY = height / 2;
       const D = 600;
 
-      // 尋找前半球 (tz < 0) 離滑鼠最近的陸地表面點
+      // 計算與 render 相同的動態 centerY，以保證射線檢測命中精準
+      let centerY = height / 2;
+      if (state.zoom > 1.0) {
+        const t = Math.min(1.0, (state.zoom - 1.0) / 3.0);
+        centerY = (height / 2) * (1.0 - t) + (height * 0.96) * t;
+      }
+
       let closestPt: Point3D | null = null;
       let minDist = Infinity;
 
       points.forEach((p) => {
-        if (p.type !== 'land' || p.tz > 0) return; // 排除背面與非陸地點
+        if (p.type !== 'land' || p.tz > 0) return;
         
         const scale = D / (D + p.tz);
         const px = centerX + p.tx * scale * state.zoom;
@@ -543,8 +550,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       });
 
-      // 若滑鼠點擊點與最近點小於寬鬆範圍，觸發板塊 Active 狀態切換
-      if (closestPt && minDist < 20 * state.zoom) {
+      // 大縮放比例時，寬鬆碰撞檢測範圍
+      const clickTolerance = 18 * state.zoom;
+      if (closestPt && minDist < Math.max(18, Math.min(45, clickTolerance))) {
         const cId = (closestPt as Point3D).continentId;
         setActiveContinents((prev) => {
           const next = [...prev];
@@ -681,7 +689,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }}
       />
 
-      {/* HUD 覆蓋層 (完全貼合設計圖架構) */}
+      {/* HUD 覆蓋層 */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -739,7 +747,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           gap: '24px',
           pointerEvents: 'auto',
           textAlign: 'center',
-          marginTop: '-40px' // 微幅向上挪動使構圖更平衡
+          marginTop: '-60px' // 微調向上挪動，避開下方龐大的地平線，使構圖更完美
         }}>
           {/* WikiTree 大標題 */}
           <h1 style={{
@@ -762,7 +770,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             color: 'rgba(255,255,255,0.5)',
             margin: '0 0 24px 0',
             letterSpacing: '0.45em',
-            paddingLeft: '0.45em' // 平衡字母間距
+            paddingLeft: '0.45em'
           }}>
             一人種樹，億人乘涼
           </p>
