@@ -551,21 +551,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
 
     const constellations: Constellation[] = [];
-    const numConstellations = 6;
+    const numConstellations = 9;
     for (let c = 0; c < numConstellations; c++) {
       const startIndex = Math.floor(Math.random() * numStars);
       const starGroup = [startIndex];
       let current = stars[startIndex];
 
-      // 串起 4 顆鄰近的星塵 (距離在 80px 至 220px 之間)
-      for (let step = 0; step < 3; step++) {
+      // 串起 5 顆鄰近的星塵，讓星座線不只是偶爾一閃，而是能被觀測到的夜空結構。
+      for (let step = 0; step < 4; step++) {
         let bestDist = Infinity;
         let bestIdx = -1;
         for (let j = 0; j < numStars; j++) {
           if (starGroup.includes(j)) continue;
           const other = stars[j];
           const d = Math.hypot(current.x - other.x, current.y - other.y, current.z - other.z);
-          if (d < bestDist && d > 80 && d < 220) {
+          if (d < bestDist && d > 70 && d < 260) {
             bestDist = d;
             bestIdx = j;
           }
@@ -585,7 +585,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         opacity: 0,
         state: 'idle',
         timer: 0,
-        activeDelay: 100 + Math.random() * 300
+        activeDelay: 40 + Math.random() * 260
       });
     }
 
@@ -608,7 +608,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       state.pulseProgress = (state.pulseProgress + 0.03) % (Math.PI * 2);
 
       // 全域慢速呼吸光暈係數
-      const globalBreathe = 0.94 + Math.sin(Date.now() * 0.0018) * 0.06;
+      const now = Date.now();
+      const globalBreathe = 0.94 + Math.sin(now * 0.0018) * 0.06;
+      const coreBreathe = 0.72 + Math.sin(now * 0.0022) * 0.28;
 
       // 清除 Canvas 為純黑背景
       ctx.fillStyle = '#000000';
@@ -640,7 +642,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           const starSize = star.size || 1.2;
 
           // 亮度的閃爍區間更廣 (最亮可達 0.95)，且有更劇烈的明暗差，使其具有真正的閃耀感
-          const twinkle = 0.52 + Math.sin(Date.now() * baseSpeed + phase) * 0.43;
+          const twinkle = 0.52 + Math.sin(now * baseSpeed + phase) * 0.43;
           const brightness = twinkle * globalBreathe;
           
           // 為星星帶來些微不同的色彩調性 (90% 純白, 5% 微金, 5% 微藍)
@@ -688,12 +690,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         // 狀態機更新
         if (c.state === 'drawing') {
-          c.opacity = Math.min(1.0, c.opacity + 0.015);
-          c.progress += 0.009; // 慢速勾勒連線
+          c.opacity = Math.min(1.0, c.opacity + 0.022);
+          c.progress += 0.012; // 慢速勾勒連線
           if (c.progress >= 1.0) {
             c.progress = 1.0;
             c.state = 'visible';
-            c.timer = 180 + Math.random() * 150; // 顯示大約 3 ~ 5 秒
+            c.timer = 240 + Math.random() * 190; // 顯示大約 4 ~ 7 秒
           }
         } else if (c.state === 'visible') {
           c.timer--;
@@ -701,11 +703,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             c.state = 'fading';
           }
         } else if (c.state === 'fading') {
-          c.opacity -= 0.012;
+          c.opacity -= 0.009;
           if (c.opacity <= 0) {
             c.opacity = 0;
             c.state = 'idle';
-            c.activeDelay = 350 + Math.random() * 500; // 下一次冷卻
+            c.activeDelay = 210 + Math.random() * 420; // 下一次冷卻
           }
         }
 
@@ -733,13 +735,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         if (projectedPoints.length < 2 || !allVisible) return;
 
-        // 繪製連線
+        // 繪製連線：先鋪一層柔光，再畫清楚的主線，讓星座真正被看見但不喧賓奪主。
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(c.opacity * 0.22 * globalBreathe).toFixed(3)})`;
-        ctx.lineWidth = 0.65;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(c.opacity * 0.18 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 2.4;
         
         const totalSegments = projectedPoints.length - 1;
         const segmentProgress = totalSegments * c.progress;
+
+        ctx.moveTo(projectedPoints[0].x, projectedPoints[0].y);
+        for (let i = 0; i < totalSegments; i++) {
+          const pStart = projectedPoints[i];
+          const pEnd = projectedPoints[i + 1];
+          
+          if (segmentProgress >= i + 1) {
+            ctx.lineTo(pEnd.x, pEnd.y);
+          } else if (segmentProgress > i) {
+            const factor = segmentProgress - i;
+            const targetX = pStart.x + (pEnd.x - pStart.x) * factor;
+            const targetY = pStart.y + (pEnd.y - pStart.y) * factor;
+            ctx.lineTo(targetX, targetY);
+            break;
+          } else {
+            break;
+          }
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(c.opacity * 0.42 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.95;
 
         ctx.moveTo(projectedPoints[0].x, projectedPoints[0].y);
         for (let i = 0; i < totalSegments; i++) {
@@ -765,8 +790,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           const segmentIndex = idx;
           if (segmentProgress >= segmentIndex) {
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${(c.opacity * 0.14 * globalBreathe).toFixed(3)})`;
+            ctx.arc(p.x, p.y, 6.2, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${(c.opacity * 0.18 * globalBreathe).toFixed(3)})`;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.7, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${(c.opacity * 0.76 * globalBreathe).toFixed(3)})`;
             ctx.fill();
           }
         });
@@ -855,15 +885,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.arc(centerX, centerY, glowRadius * 1.25, 0, Math.PI * 2);
       ctx.fill();
 
-      // 【星球內部層】：用低透明度同心層表現地殼、地函與地核，讓樹根像深入星球內部。
+      // 【星球內部層】：用呼吸的內核與偏白地盤，表現「地表板塊 / 地核」的觀測分界。
+      const coreGrad = ctx.createRadialGradient(
+        centerX, centerY, 0,
+        centerX, centerY, glowRadius * 0.54
+      );
+      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${(0.28 + coreBreathe * 0.18).toFixed(3)})`);
+      coreGrad.addColorStop(0.26, `rgba(248, 249, 250, ${(0.18 + coreBreathe * 0.12).toFixed(3)})`);
+      coreGrad.addColorStop(0.62, `rgba(210, 214, 218, ${(0.06 + coreBreathe * 0.08).toFixed(3)})`);
+      coreGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, glowRadius * 0.56, 0, Math.PI * 2);
+      ctx.fill();
+
       const interiorGrad = ctx.createRadialGradient(
         centerX, centerY, 0,
         centerX, centerY, glowRadius * 0.98
       );
-      interiorGrad.addColorStop(0, `rgba(245, 247, 248, ${(0.09 * globalBreathe).toFixed(3)})`);
-      interiorGrad.addColorStop(0.22, `rgba(210, 214, 216, ${(0.045 * globalBreathe).toFixed(3)})`);
-      interiorGrad.addColorStop(0.48, `rgba(150, 154, 158, ${(0.035 * globalBreathe).toFixed(3)})`);
-      interiorGrad.addColorStop(0.72, `rgba(110, 114, 118, ${(0.028 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0, `rgba(245, 247, 248, ${(0.08 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.34, `rgba(210, 214, 216, ${(0.045 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.62, `rgba(148, 152, 156, ${(0.035 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.76, `rgba(235, 238, 240, ${(0.09 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.9, `rgba(255, 255, 255, ${(0.18 * globalBreathe).toFixed(3)})`);
       interiorGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
       ctx.fillStyle = interiorGrad;
@@ -871,10 +916,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.arc(centerX, centerY, glowRadius * 0.98, 0, Math.PI * 2);
       ctx.fill();
 
+      const crustGrad = ctx.createRadialGradient(
+        centerX, centerY, glowRadius * 0.7,
+        centerX, centerY, glowRadius * 1.02
+      );
+      crustGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      crustGrad.addColorStop(0.46, `rgba(255, 255, 255, ${(0.08 * globalBreathe).toFixed(3)})`);
+      crustGrad.addColorStop(0.74, `rgba(255, 255, 255, ${(0.2 * globalBreathe).toFixed(3)})`);
+      crustGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = crustGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, glowRadius * 1.02, 0, Math.PI * 2);
+      ctx.fill();
+
       const layerRings = [
-        { r: 0.32, alpha: 0.1, width: 1.2 },
-        { r: 0.56, alpha: 0.075, width: 1.0 },
-        { r: 0.78, alpha: 0.055, width: 0.9 }
+        { r: 0.34, alpha: 0.16 + coreBreathe * 0.08, width: 1.25 },
+        { r: 0.58, alpha: 0.095 + coreBreathe * 0.035, width: 1.0 },
+        { r: 0.78, alpha: 0.13, width: 1.15 },
+        { r: 0.91, alpha: 0.2, width: 1.2 }
       ];
       layerRings.forEach((ring) => {
         ctx.beginPath();
@@ -1194,7 +1254,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 4. 繪製已啟動的樹木線條
       if (hasActiveTree) {
         ctx.beginPath();
-        const pulse = 0.93 + Math.sin(Date.now() * 0.005) * 0.07;
+        const pulse = 0.93 + Math.sin(now * 0.005) * 0.07;
         ctx.strokeStyle = `rgba(255, 255, 255, ${(0.98 * pulse * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 1.8 * zoomWidthScale;
         ctx.stroke(activeTreePath);
@@ -1213,7 +1273,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         // 已啟動的大陸葉子點：保留單獨繪製，以維持獨立閃爍與精緻雙層發光圓環效果
         if (p.type === 'tree_leaf' && isContinentActive) {
-          const radius = 2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8;
+          const radius = 2.8 + Math.sin(now * 0.005 + p.id) * 0.8;
           
           // 繪製外層發光圓環 (大而半透明)
           ctx.beginPath();
