@@ -43,6 +43,14 @@ interface ContinentBoundary {
   pointIds: number[];
 }
 
+// 樹根線段定義：從地表往星球內部延伸
+interface RootSegment {
+  p1: { x: number; y: number; z: number; tx: number; ty: number; tz: number };
+  p2: { x: number; y: number; z: number; tx: number; ty: number; tz: number };
+  continentId: number;
+  depth: number;
+}
+
 // 洋流路徑與粒子定義
 interface CurrentPath {
   points: { x: number; y: number; z: number; tx: number; ty: number; tz: number }[];
@@ -131,6 +139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const connections: Connection[] = [];
     const triangles: Triangle3D[] = [];
     const continentBoundaries: ContinentBoundary[] = [];
+    const rootSegments: RootSegment[] = [];
     let pointIdCounter = 0;
 
     // 用於點的離散化分箱批處理（減少 Draw Calls，提升 FPS）
@@ -308,6 +317,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         const profile = sizePool[Math.floor(Math.random() * sizePool.length)];
         const treeHeight = profile.baseHeight + Math.random() * profile.heightVar;
+
+        // 樹根往球體內部扎入，並在地表下方分叉，讓森林像是深入星球核心。
+        const rootMaxDepth = profile.kind === 'large' ? 3 : 2;
+        const growRoot = (
+          sx: number, sy: number, sz: number,
+          dirX: number, dirY: number, dirZ: number,
+          length: number, depth: number
+        ) => {
+          const childCount = depth === 0 ? 3 : 2;
+          for (let r = 0; r < childCount; r++) {
+            const angle = Math.random() * Math.PI * 2;
+            const drift = 0.22 + Math.random() * 0.22;
+            const tanX = ux * Math.cos(angle) + vx * Math.sin(angle);
+            const tanY = uy * Math.cos(angle) + vy * Math.sin(angle);
+            const tanZ = uz * Math.cos(angle) + vz * Math.sin(angle);
+
+            let ndx = dirX + tanX * drift;
+            let ndy = dirY + tanY * drift;
+            let ndz = dirZ + tanZ * drift;
+            const nLen = Math.hypot(ndx, ndy, ndz) || 1;
+            ndx /= nLen; ndy /= nLen; ndz /= nLen;
+
+            const segLen = length * (0.82 + Math.random() * 0.32);
+            const ex = sx + ndx * segLen;
+            const ey = sy + ndy * segLen;
+            const ez = sz + ndz * segLen;
+
+            rootSegments.push({
+              p1: { x: sx, y: sy, z: sz, tx: sx, ty: sy, tz: sz },
+              p2: { x: ex, y: ey, z: ez, tx: ex, ty: ey, tz: ez },
+              continentId: continent.id,
+              depth
+            });
+
+            if (depth + 1 < rootMaxDepth) {
+              growRoot(ex, ey, ez, ndx, ndy, ndz, segLen * 0.78, depth + 1);
+            }
+          }
+        };
+        growRoot(rootPt.x, rootPt.y, rootPt.z, -nx, -ny, -nz, treeHeight * 0.58, 0);
 
         // 樹幹頂點 (沿球面法線向外)
         const tx = rootPt.x + nx * treeHeight;
@@ -759,6 +808,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         });
       });
 
+      // 旋轉並投影深入星球內部的樹根線段
+      rootSegments.forEach((seg) => {
+        [seg.p1, seg.p2].forEach((p) => {
+          const cosY = Math.cos(state.ry);
+          const sinY = Math.sin(state.ry);
+          const cosX = Math.cos(state.rx);
+          const sinX = Math.sin(state.rx);
+
+          let x1 = p.x * cosY - p.z * sinY;
+          let z1 = p.x * sinY + p.z * cosY;
+          let y2 = p.y * cosX - z1 * sinX;
+          let z2 = p.y * sinX + z1 * cosX;
+
+          p.tx = x1;
+          p.ty = y2;
+          p.tz = z2;
+        });
+      });
+
       // 篩選出前半球與後半球
       const getOpacity = (tz: number) => {
         const fadeStart = -100;
@@ -786,6 +854,76 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.beginPath();
       ctx.arc(centerX, centerY, glowRadius * 1.25, 0, Math.PI * 2);
       ctx.fill();
+
+      // 【星球內部層】：用低透明度同心層表現地殼、地函與地核，讓樹根像深入星球內部。
+      const interiorGrad = ctx.createRadialGradient(
+        centerX, centerY, 0,
+        centerX, centerY, glowRadius * 0.98
+      );
+      interiorGrad.addColorStop(0, `rgba(245, 247, 248, ${(0.09 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.22, `rgba(210, 214, 216, ${(0.045 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.48, `rgba(150, 154, 158, ${(0.035 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(0.72, `rgba(110, 114, 118, ${(0.028 * globalBreathe).toFixed(3)})`);
+      interiorGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = interiorGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, glowRadius * 0.98, 0, Math.PI * 2);
+      ctx.fill();
+
+      const layerRings = [
+        { r: 0.32, alpha: 0.1, width: 1.2 },
+        { r: 0.56, alpha: 0.075, width: 1.0 },
+        { r: 0.78, alpha: 0.055, width: 0.9 }
+      ];
+      layerRings.forEach((ring) => {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, glowRadius * ring.r, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(ring.alpha * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = ring.width * zoomWidthScale;
+        ctx.stroke();
+      });
+
+      // 【樹根系統】：從樹幹下方往地表內部延伸，畫在地表紋理之下，形成扎根感。
+      const activeRootPath = new Path2D();
+      const inactiveRootPath = new Path2D();
+      let hasActiveRoots = false;
+      let hasInactiveRoots = false;
+
+      rootSegments.forEach((seg) => {
+        const avgTz = (seg.p1.tz + seg.p2.tz) / 2;
+        if (avgTz > 65) return;
+
+        const opacity = getOpacity(avgTz);
+        if (opacity < 0.1) return;
+
+        const scale1 = D / (D + seg.p1.tz);
+        const scale2 = D / (D + seg.p2.tz);
+        const x1 = centerX + seg.p1.tx * scale1 * state.zoom;
+        const y1 = centerY + seg.p1.ty * scale1 * state.zoom;
+        const x2 = centerX + seg.p2.tx * scale2 * state.zoom;
+        const y2 = centerY + seg.p2.ty * scale2 * state.zoom;
+        const path = state.activeContinents[seg.continentId] ? activeRootPath : inactiveRootPath;
+
+        path.moveTo(x1, y1);
+        path.lineTo(x2, y2);
+        if (state.activeContinents[seg.continentId]) hasActiveRoots = true;
+        else hasInactiveRoots = true;
+      });
+
+      if (hasInactiveRoots) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(180, 184, 187, ${(0.16 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.75 * zoomWidthScale;
+        ctx.stroke(inactiveRootPath);
+      }
+
+      if (hasActiveRoots) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(238, 240, 241, ${(0.34 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 1.05 * zoomWidthScale;
+        ctx.stroke(activeRootPath);
+      }
 
       // 【洋流繪製】：
       // 1. 繪製極淡的「洋流軌跡底線」
