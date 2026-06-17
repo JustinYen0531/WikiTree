@@ -1214,8 +1214,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             width: '100%',
             height: '100%',
             zIndex: -1,
-            pointerEvents: 'none',
-            overflow: 'hidden'
+            pointerEvents: 'none'
           }}>
             {/* 1. 模糊預覽佔位圖 (LQIP)，在大圖載入前提供即時視覺回饋 */}
             <img
