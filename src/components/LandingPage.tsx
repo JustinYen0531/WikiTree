@@ -50,6 +50,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [zoom, setZoom] = useState<number>(2.5);
   const [activeContinents, setActiveContinents] = useState<boolean[]>([true, false, true, false, false]);
   const [currentTime, setCurrentTime] = useState<string>('');
+  const [logoLoaded, setLogoLoaded] = useState<boolean>(false);
   
   // 用於 Canvas 繪圖循環的 mutable references
   const stateRef = useRef({
@@ -1213,12 +1214,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             width: '100%',
             height: '100%',
             zIndex: -1,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            overflow: 'hidden'
           }}>
+            {/* 1. 模糊預覽佔位圖 (LQIP)，在大圖載入前提供即時視覺回饋 */}
+            <img
+              src="/wikitree-logo-placeholder.png"
+              alt="WikiTree Placeholder"
+              draggable={false}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '560px',
+                height: 'auto',
+                maxWidth: 'none',
+                filter: 'blur(8px) drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55))',
+                userSelect: 'none',
+                opacity: logoLoaded ? 0 : 0.7,
+                transition: 'opacity 0.6s ease-in-out',
+                pointerEvents: 'none'
+              }}
+            />
+            {/* 2. 高畫質主要大圖，載入完畢後淡入 */}
             <img
               src="/wikitree-logo.png"
               alt="WikiTree"
               draggable={false}
+              onLoad={() => setLogoLoaded(true)}
               style={{
                 position: 'absolute',
                 top: '50%',
@@ -1228,7 +1252,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 height: 'auto',
                 maxWidth: 'none',
                 filter: 'drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55))', // 柔和投影，讓素描樹自夜空中浮起
-                userSelect: 'none'
+                userSelect: 'none',
+                opacity: logoLoaded ? 1 : 0,
+                transition: 'opacity 0.6s ease-in-out'
               }}
             />
           </div>
