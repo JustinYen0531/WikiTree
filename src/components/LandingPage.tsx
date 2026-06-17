@@ -1186,21 +1186,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* 中間主標題與控制面板 (整合幾何科技樹形背景面板與文字黑色外框) */}
+        {/* 中間主標題與控制面板 (整合平滑曲線樹形背景面板與強灰色遮罩) */}
         <div style={{
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '55px 75px 65px 75px', // 左右與上下提供足夠安全邊距適應樹形輪廓
+          padding: '75px 50px 75px 50px', 
           pointerEvents: 'auto',
           textAlign: 'center',
           marginTop: '-40px',
-          minWidth: '420px',
+          width: '100%',
+          maxWidth: '420px', // 限制最大寬度防止扁平拉伸，維持樹木黃金比例
+          minHeight: '530px',
           boxSizing: 'border-box'
         }}>
-          {/* 精緻幾何科技樹形背景面板 SVG */}
+          {/* 強烈灰色底層遮罩與毛玻璃效果 (完全阻擋後面雜線，增強對比) */}
+          <div style={{
+            position: 'absolute',
+            top: '35px',
+            bottom: '45px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '320px', // 比樹冠稍窄，剛好嵌入樹幹內部，形成視覺一體
+            backgroundColor: 'rgba(10, 10, 10, 0.93)', // 強化灰色遮罩感
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            borderRadius: '24px',
+            zIndex: -2,
+            pointerEvents: 'none'
+          }} />
+
+          {/* 精緻平滑貝氏曲線樹形背景外框 SVG */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -1210,42 +1228,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             zIndex: -1,
             pointerEvents: 'none'
           }}>
-            <svg width="100%" height="100%" viewBox="0 0 500 600" preserveAspectRatio="none" style={{
-              filter: 'drop-shadow(0 0 16px rgba(0, 0, 0, 0.75))'
-            }}>
+            <svg 
+              width="400" 
+              height="550" 
+              viewBox="0 0 400 550" 
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)', // 居中定位，確保高寬比例永不變形
+                filter: 'drop-shadow(0 0 12px rgba(0, 0, 0, 0.85))'
+              }}
+            >
               <path
-                d="M 140 585 
-                   L 160 525 
-                   L 170 465 
-                   L 175 395 
-                   L 175 325 
-                   L 140 305 
-                   L 70 305 
-                   L 60 255 
-                   L 80 215 
-                   L 55 175 
-                   L 75 115 
-                   L 120 95 
-                   L 160 105 
-                   L 200 65 
-                   L 250 50 
-                   L 300 65 
-                   L 340 105 
-                   L 380 95 
-                   L 425 115 
-                   L 445 175 
-                   L 420 215 
-                   L 440 255 
-                   L 430 305 
-                   L 360 305 
-                   L 325 325 
-                   L 325 395 
-                   L 330 465 
-                   L 340 525 
-                   L 360 585"
-                fill="rgba(18, 18, 18, 0.52)"
-                stroke="rgba(255, 255, 255, 0.42)"
-                strokeWidth="1.5"
+                d="M 90 530
+                   Q 125 450, 130 360
+                   Q 130 300, 115 270
+                   C 70 270, 30 230, 30 170
+                   C 30 100, 90 60, 150 75
+                   Q 200 40, 250 75
+                   C 310 60, 370 100, 370 170
+                   C 370 230, 330 270, 285 270
+                   Q 270 300, 270 360
+                   Q 275 450, 310 530"
+                fill="rgba(12, 12, 12, 0.88)" // 深灰色遮罩填充
+                stroke="rgba(255, 255, 255, 0.72)" // 提升線條亮度
+                strokeWidth="3.5" // 大幅增加外框線條粗度，與後面細線產生明顯反差
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
