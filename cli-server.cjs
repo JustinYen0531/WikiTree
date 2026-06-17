@@ -168,12 +168,15 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
       const tempFilePath = path.join(os.tmpdir(), `antigravity-browse-${Date.now()}.ps1`);
       const psScript = `
         Add-Type -AssemblyName System.Windows.Forms
+        $form = New-Object System.Windows.Forms.Form
+        $form.TopMost = $true
         $f = New-Object System.Windows.Forms.FolderBrowserDialog
         $f.Description = "選擇或建立您的工作區資料夾"
         $f.ShowNewFolderButton = $true
-        if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        if ($f.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
             Write-Output $f.SelectedPath
         }
+        $form.Dispose()
       `.trim();
       
       try {
