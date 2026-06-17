@@ -502,11 +502,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         pathPts.push({ x: finalX, y: finalY, z: finalZ, tx: finalX, ty: finalY, tz: finalZ });
       }
 
-      // 每條洋流上有 3 個流動粒子，調慢速度以減少焦躁感（約原本 35%-40% 的速度）
+      // 每條洋流上有 3 個流動粒子，速度降至先前的 1/4，讓流動更像深層觀測資料。
       const particles = [
-        { progress: 0.0, speed: 0.0005 + Math.random() * 0.0002 },
-        { progress: 0.33, speed: 0.0005 + Math.random() * 0.0002 },
-        { progress: 0.66, speed: 0.0005 + Math.random() * 0.0002 }
+        { progress: 0.0, speed: 0.000125 + Math.random() * 0.00005 },
+        { progress: 0.33, speed: 0.000125 + Math.random() * 0.00005 },
+        { progress: 0.66, speed: 0.000125 + Math.random() * 0.00005 }
       ];
 
       currentPaths.push({ points: pathPts, particles });
