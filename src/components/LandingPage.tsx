@@ -885,43 +885,96 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.arc(centerX, centerY, glowRadius * 1.25, 0, Math.PI * 2);
       ctx.fill();
 
-      // 【縮小視角衛星】：倍率拉遠時才浮現三顆不同軌道半徑的衛星，像外圍觀測資料點。
+      // 【縮小視角衛星】：倍率拉遠時才浮現三顆不同 3D 軌道平面的衛星，軌道會隨拖曳視角改變投影。
       const satelliteVisibility = Math.max(0, Math.min(1, (1.65 - state.zoom) / 0.85));
       if (satelliteVisibility > 0.01) {
         const satellites = [
-          { orbit: 1.55, size: 4.4, speed: 0.00012, phase: 0.2, tilt: 0.86 },
-          { orbit: 1.88, size: 3.4, speed: -0.0001, phase: 2.35, tilt: 0.78 },
-          { orbit: 2.2, size: 5.2, speed: 0.00008, phase: 4.25, tilt: 0.92 }
+          {
+            orbit: 1.55,
+            size: 17.6,
+            speed: 0.00012,
+            phase: 0.2,
+            u: { x: 0.96, y: 0.16, z: 0.22 },
+            v: { x: -0.12, y: 0.72, z: 0.68 }
+          },
+          {
+            orbit: 1.76,
+            size: 13.6,
+            speed: -0.0001,
+            phase: 2.35,
+            u: { x: 0.18, y: 0.94, z: -0.28 },
+            v: { x: 0.76, y: -0.02, z: 0.65 }
+          },
+          {
+            orbit: 1.98,
+            size: 20.8,
+            speed: 0.00008,
+            phase: 4.25,
+            u: { x: 0.62, y: -0.4, z: 0.68 },
+            v: { x: -0.66, y: 0.2, z: 0.72 }
+          }
         ];
         const satelliteAlpha = satelliteVisibility * globalBreathe;
+        const projectSatellitePoint = (x: number, y: number, z: number) => {
+          const cosY = Math.cos(state.ry);
+          const sinY = Math.sin(state.ry);
+          const cosX = Math.cos(state.rx);
+          const sinX = Math.sin(state.rx);
+          const x1 = x * cosY - z * sinY;
+          const z1 = x * sinY + z * cosY;
+          const y2 = y * cosX - z1 * sinX;
+          const z2 = y * sinX + z1 * cosX;
+          const scale = D / (D + z2);
+
+          return {
+            x: centerX + x1 * scale * state.zoom,
+            y: centerY + y2 * scale * state.zoom,
+            z: z2
+          };
+        };
 
         satellites.forEach((sat, index) => {
-          const orbitRadius = glowRadius * sat.orbit;
-          const angle = now * sat.speed + state.ry * 0.18 + sat.phase;
-          const sx = centerX + Math.cos(angle) * orbitRadius;
-          const sy = centerY + Math.sin(angle) * orbitRadius * sat.tilt;
+          const orbitRadius = R * sat.orbit;
+          const orbitPath = new Path2D();
+          const orbitSteps = 104;
+
+          for (let step = 0; step <= orbitSteps; step++) {
+            const angle = (step / orbitSteps) * Math.PI * 2;
+            const wx = (sat.u.x * Math.cos(angle) + sat.v.x * Math.sin(angle)) * orbitRadius;
+            const wy = (sat.u.y * Math.cos(angle) + sat.v.y * Math.sin(angle)) * orbitRadius;
+            const wz = (sat.u.z * Math.cos(angle) + sat.v.z * Math.sin(angle)) * orbitRadius;
+            const projected = projectSatellitePoint(wx, wy, wz);
+
+            if (step === 0) orbitPath.moveTo(projected.x, projected.y);
+            else orbitPath.lineTo(projected.x, projected.y);
+          }
 
           ctx.beginPath();
-          ctx.ellipse(centerX, centerY, orbitRadius, orbitRadius * sat.tilt, 0, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(255, 255, 255, ${(0.075 * satelliteAlpha).toFixed(3)})`;
           ctx.lineWidth = 0.7;
-          ctx.stroke();
+          ctx.stroke(orbitPath);
 
+          const angle = now * sat.speed + sat.phase;
+          const wx = (sat.u.x * Math.cos(angle) + sat.v.x * Math.sin(angle)) * orbitRadius;
+          const wy = (sat.u.y * Math.cos(angle) + sat.v.y * Math.sin(angle)) * orbitRadius;
+          const wz = (sat.u.z * Math.cos(angle) + sat.v.z * Math.sin(angle)) * orbitRadius;
+          const projectedSatellite = projectSatellitePoint(wx, wy, wz);
           const satellitePulse = 0.82 + Math.sin(now * 0.0024 + index * 1.7) * 0.18;
-          const satelliteSize = sat.size * (0.85 + Math.sqrt(Math.max(state.zoom, 0.6)) * 0.18);
+          const depthScale = Math.max(0.72, Math.min(1.28, D / (D + projectedSatellite.z)));
+          const satelliteSize = sat.size * depthScale;
 
           ctx.beginPath();
-          ctx.arc(sx, sy, satelliteSize * 2.4, 0, Math.PI * 2);
+          ctx.arc(projectedSatellite.x, projectedSatellite.y, satelliteSize * 2.4, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${(0.1 * satelliteAlpha * satellitePulse).toFixed(3)})`;
           ctx.fill();
 
           ctx.beginPath();
-          ctx.arc(sx, sy, satelliteSize, 0, Math.PI * 2);
+          ctx.arc(projectedSatellite.x, projectedSatellite.y, satelliteSize, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(248, 249, 250, ${(0.72 * satelliteAlpha).toFixed(3)})`;
           ctx.fill();
 
           ctx.beginPath();
-          ctx.arc(sx - satelliteSize * 0.24, sy - satelliteSize * 0.22, satelliteSize * 0.36, 0, Math.PI * 2);
+          ctx.arc(projectedSatellite.x - satelliteSize * 0.24, projectedSatellite.y - satelliteSize * 0.22, satelliteSize * 0.36, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${(0.78 * satelliteAlpha).toFixed(3)})`;
           ctx.fill();
         });
