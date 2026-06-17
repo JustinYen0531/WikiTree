@@ -1021,18 +1021,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
 
         @keyframes titleGlowBreathe {
-          0% { 
-            text-shadow: 0 0 12px rgba(255, 255, 255, 0.08); 
+          0% {
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.08);
             opacity: 0.88;
           }
-          50% { 
-            text-shadow: 0 0 25px rgba(255, 255, 255, 0.28); 
+          50% {
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.28);
             opacity: 1.0;
           }
-          100% { 
-            text-shadow: 0 0 12px rgba(255, 255, 255, 0.08); 
+          100% {
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.08);
             opacity: 0.88;
           }
+        }
+
+        /* 中央標題專用：保留白色描邊輪廓，同時做光暈呼吸，確保黑字永遠清晰 */
+        @keyframes titleInkBreathe {
+          0% {
+            text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 0 12px rgba(255, 255, 255, 0.45);
+            opacity: 0.94;
+          }
+          50% {
+            text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 0 22px rgba(255, 255, 255, 0.85);
+            opacity: 1.0;
+          }
+          100% {
+            text-shadow: -1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 0 12px rgba(255, 255, 255, 0.45);
+            opacity: 0.94;
+          }
+        }
+
+        .title-ink-breathe {
+          animation: titleInkBreathe 6s infinite ease-in-out;
         }
 
         .hud-text {
@@ -1061,9 +1081,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
 
         .btn-sci-fi {
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: rgba(255, 255, 255, 0.6);
+          background: rgba(248, 246, 240, 0.35);
+          border: 1px solid rgba(30, 30, 30, 0.4);
+          color: rgba(20, 20, 20, 0.85);
           padding: 12px 40px;
           font-family: 'Roboto Mono', monospace;
           font-size: 14px;
@@ -1079,7 +1099,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           position: absolute;
           width: 4px;
           height: 4px;
-          border: 1px solid #ffffff;
+          border: 1px solid #101010;
           transition: all 0.3s ease;
           opacity: 0;
         }
@@ -1095,9 +1115,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
 
         .btn-sci-fi:hover {
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.95);
-          box-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+          color: #000000;
+          background: rgba(248, 246, 240, 0.6);
+          border-color: rgba(10, 10, 10, 0.9);
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
         }
 
         .btn-sci-fi:hover::before, .btn-sci-fi:hover::after {
@@ -1107,7 +1128,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         .btn-link-sci-fi {
           background: transparent;
           border: none;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(20, 20, 20, 0.7);
           font-family: 'Roboto Mono', monospace;
           font-size: 12px;
           letter-spacing: 0.12em;
@@ -1117,9 +1138,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
 
         .btn-link-sci-fi:hover {
-          color: #ffffff;
+          color: #000000;
           letter-spacing: 0.18em;
-          text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+          text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 6px rgba(255, 255, 255, 0.8);
         }
       `}</style>
 
@@ -1229,92 +1250,129 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)', // 居中對齊，比例永不變形
-                filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.9))'
+                filter: 'drop-shadow(0 8px 22px rgba(0, 0, 0, 0.6))' // 柔和投影，讓紙白色素描樹自夜空中浮起
               }}
             >
-              {/* 1. 樹的主輪廓外框（底邊閉合，直接填充 100% 不透明深灰色作為遮罩，外框為白色手繪線） */}
+              {/* 1. 主樹輪廓：紙白色填充 + 炭筆素描外框（白色樹幹與樹冠） */}
               <path
-                d="M 100 520 
-                   Q 145 440, 145 350 
-                   C 105 350, 70 330, 70 280 
-                   C 70 240, 30 230, 30 180 
-                   C 30 130, 80 100, 130 120 
-                   C 140 80, 180 60, 225 75 
-                   C 270 60, 310 80, 320 120 
-                   C 370 100, 420 130, 420 180 
-                   C 420 230, 380 240, 380 280 
-                   C 380 330, 345 350, 305 350 
-                   Q 305 440, 350 520 
+                d="M 100 520
+                   Q 145 440, 145 350
+                   C 105 350, 70 330, 70 280
+                   C 70 240, 30 230, 30 180
+                   C 30 130, 80 100, 130 120
+                   C 140 80, 180 60, 225 75
+                   C 270 60, 310 80, 320 120
+                   C 370 100, 420 130, 420 180
+                   C 420 230, 380 240, 380 280
+                   C 380 330, 345 350, 305 350
+                   Q 305 440, 350 520
                    Z"
-                fill="rgba(13, 13, 13, 1.0)" // 100% 不透明遮罩，徹底遮擋後方地球點線
-                stroke="rgba(255, 255, 255, 0.85)" // 手繪白色細線
-                strokeWidth="3.2" 
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              
-              {/* 2. 樹幹內部的 Y 字形主分岔樹枝 (真實素描樹枝) */}
-              <path
-                d="M 175 355 Q 165 290, 130 230
-                   M 225 355 L 225 250
-                   M 275 355 Q 285 290, 320 230"
-                fill="none"
-                stroke="rgba(255, 255, 255, 0.65)"
-                strokeWidth="1.8"
+                fill="rgba(248, 246, 240, 0.97)" // 紙白色填充，既當白色樹幹也讓黑字清晰可讀
+                stroke="rgba(38, 38, 38, 0.92)" // 炭筆深灰描邊
+                strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
 
-              {/* 3. 樹幹內部的縱向素描木紋排線 (增加樹皮素描層次) */}
+              {/* 2. 樹冠：層層疊疊的素描葉團輪廓（雲朵狀波浪短弧） */}
               <path
-                d="M 155 485 Q 178 430, 182 375
-                   M 295 485 Q 272 430, 268 375
-                   M 225 505 L 225 410
-                   M 190 485 Q 200 440, 202 390
-                   M 260 485 Q 250 440, 248 390"
+                d="M 60 172 C 76 140, 120 140, 136 170
+                   M 140 150 C 158 116, 206 116, 224 148
+                   M 226 150 C 244 118, 292 118, 310 150
+                   M 314 172 C 330 142, 374 142, 390 174
+                   M 96 216 C 114 186, 160 186, 178 214
+                   M 274 216 C 292 186, 338 186, 356 214
+                   M 184 196 C 204 164, 250 164, 270 196"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.35)"
+                stroke="rgba(64, 64, 64, 0.55)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* 3. 樹冠內層細葉（較淡的小波浪，增添茂密層次） */}
+              <path
+                d="M 118 246 C 134 224, 170 224, 186 244
+                   M 264 248 C 280 226, 316 226, 332 246
+                   M 196 256 C 212 232, 250 232, 268 254
+                   M 150 188 C 162 172, 188 172, 200 186
+                   M 252 190 C 264 174, 290 174, 302 188"
+                fill="none"
+                stroke="rgba(92, 92, 92, 0.4)"
                 strokeWidth="1.0"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
 
-              {/* 4. 樹冠內部的層次葉片素描線 (提升茂密質感) */}
+              {/* 4. 主幹分岔枝條（由樹幹向樹冠延伸的炭筆枝幹） */}
               <path
-                d="M 125 185 C 135 165, 175 165, 185 185
-                   M 265 195 C 275 175, 315 175, 325 195
-                   M 180 235 C 190 215, 260 215, 270 235"
+                d="M 224 366 L 222 250
+                   M 222 300 Q 190 268 150 236
+                   M 222 294 Q 256 262 298 232
+                   M 188 270 Q 172 250 148 248
+                   M 256 262 Q 274 246 300 250
+                   M 222 330 Q 205 310 184 304
+                   M 222 326 Q 240 308 262 304"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.45)"
-                strokeWidth="1.2"
+                stroke="rgba(40, 40, 40, 0.82)"
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+              />
+
+              {/* 5. 樹幹縱向木紋排線（樹皮素描質感） */}
+              <path
+                d="M 150 505 Q 172 432 180 362
+                   M 300 505 Q 278 432 270 362
+                   M 225 515 L 224 360
+                   M 188 505 Q 200 440 205 372
+                   M 262 505 Q 250 440 245 372
+                   M 168 500 Q 186 436 193 368"
+                fill="none"
+                stroke="rgba(58, 58, 58, 0.55)"
+                strokeWidth="1.05"
+                strokeLinecap="round"
+              />
+
+              {/* 6. 樹幹右側交叉陰影排線（素描立體明暗） */}
+              <path
+                d="M 286 484 l 15 -8
+                   M 283 462 l 15 -8
+                   M 279 440 l 14 -7
+                   M 275 420 l 13 -7
+                   M 271 400 l 13 -6
+                   M 268 382 l 12 -6"
+                fill="none"
+                stroke="rgba(80, 80, 80, 0.38)"
+                strokeWidth="0.9"
+                strokeLinecap="round"
               />
             </svg>
           </div>
 
           {/* WikiTree 大標題 (適度調回 54px，在 450px 面板內有寬鬆的左右邊距，絕不貼線) */}
-          <h1 className="title-breathe" style={{
+          <h1 className="title-ink-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
             fontSize: '54px',
-            fontWeight: 400,
-            color: '#ffffff',
+            fontWeight: 500,
+            color: '#101010',
             margin: 0,
             letterSpacing: '0.04em',
-            textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 0 8px rgba(0,0,0,0.8)'
+            textShadow: '-1.5px -1.5px 0 #fff, 1.5px -1.5px 0 #fff, -1.5px 1.5px 0 #fff, 1.5px 1.5px 0 #fff, 0 0 8px rgba(255,255,255,0.85)'
           }}>
             WikiTree
           </h1>
 
           {/* 副標題 一人種樹，億人乘涼 */}
-          <p className="hud-breathe" style={{
+          <p style={{
             fontFamily: '"Roboto Mono", monospace',
             fontSize: '14px',
-            fontWeight: 300,
-            color: 'rgba(255,255,255,0.7)',
+            fontWeight: 500,
+            color: '#1c1c1c',
             margin: '0 0 24px 0',
             letterSpacing: '0.35em',
             paddingLeft: '0.35em',
-            textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 6px rgba(0,0,0,0.9)'
+            textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 6px rgba(255,255,255,0.9)'
           }}>
             一人種樹，億人乘涼
           </p>
@@ -1325,7 +1383,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onLoginClick}
               className="btn-sci-fi"
               style={{
-                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
               }}
             >
               [ LOGIN ]
@@ -1335,7 +1393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onLoginClick}
               className="btn-link-sci-fi"
               style={{
-                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
               }}
             >
               SIGN UP
@@ -1345,7 +1403,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onGuestClick}
               className="btn-link-sci-fi"
               style={{
-                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
               }}
             >
               EXPLORE AS GUEST
