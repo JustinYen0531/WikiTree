@@ -177,7 +177,7 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
       `.trim();
       
       try {
-        fs.writeFileSync(tempFilePath, psScript, 'utf8');
+        fs.writeFileSync(tempFilePath, '\ufeff' + psScript, 'utf8');
         const command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${tempFilePath}"`;
         
         exec(command, (error, stdout, stderr) => {
