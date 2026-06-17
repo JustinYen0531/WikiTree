@@ -491,6 +491,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       });
     }
 
+    // --- 星座連線動畫數據結構與初始化 ---
+    interface Constellation {
+      starIndices: number[];
+      progress: number;
+      opacity: number;
+      state: 'idle' | 'drawing' | 'visible' | 'fading';
+      timer: number;
+      activeDelay: number;
+    }
+
+    const constellations: Constellation[] = [];
+    const numConstellations = 6;
+    for (let c = 0; c < numConstellations; c++) {
+      const startIndex = Math.floor(Math.random() * numStars);
+      const starGroup = [startIndex];
+      let current = stars[startIndex];
+
+      // 串起 4 顆鄰近的星塵 (距離在 80px 至 220px 之間)
+      for (let step = 0; step < 3; step++) {
+        let bestDist = Infinity;
+        let bestIdx = -1;
+        for (let j = 0; j < numStars; j++) {
+          if (starGroup.includes(j)) continue;
+          const other = stars[j];
+          const d = Math.hypot(current.x - other.x, current.y - other.y, current.z - other.z);
+          if (d < bestDist && d > 80 && d < 220) {
+            bestDist = d;
+            bestIdx = j;
+          }
+        }
+        if (bestIdx !== -1) {
+          starGroup.push(bestIdx);
+          current = stars[bestIdx];
+        } else {
+          const randIdx = Math.floor(Math.random() * numStars);
+          if (!starGroup.includes(randIdx)) starGroup.push(randIdx);
+        }
+      }
+
+      constellations.push({
+        starIndices: starGroup,
+        progress: 0,
+        opacity: 0,
+        state: 'idle',
+        timer: 0,
+        activeDelay: 100 + Math.random() * 300
+      });
+    }
+
     // 2. 渲染繪圖循環
     const render = () => {
       const state = stateRef.current;
@@ -541,13 +590,137 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           const phase = star.phaseOffset || 0;
           const starSize = star.size || 1.2;
 
-          // 讓亮度的閃爍區間更廣 (0.15 到 0.52)，使星光點點非常清晰且有呼吸感
-          const twinkle = 0.33 + Math.sin(Date.now() * baseSpeed + phase) * 0.19;
+          // 亮度的閃爍區間更廣 (最亮可達 0.95)，且有更劇烈的明暗差，使其具有真正的閃耀感
+          const twinkle = 0.52 + Math.sin(Date.now() * baseSpeed + phase) * 0.43;
           const brightness = twinkle * globalBreathe;
           
-          ctx.fillStyle = `rgba(255, 255, 255, ${brightness.toFixed(3)})`;
+          // 為星星帶來些微不同的色彩調性 (90% 純白, 5% 微金, 5% 微藍)
+          let color = `rgba(255, 255, 255, ${brightness.toFixed(3)})`;
+          if (star.id % 20 === 0) {
+            color = `rgba(255, 243, 210, ${brightness.toFixed(3)})`; // 微金
+          } else if (star.id % 20 === 1) {
+            color = `rgba(215, 238, 255, ${brightness.toFixed(3)})`; // 微藍
+          }
+          
+          ctx.fillStyle = color;
           ctx.fillRect(sx - starSize / 2, sy - starSize / 2, starSize, starSize);
+
+          // 超閃耀十字星芒特效：僅大顆星星 (size > 1.6) 且在它足夠亮時 (brightness > 0.65) 才繪製
+          if (starSize > 1.6 && brightness > 0.65) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.55;
+            const flareLen = starSize * 2.2;
+            
+            // 水平星芒
+            ctx.moveTo(sx - flareLen, sy);
+            ctx.lineTo(sx + flareLen, sy);
+            
+            // 垂直星芒
+            ctx.moveTo(sx, sy - flareLen);
+            ctx.lineTo(sx, sy + flareLen);
+            
+            ctx.stroke();
+          }
         }
+      });
+
+      // --- 繪製與更新星座連線動畫 ---
+      constellations.forEach((c) => {
+        if (c.state === 'idle') {
+          c.activeDelay--;
+          if (c.activeDelay <= 0) {
+            c.state = 'drawing';
+            c.progress = 0;
+            c.opacity = 0;
+          }
+          return;
+        }
+
+        // 狀態機更新
+        if (c.state === 'drawing') {
+          c.opacity = Math.min(1.0, c.opacity + 0.015);
+          c.progress += 0.009; // 慢速勾勒連線
+          if (c.progress >= 1.0) {
+            c.progress = 1.0;
+            c.state = 'visible';
+            c.timer = 180 + Math.random() * 150; // 顯示大約 3 ~ 5 秒
+          }
+        } else if (c.state === 'visible') {
+          c.timer--;
+          if (c.timer <= 0) {
+            c.state = 'fading';
+          }
+        } else if (c.state === 'fading') {
+          c.opacity -= 0.012;
+          if (c.opacity <= 0) {
+            c.opacity = 0;
+            c.state = 'idle';
+            c.activeDelay = 350 + Math.random() * 500; // 下一次冷卻
+          }
+        }
+
+        // 投影星座中的星星 2D 座標
+        const projectedPoints: { x: number; y: number }[] = [];
+        let allVisible = true;
+        
+        c.starIndices.forEach((idx) => {
+          const star = stars[idx];
+          if (!star) return;
+          const slowRy = state.ry * 0.03;
+          const x1 = star.x * Math.cos(slowRy) - star.z * Math.sin(slowRy);
+          const z1 = star.x * Math.sin(slowRy) + star.z * Math.cos(slowRy);
+          
+          const scale = D / (D + z1);
+          const sx = centerX + x1 * scale;
+          const sy = (height / 2) + star.y * scale;
+          
+          if (sx >= 0 && sx <= width && sy >= 0 && sy <= height && z1 < 300) {
+            projectedPoints.push({ x: sx, y: sy });
+          } else {
+            allVisible = false;
+          }
+        });
+
+        if (projectedPoints.length < 2 || !allVisible) return;
+
+        // 繪製連線
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(c.opacity * 0.22 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.65;
+        
+        const totalSegments = projectedPoints.length - 1;
+        const segmentProgress = totalSegments * c.progress;
+
+        ctx.moveTo(projectedPoints[0].x, projectedPoints[0].y);
+        for (let i = 0; i < totalSegments; i++) {
+          const pStart = projectedPoints[i];
+          const pEnd = projectedPoints[i + 1];
+          
+          if (segmentProgress >= i + 1) {
+            ctx.lineTo(pEnd.x, pEnd.y);
+          } else if (segmentProgress > i) {
+            const factor = segmentProgress - i;
+            const targetX = pStart.x + (pEnd.x - pStart.x) * factor;
+            const targetY = pStart.y + (pEnd.y - pStart.y) * factor;
+            ctx.lineTo(targetX, targetY);
+            break;
+          } else {
+            break;
+          }
+        }
+        ctx.stroke();
+
+        // 繪製連線端點的微弱星暈
+        projectedPoints.forEach((p, idx) => {
+          const segmentIndex = idx;
+          if (segmentProgress >= segmentIndex) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${(c.opacity * 0.14 * globalBreathe).toFixed(3)})`;
+            ctx.fill();
+          }
+        });
       });
 
       // B. 旋轉並投影地球上所有的 3D 點
@@ -596,6 +769,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       };
 
       const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
+
+      // 【星球大氣背景光暈 (Backlight Atmosphere Glow)】：在球體正後方渲染柔和的白色模糊發光效果，突顯輪廓
+      const glowRadius = R * state.zoom;
+      // 徑向漸層，從球體內部 (80%) 開始向外擴展到球體外部 (125%)
+      const glowGrad = ctx.createRadialGradient(
+        centerX, centerY, glowRadius * 0.82,
+        centerX, centerY, glowRadius * 1.25
+      );
+      glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.0)');
+      glowGrad.addColorStop(0.2, `rgba(255, 255, 255, ${(0.08 * globalBreathe).toFixed(3)})`);
+      glowGrad.addColorStop(0.7, `rgba(255, 255, 255, ${(0.03 * globalBreathe).toFixed(3)})`);
+      glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+      ctx.fillStyle = glowGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, glowRadius * 1.25, 0, Math.PI * 2);
+      ctx.fill();
 
       // 【洋流繪製】：
       // 1. 繪製極淡的「洋流軌跡底線」
