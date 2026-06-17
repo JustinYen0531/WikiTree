@@ -12,7 +12,8 @@ import {
   ChevronRight, 
   FolderPlus,
   BookOpen,
-  Sparkles
+  Sparkles,
+  LogIn
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import { AntigravityPlugin } from './AntigravityPlugin';
@@ -30,6 +31,9 @@ interface SidebarProps {
   onDelete: (node: FileNode) => void;
   activeTab: 'files' | 'history' | 'publish' | 'antigravity';
   setActiveTab: (tab: 'files' | 'history' | 'publish' | 'antigravity') => void;
+  user?: { name: string; email: string; picture: string; token: string; isMock?: boolean } | null;
+  onLogout?: () => void;
+  onTriggerLogin?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -45,6 +49,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDelete,
   activeTab,
   setActiveTab,
+  user,
+  onLogout,
+  onTriggerLogin,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -318,6 +325,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       )}
+
+      {/* User Profile Card at the Bottom */}
+      <div 
+        style={{ 
+          marginTop: 'auto', 
+          borderTop: '1px solid var(--border-color)', 
+          padding: '12px 16px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '8px', 
+          backgroundColor: 'var(--bg-secondary)',
+          flexShrink: 0 
+        }}
+      >
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', flex: 1 }}>
+              {user.picture ? (
+                <img 
+                  src={user.picture} 
+                  alt="avatar" 
+                  style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} 
+                />
+              ) : (
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', flexShrink: 0 }}>
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.name}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.email}
+                </span>
+              </div>
+            </div>
+            <button 
+              className="btn" 
+              onClick={onLogout}
+              style={{ padding: '4px 8px', fontSize: '11.5px', minHeight: 'auto', border: '1px solid var(--border-color)', height: '26px' }}
+            >
+              登出
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button 
+              className="btn btn-primary" 
+              onClick={onTriggerLogin}
+              style={{ width: '100%', padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <LogIn size={13} />
+              登入 Google 帳戶
+            </button>
+            {localStorage.getItem('antigravity_google_client_id') && (
+              <div 
+                id="google-signin-btn-container" 
+                style={{ 
+                  marginTop: '4px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
+                  overflow: 'hidden'
+                }}
+              ></div>
+            )}
+          </div>
+        )}
+      </div>
     </aside>
   );
 };

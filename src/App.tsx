@@ -36,6 +36,7 @@ import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
 import { VersionHistory } from './components/VersionHistory';
 import { PublishModal } from './components/PublishModal';
+import { LoginModal } from './components/LoginModal';
 
 function App() {
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -48,6 +49,92 @@ function App() {
   // CLI States
   const [cliConnected, setCliConnected] = useState(false);
   const [cliPathInput, setCliPathInput] = useState('');
+
+  // Google Sign-In States
+  const [user, setUser] = useState<any>(() => {
+    const saved = localStorage.getItem('antigravity_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [googleClientId, setGoogleClientId] = useState<string>(() => {
+    return localStorage.getItem('antigravity_google_client_id') || '';
+  });
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Helper to decode Google JWT token client-side
+  const decodeGoogleJwt = (token: string) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Failed to decode JWT', e);
+      return null;
+    }
+  };
+
+  // Initialize official Google Sign-In
+  useEffect(() => {
+    if (!googleClientId || user) return;
+
+    const initGoogleSignIn = () => {
+      if ((window as any).google?.accounts?.id) {
+        (window as any).google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: (response: any) => {
+            const decoded = decodeGoogleJwt(response.credential);
+            if (decoded) {
+              const loggedUser = {
+                name: decoded.name || decoded.email,
+                email: decoded.email,
+                picture: decoded.picture || '',
+                token: response.credential,
+              };
+              setUser(loggedUser);
+              localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
+              setShowLoginModal(false);
+            }
+          }
+        });
+
+        // Attempt to render the button if the sign-in container exists in the DOM
+        const btnContainer = document.getElementById('google-signin-btn-container');
+        if (btnContainer) {
+          (window as any).google.accounts.id.renderButton(
+            btnContainer,
+            { theme: 'outline', size: 'medium', width: 200 }
+          );
+        }
+      }
+    };
+
+    initGoogleSignIn();
+    const timer = setTimeout(initGoogleSignIn, 1200);
+    return () => clearTimeout(timer);
+  }, [googleClientId, user]);
+
+  const handleSaveClientId = (id: string) => {
+    setGoogleClientId(id);
+    localStorage.setItem('antigravity_google_client_id', id);
+  };
+
+  const handleLoginSuccess = (loggedUser: any) => {
+    setUser(loggedUser);
+    localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('antigravity_user');
+    if ((window as any).google?.accounts?.id) {
+      (window as any).google.accounts.id.disableAutoSelect();
+    }
+  };
 
   // Check CLI status on load and periodically
   const checkCliStatus = async () => {
@@ -523,6 +610,9 @@ function App() {
         onDelete={handleDelete}
         activeTab={sidebarTab}
         setActiveTab={setSidebarTab}
+        user={user}
+        onLogout={handleLogout}
+        onTriggerLogin={() => setShowLoginModal(true)}
       />
 
       {/* Main Panel View */}
@@ -715,6 +805,16 @@ function App() {
           rootHandle={rootHandle}
           files={files}
           onClose={() => setShowPublishModal(false)}
+        />
+      )}
+
+      {/* Google Sign-In Modal */}
+      {showLoginModal && (
+        <LoginModal 
+          onClose={() => setShowLoginModal(false)}
+          onLoginSuccess={handleLoginSuccess}
+          clientId={googleClientId}
+          onSaveClientId={handleSaveClientId}
         />
       )}
     </div>
