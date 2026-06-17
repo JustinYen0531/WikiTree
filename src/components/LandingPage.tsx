@@ -124,7 +124,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const triangles: Triangle3D[] = [];
     let pointIdCounter = 0;
 
-    // 定義 5 個板塊中心，分別對應政大學院
+    // 定義 5 個板塊中心 (經度 phi, 緯度 theta)，分別對應政大學院
     const continentsData = [
       { id: 0, lat: 0.45, lon: 1.2, nameZh: '商學院', nameEn: 'COMMERCE' },
       { id: 1, lat: 0.1, lon: -0.2, nameZh: '社科院', nameEn: 'SOCIAL SCI' },
@@ -135,18 +135,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成陸地表面點與密集樹木
     continentsData.forEach((continent) => {
-      // 陸地表面點 (130-160 個點)
-      const numPoints = 130 + Math.floor(Math.random() * 30);
+      // 【效能優化】：將表面陸地點降低至 65 個，減少運算量，同時維持視覺細緻度
+      const numPoints = 60 + Math.floor(Math.random() * 10);
       const landPoints: Point3D[] = [];
 
       for (let i = 0; i < numPoints; i++) {
-        const dLat = (Math.random() + Math.random() + Math.random() - 1.5) * 0.38;
-        const dLon = (Math.random() + Math.random() + Math.random() - 1.5) * 0.48;
+        const dLat = (Math.random() + Math.random() + Math.random() - 1.5) * 0.35;
+        const dLon = (Math.random() + Math.random() + Math.random() - 1.5) * 0.45;
         
         const theta = continent.lat + dLat;
         const phi = continent.lon + dLon;
 
-        // 【摺紙皺褶優化】：為每個陸地表面點的半徑引入 -6px 到 +6px 的隨機小起伏
+        // 摺紙起伏半徑
         const r_i = R + (Math.random() - 0.5) * 12;
 
         const x = r_i * Math.cos(theta) * Math.sin(phi);
@@ -164,13 +164,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         landPoints.push(pt);
       }
 
-      // 大陸內部的點進行距離檢測連線 (臨界值 28)
+      // 大陸內部的點進行距離檢測連線 (臨界值 30，減少線段重疊數)
       for (let i = 0; i < landPoints.length; i++) {
         for (let j = i + 1; j < landPoints.length; j++) {
           const p1 = landPoints[i];
           const p2 = landPoints[j];
           const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
-          if (dist < 28) {
+          if (dist < 30) {
             connections.push({
               p1: p1.id,
               p2: p2.id,
@@ -181,43 +181,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 【摺紙面檢測】：搜尋同一個板塊內兩兩距離小於 28 像素的緊鄰點三元組，構成三角形面
-      for (let i = 0; i < landPoints.length; i++) {
-        for (let j = i + 1; j < landPoints.length; j++) {
+      // 【極致優化】：每個板塊限制最多 16 個三角形面，以防 CPU 每一影格計算卡頓，並形成更美觀的破碎線面感！
+      let continentTriCount = 0;
+      const maxContinentTriangles = 16;
+      for (let i = 0; i < landPoints.length && continentTriCount < maxContinentTriangles; i++) {
+        for (let j = i + 1; j < landPoints.length && continentTriCount < maxContinentTriangles; j++) {
           const pi = landPoints[i];
           const pj = landPoints[j];
           const d1 = Math.hypot(pi.x - pj.x, pi.y - pj.y, pi.z - pj.z);
-          if (d1 > 28) continue;
+          if (d1 > 30) continue;
 
-          for (let k = j + 1; k < landPoints.length; k++) {
+          for (let k = j + 1; k < landPoints.length && continentTriCount < maxContinentTriangles; k++) {
             const pk = landPoints[k];
             const d2 = Math.hypot(pj.x - pk.x, pj.y - pk.y, pj.z - pk.z);
             const d3 = Math.hypot(pk.x - pi.x, pk.y - pi.y, pk.z - pi.z);
             
-            if (d2 < 28 && d3 < 28) {
+            if (d2 < 30 && d3 < 30) {
               triangles.push({
                 p1: pi.id,
                 p2: pj.id,
                 p3: pk.id,
                 continentId: continent.id
               });
+              continentTriCount++;
             }
           }
         }
       }
 
-      // 密集樹木森林：每個板塊種植 16 - 22 棵節點樹
-      const numTrees = 16 + Math.floor(Math.random() * 7);
+      // 樹木森林：每個板塊種植 12 棵樹，分布密集且效能優良
+      const numTrees = 12;
       for (let t = 0; t < numTrees; t++) {
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
         
-        // 算出該處起伏點的實際半徑與法線
         const rootR = Math.hypot(rootPt.x, rootPt.y, rootPt.z);
         const nx = rootPt.x / rootR;
         const ny = rootPt.y / rootR;
         const nz = rootPt.z / rootR;
 
-        const treeHeight = 22 + Math.random() * 12;
+        const treeHeight = 22 + Math.random() * 10;
 
         // 樹幹頂點
         const tx = rootPt.x + nx * treeHeight;
@@ -319,20 +321,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       }
     });
 
-    // 【洋流初始化】：在空曠的海洋區域生成 40 條流動線條
+    // 【洋流優化】：條數降為 18 條，軌跡長度縮減至 4，以大幅提昇性能並保證平滑流動
     const currentLines: CurrentLine[] = [];
-    const numCurrents = 40;
+    const numCurrents = 18;
     for (let c = 0; c < numCurrents; c++) {
-      const baseLat = (Math.random() - 0.5) * 1.5; // 限制在經緯度中間帶，避開兩極
+      const baseLat = (Math.random() - 0.5) * 1.4;
       const lon = Math.random() * Math.PI * 2;
       const offset = Math.random() * Math.PI * 2;
       const trail: CurrentLine['trail'] = [];
       
-      // 預先往後回溯 6 個點填入歷史軌跡
-      for (let i = 0; i < 6; i++) {
-        const pLon = lon - i * 0.03;
-        const pLat = baseLat + Math.sin(pLon * 5 + offset) * 0.05;
-        // 洋流貼合在地球球面半徑 R 處
+      for (let i = 0; i < 4; i++) {
+        const pLon = lon - i * 0.035;
+        const pLat = baseLat + Math.sin(pLon * 4 + offset) * 0.05;
         const x = R * Math.cos(pLat) * Math.sin(pLon);
         const y = R * Math.sin(pLat);
         const z = R * Math.cos(pLat) * Math.cos(pLon);
@@ -341,12 +341,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       currentLines.push({ baseLat, lon, offset, trail });
     }
 
-    // 生成背景星塵
+    // 生成背景星塵 (降至 150 個)
     const stars: Point3D[] = [];
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 150; i++) {
       const theta = (Math.random() - 0.5) * Math.PI;
       const phi = Math.random() * Math.PI * 2;
-      const starR = 500 + Math.random() * 400;
+      const starR = 500 + Math.random() * 300;
       const x = starR * Math.cos(theta) * Math.sin(phi);
       const y = starR * Math.sin(theta);
       const z = starR * Math.cos(theta) * Math.cos(phi);
@@ -363,7 +363,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const render = () => {
       const state = stateRef.current;
       
-      // 自動自轉 (放手後只更新 ry，流暢無阻)
+      // 自動自轉
       if (!state.isDragging) {
         state.ry += 0.0006;
       }
@@ -430,24 +430,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         return 1.0 - (tz - fadeStart) / (fadeEnd - fadeStart);
       };
 
-      // 【更新與繪製洋流流動線條】：像海水洋流一樣在非學院海洋區域緩慢流動
+      // 【更新與繪製洋流流動線條】：像海水洋流一樣在非學院海洋區域緩慢流動 (優化後無卡頓，能流暢前行)
       currentLines.forEach((line) => {
         // 更新當前位置
         line.lon += 0.0012; // 緩慢自西向東前進
         
-        // 往軌跡最前部推入新點，並捨棄尾部
         const newLon = line.lon;
-        const newLat = line.baseLat + Math.sin(newLon * 5 + line.offset) * 0.05;
+        const newLat = line.baseLat + Math.sin(newLon * 4 + line.offset) * 0.05;
         const nx = R * Math.cos(newLat) * Math.sin(newLon);
         const ny = R * Math.sin(newLat);
         const nz = R * Math.cos(newLat) * Math.cos(newLon);
         
         line.trail.unshift({ x: nx, y: ny, z: nz, tx: nx, ty: ny, tz: nz });
-        if (line.trail.length > 6) {
+        if (line.trail.length > 4) {
           line.trail.pop();
         }
 
-        // 計算 trail 中各個點的 3D 旋轉投影
         const cosY = Math.cos(state.ry);
         const sinY = Math.sin(state.ry);
         const cosX = Math.cos(state.rx);
@@ -456,10 +454,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const scrPoints: { x: number; y: number; opacity: number }[] = [];
 
         line.trail.forEach((p) => {
-          // 繞 Y 軸
           let x1 = p.x * cosY - p.z * sinY;
           let z1 = p.x * sinY + p.z * cosY;
-          // 繞 X 軸
           let y2 = p.y * cosX - z1 * sinX;
           let z2 = p.y * sinX + z1 * cosX;
 
@@ -472,14 +468,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           scrPoints.push({ x: px, y: py, opacity });
         });
 
-        // 繪製這條流線的漸淡軌跡段
+        // 繪製漸淡軌跡段
         for (let i = 0; i < scrPoints.length - 1; i++) {
           const pStart = scrPoints[i];
           const pEnd = scrPoints[i + 1];
           const avgOpacity = (pStart.opacity + pEnd.opacity) / 2;
           if (avgOpacity < 0.15) continue;
 
-          // 洋流流線為極淡的灰光 (頭部略亮，尾部漸淡)
+          // 洋流流線為極淡的灰光
           const tailFade = (1.0 - i / (scrPoints.length - 1));
           const currentAlpha = 0.13 * avgOpacity * tailFade * globalBreathe;
 
@@ -545,7 +541,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.fill(activeFacePath);
       }
 
-      // C. 繪製連接線 (優化：使用 Path2D 分組 Batch 繪製，解決單獨呼叫 stroke() 的效能黑洞與白線消失問題)
+      // C. 繪製連接線 (優化：使用 Path2D 分組 Batch 繪製，解決單舊呼叫 stroke() 的效能黑洞與白線消失問題)
       const activeTreePath = new Path2D();
       const inactiveTreePath = new Path2D();
       const activeLandPath = new Path2D();
