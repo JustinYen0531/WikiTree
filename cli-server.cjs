@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { exec } = require('child_process');
 
 const PORT = 18080;
@@ -164,19 +165,45 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
   // Route: POST /api/workspace/browse
   if (req.url === '/api/workspace/browse' && req.method === 'POST') {
     if (process.platform === 'win32') {
-      const psScript = `[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description = '選擇或建立您的工作區資料夾'; $f.ShowNewFolderButton = $true; if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $f.SelectedPath }`;
-      const command = `powershell.exe -NoProfile -Command "${psScript.replace(/"/g, '\\"')}"`;
-      
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: error.message }));
-          return;
+      const tempFilePath = path.join(os.tmpdir(), `antigravity-browse-${Date.now()}.ps1`);
+      const psScript = `
+        Add-Type -AssemblyName System.Windows.Forms
+        $f = New-Object System.Windows.Forms.FolderBrowserDialog
+        $f.Description = "選擇或建立您的工作區資料夾"
+        $f.ShowNewFolderButton = $true
+        if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            Write-Output $f.SelectedPath
         }
-        const selectedPath = stdout.trim();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ path: selectedPath }));
-      });
+      `.trim();
+      
+      try {
+        fs.writeFileSync(tempFilePath, psScript, 'utf8');
+        const command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${tempFilePath}"`;
+        
+        exec(command, (error, stdout, stderr) => {
+          // Clean up temp file
+          try {
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+          } catch(err) {
+            console.error('Failed to delete temp ps1 file', err);
+          }
+
+          if (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: error.message }));
+            return;
+          }
+          
+          const selectedPath = stdout.trim();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ path: selectedPath }));
+        });
+      } catch(e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Failed to initiate browse: ' + e.message }));
+      }
     } else {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: '本機瀏覽功能目前僅支援 Windows 系統，其他系統請手動輸入路徑。' }));
