@@ -251,9 +251,126 @@ npm.cmd run cli
   const handleTerminalFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!terminalInput.trim() || isRunningCommand) return;
-    const cmd = terminalInput;
+    const cmd = terminalInput.trim();
     setTerminalInput('');
+
+    // Check if user is typing Chinese natural language instead of standard CLI shell commands
+    const hasChinese = /[\u4e00-\u9fa5]/.test(cmd);
+    const commonPrefixes = ['git', 'npm', 'node', 'cd', 'dir', 'ls', 'mkdir', 'echo', 'antigravity', 'npx', 'tsc', 'vite', 'python', 'pip', 'yarn', 'pnpm', 'clear', 'cls', 'git.exe', 'npm.cmd'];
+    const firstWord = cmd.split(/[\s|&;]+/)[0].toLowerCase();
+    const isStandardCmd = commonPrefixes.some(prefix => firstWord === prefix || firstWord.startsWith(prefix));
+
+    if (hasChinese && !isStandardCmd) {
+      setTerminalLogs(prev => [
+        ...prev,
+        `$ ${cmd}`,
+        `[Antigravity 系統提示] 偵測到您輸入了中文自然語言要求。`,
+        `-> 本控制台為執行「本機系統指令」（如 git status 或 npm run build）所設計。`,
+        `-> 若要讓 AI 助理為您執行檔案操作或解答問題，請切換至上方的「AI 助理」對話分頁與 AI 聊聊！`,
+        `--------------------------------------------------------------------------------`
+      ]);
+      return;
+    }
+
     handleRunCommand(cmd);
+  };
+
+  // Helper to parse bolding in lines
+  const parseInlineMarkdown = (line: string) => {
+    let parts: React.ReactNode[] = [line];
+    if (line.includes('**')) {
+      const subParts = line.split('**');
+      parts = subParts.map((sp, sIdx) => sIdx % 2 === 1 ? <strong key={sIdx}>{sp}</strong> : sp);
+    }
+    return parts;
+  };
+
+  // Helper to render message with formatted code blocks and click-to-run integration
+  const renderMessageText = (text: string) => {
+    if (!text) return null;
+    
+    // Split by code blocks
+    const parts = text.split(/(```[\s\S]*?```)/g);
+    
+    return parts.map((part, idx) => {
+      if (part.startsWith('```')) {
+        const lines = part.split('\n');
+        const firstLine = lines[0];
+        const lang = firstLine.replace('```', '').trim();
+        const code = lines.slice(1, lines.length - 1).join('\n');
+        
+        // Check if code can be executed in terminal
+        const cleanLang = lang.toLowerCase();
+        const isShellCode = ['bash', 'shell', 'powershell', 'cmd', 'sh', 'bat', 'ps1'].includes(cleanLang) || 
+                            code.includes('git ') || code.includes('npm ') || code.includes('antigravity ');
+        
+        return (
+          <div 
+            key={idx} 
+            style={{ 
+              backgroundColor: 'var(--bg-primary)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '8px', 
+              margin: '8px 0', 
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11.5px',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: 'var(--shadow-sm)'
+            }}
+          >
+            {/* Header section with copy & execution actions */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              backgroundColor: 'var(--bg-secondary)', 
+              padding: '6px 10px',
+              borderBottom: '1px solid var(--border-color)',
+              color: 'var(--text-secondary)'
+            }}>
+              <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}>{lang || 'code'}</span>
+              {isShellCode && (
+                <button
+                  onClick={() => {
+                    setMode('terminal');
+                    handleRunCommand(code);
+                  }}
+                  style={{
+                    backgroundColor: 'var(--accent-bg)',
+                    border: '1px solid var(--accent)',
+                    color: 'var(--accent)',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '10.5px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.95)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                >
+                  <TerminalIcon size={11} />
+                  本機終端執行
+                </button>
+              )}
+            </div>
+            <pre style={{ margin: 0, padding: '10px', whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: 'var(--text-primary)' }}>{code}</pre>
+          </div>
+        );
+      } else {
+        // Render regular lines
+        return part.split('\n').map((line, lIdx) => {
+          if (line.startsWith('- ')) {
+            return <li key={`${idx}-${lIdx}`} style={{ marginLeft: '12px', listStyleType: 'disc', color: 'var(--text-primary)' }}>{parseInlineMarkdown(line.substring(2))}</li>;
+          }
+          return <p key={`${idx}-${lIdx}`} style={{ margin: '4px 0', minHeight: line ? undefined : '8px', color: 'var(--text-primary)' }}>{parseInlineMarkdown(line)}</p>;
+        });
+      }
+    });
   };
 
   const clearChat = () => {
@@ -550,17 +667,7 @@ npm.cmd run cli
                   whiteSpace: 'pre-wrap',
                   fontSize: '12.5px'
                 }}>
-                  {msg.text.split('\n').map((line, lIdx) => {
-                    if (line.startsWith('- ')) {
-                      return <li key={lIdx} style={{ marginLeft: '12px' }}>{line.substring(2)}</li>;
-                    }
-                    let parts: React.ReactNode[] = [line];
-                    if (line.includes('**')) {
-                      const subParts = line.split('**');
-                      parts = subParts.map((sp, sIdx) => sIdx % 2 === 1 ? <strong key={sIdx}>{sp}</strong> : sp);
-                    }
-                    return <p key={lIdx} style={{ margin: 0, minHeight: line ? undefined : '8px' }}>{parts}</p>;
-                  })}
+                  {renderMessageText(msg.text)}
                 </div>
               </div>
             ))}

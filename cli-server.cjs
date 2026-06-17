@@ -4,6 +4,14 @@ const path = require('path');
 const os = require('os');
 const { exec } = require('child_process');
 
+const isWin = process.platform === 'win32';
+const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
+
+function decodeBuffer(buf) {
+  if (!buf) return '';
+  return decoder.decode(buf);
+}
+
 const PORT = 18080;
 
 let currentWorkspace = process.cwd();
@@ -104,9 +112,17 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
           return;
         }
 
-        // Run the command directly in the host shell
-        exec(command, (error, stdout, stderr) => {
-          const output = stdout + (stderr ? '\n' + stderr : '') + (error ? '\nError: ' + error.message : '');
+        // Run the command directly in the host shell, returning raw buffer for proper decoding
+        exec(command, { encoding: 'buffer' }, (error, stdout, stderr) => {
+          const outStr = decodeBuffer(stdout);
+          const errStr = decodeBuffer(stderr);
+          
+          let errMsg = '';
+          if (error) {
+            errMsg = `\nError: Command failed: ${command}\n${errStr}`;
+          }
+          
+          const output = outStr + (errStr && !error ? '\n' + errStr : '') + errMsg;
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ output }));
         });
@@ -183,7 +199,7 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
         fs.writeFileSync(tempFilePath, '\ufeff' + psScript, 'utf8');
         const command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${tempFilePath}"`;
         
-        exec(command, (error, stdout, stderr) => {
+        exec(command, { encoding: 'buffer' }, (error, stdout, stderr) => {
           // Clean up temp file
           try {
             if (fs.existsSync(tempFilePath)) {
@@ -193,13 +209,16 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
             console.error('Failed to delete temp ps1 file', err);
           }
 
+          const outStr = decodeBuffer(stdout);
+          const errStr = decodeBuffer(stderr);
+
           if (error) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: error.message }));
+            res.end(JSON.stringify({ error: errStr || 'PowerShell execution failed' }));
             return;
           }
           
-          const selectedPath = stdout.trim();
+          const selectedPath = outStr.trim();
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ path: selectedPath }));
         });
