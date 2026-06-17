@@ -1144,15 +1144,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       `}</style>
 
-      {/* 定義用於裁剪樹形遮罩的 clipPath */}
-      <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
-        <defs>
-          <clipPath id="tree-clip">
-            <path d="M 110 530 Q 135 420, 135 340 C 90 340, 50 320, 50 270 C 50 210, 20 210, 20 160 C 20 110, 90 70, 150 90 C 150 50, 210 50, 225 80 C 240 50, 300 50, 300 90 C 360 70, 430 110, 430 160 C 430 210, 400 210, 400 270 C 400 320, 360 340, 315 340 Q 315 420, 340 530 Z" />
-          </clipPath>
-        </defs>
-      </svg>
-
       {/* 3D 渲染的背景 Canvas */}
       <canvas
         ref={canvasRef}
@@ -1231,7 +1222,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           alignSelf: 'center', // 確保在父容器中水平居中，防拉伸
           boxSizing: 'border-box'
         }}>
-          {/* 精緻素描樹背景與 100% 不透明灰色遮罩 SVG (遮罩與線條同源一體，徹底消除對不齊錯位) */}
+          {/* 使用者手繪的 WikiTree 素描樹 Logo（已 AI 去背為透明 PNG），取代原本的程式繪製樹 */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -1241,113 +1232,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             zIndex: -1,
             pointerEvents: 'none'
           }}>
-            <svg 
-              width="450" 
-              height="560" 
-              viewBox="0 0 450 560" 
+            <img
+              src="/wikitree-logo.png"
+              alt="WikiTree"
+              draggable={false}
               style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)', // 居中對齊，比例永不變形
-                filter: 'drop-shadow(0 8px 22px rgba(0, 0, 0, 0.6))' // 柔和投影，讓紙白色素描樹自夜空中浮起
+                width: '560px', // 樹冠寬展，作為標題與按鈕的背景
+                height: 'auto',
+                maxWidth: 'none',
+                filter: 'drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55))', // 柔和投影，讓素描樹自夜空中浮起
+                userSelect: 'none'
               }}
-            >
-              {/* 1. 主樹輪廓：紙白色填充 + 炭筆素描外框（白色樹幹與樹冠） */}
-              <path
-                d="M 100 520
-                   Q 145 440, 145 350
-                   C 105 350, 70 330, 70 280
-                   C 70 240, 30 230, 30 180
-                   C 30 130, 80 100, 130 120
-                   C 140 80, 180 60, 225 75
-                   C 270 60, 310 80, 320 120
-                   C 370 100, 420 130, 420 180
-                   C 420 230, 380 240, 380 280
-                   C 380 330, 345 350, 305 350
-                   Q 305 440, 350 520
-                   Z"
-                fill="rgba(248, 246, 240, 0.97)" // 紙白色填充，既當白色樹幹也讓黑字清晰可讀
-                stroke="rgba(38, 38, 38, 0.92)" // 炭筆深灰描邊
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* 2. 樹冠：層層疊疊的素描葉團輪廓（雲朵狀波浪短弧） */}
-              <path
-                d="M 60 172 C 76 140, 120 140, 136 170
-                   M 140 150 C 158 116, 206 116, 224 148
-                   M 226 150 C 244 118, 292 118, 310 150
-                   M 314 172 C 330 142, 374 142, 390 174
-                   M 96 216 C 114 186, 160 186, 178 214
-                   M 274 216 C 292 186, 338 186, 356 214
-                   M 184 196 C 204 164, 250 164, 270 196"
-                fill="none"
-                stroke="rgba(64, 64, 64, 0.55)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* 3. 樹冠內層細葉（較淡的小波浪，增添茂密層次） */}
-              <path
-                d="M 118 246 C 134 224, 170 224, 186 244
-                   M 264 248 C 280 226, 316 226, 332 246
-                   M 196 256 C 212 232, 250 232, 268 254
-                   M 150 188 C 162 172, 188 172, 200 186
-                   M 252 190 C 264 174, 290 174, 302 188"
-                fill="none"
-                stroke="rgba(92, 92, 92, 0.4)"
-                strokeWidth="1.0"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* 4. 主幹分岔枝條（由樹幹向樹冠延伸的炭筆枝幹） */}
-              <path
-                d="M 224 366 L 222 250
-                   M 222 300 Q 190 268 150 236
-                   M 222 294 Q 256 262 298 232
-                   M 188 270 Q 172 250 148 248
-                   M 256 262 Q 274 246 300 250
-                   M 222 330 Q 205 310 184 304
-                   M 222 326 Q 240 308 262 304"
-                fill="none"
-                stroke="rgba(40, 40, 40, 0.82)"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* 5. 樹幹縱向木紋排線（樹皮素描質感） */}
-              <path
-                d="M 150 505 Q 172 432 180 362
-                   M 300 505 Q 278 432 270 362
-                   M 225 515 L 224 360
-                   M 188 505 Q 200 440 205 372
-                   M 262 505 Q 250 440 245 372
-                   M 168 500 Q 186 436 193 368"
-                fill="none"
-                stroke="rgba(58, 58, 58, 0.55)"
-                strokeWidth="1.05"
-                strokeLinecap="round"
-              />
-
-              {/* 6. 樹幹右側交叉陰影排線（素描立體明暗） */}
-              <path
-                d="M 286 484 l 15 -8
-                   M 283 462 l 15 -8
-                   M 279 440 l 14 -7
-                   M 275 420 l 13 -7
-                   M 271 400 l 13 -6
-                   M 268 382 l 12 -6"
-                fill="none"
-                stroke="rgba(80, 80, 80, 0.38)"
-                strokeWidth="0.9"
-                strokeLinecap="round"
-              />
-            </svg>
+            />
           </div>
 
           {/* WikiTree 大標題 (適度調回 54px，在 450px 面板內有寬鬆的左右邊距，絕不貼線) */}
