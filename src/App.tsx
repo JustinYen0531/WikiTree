@@ -60,6 +60,20 @@ function App() {
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Helper to decode Google JWT token client-side
   const decodeGoogleJwt = (token: string) => {
     try {
@@ -78,54 +92,16 @@ function App() {
     }
   };
 
-  // Initialize official Google Sign-In
-  useEffect(() => {
-    if (!googleClientId || user) return;
-
-    const initGoogleSignIn = () => {
-      if ((window as any).google?.accounts?.id) {
-        (window as any).google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: (response: any) => {
-            const decoded = decodeGoogleJwt(response.credential);
-            if (decoded) {
-              const loggedUser = {
-                name: decoded.name || decoded.email,
-                email: decoded.email,
-                picture: decoded.picture || '',
-                token: response.credential,
-              };
-              setUser(loggedUser);
-              localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
-              setShowLoginModal(false);
-            }
-          }
-        });
-
-        // Attempt to render the button if the sign-in container exists in the DOM
-        const btnContainer = document.getElementById('google-signin-btn-container');
-        if (btnContainer) {
-          (window as any).google.accounts.id.renderButton(
-            btnContainer,
-            { theme: 'outline', size: 'medium', width: 200 }
-          );
-        }
-      }
-    };
-
-    initGoogleSignIn();
-    const timer = setTimeout(initGoogleSignIn, 1200);
-    return () => clearTimeout(timer);
-  }, [googleClientId, user]);
-
   const handleSaveClientId = (id: string) => {
     setGoogleClientId(id);
     localStorage.setItem('antigravity_google_client_id', id);
+    showToast('💾 Client ID 設定已儲存', 'success');
   };
 
   const handleLoginSuccess = (loggedUser: any) => {
     setUser(loggedUser);
     localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
+    showToast(`🎉 歡迎回來，${loggedUser.name}！`, 'success');
   };
 
   const handleLogout = () => {
@@ -134,6 +110,7 @@ function App() {
     if ((window as any).google?.accounts?.id) {
       (window as any).google.accounts.id.disableAutoSelect();
     }
+    showToast('🔒 已安全登出 Google 帳戶', 'info');
   };
 
   // Check CLI status on load and periodically
@@ -816,6 +793,32 @@ function App() {
           clientId={googleClientId}
           onSaveClientId={handleSaveClientId}
         />
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div 
+          className="animate-slide-in"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            backgroundColor: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 11000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          {toast.message}
+        </div>
       )}
     </div>
   );

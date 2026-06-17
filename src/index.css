@@ -794,3 +794,79 @@ body {
   background-color: var(--bg-sidebar);
   color: var(--accent);
 }
+
+/* Premium Animations & UI Effects */
+@keyframes slideInRight {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(35, 131, 226, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(35, 131, 226, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(35, 131, 226, 0);
+  }
+}
+
+@keyframes pulseGlowMock {
+  0% {
+    box-shadow: 0 0 0 0 rgba(15, 123, 70, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(15, 123, 70, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 123, 70, 0);
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal-fade-in {
+  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.avatar-glow-real {
+  animation: pulseGlow 2s infinite;
+}
+
+.avatar-glow-mock {
+  animation: pulseGlowMock 2s infinite;
+}
+
+/* Dropdown popover transitions */
+.popover-enter {
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.popover-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+

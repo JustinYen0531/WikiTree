@@ -13,7 +13,11 @@ import {
   FolderPlus,
   BookOpen,
   Sparkles,
-  LogIn
+  LogIn,
+  Copy,
+  Check,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import { AntigravityPlugin } from './AntigravityPlugin';
@@ -55,6 +59,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [showProfilePopover, setShowProfilePopover] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
+
+  const handleCopyToken = (token: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(token);
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
+  };
 
   const toggleExpand = (path: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -326,33 +339,196 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* User Profile Card at the Bottom */}
+      {/* User Profile Card at the Bottom with Popover Support */}
       <div 
         style={{ 
           marginTop: 'auto', 
           borderTop: '1px solid var(--border-color)', 
           padding: '12px 16px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '8px', 
           backgroundColor: 'var(--bg-secondary)',
-          flexShrink: 0 
+          flexShrink: 0,
+          position: 'relative'
         }}
       >
-        {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', flex: 1 }}>
+        {/* Click catcher backdrop when popover is open */}
+        {showProfilePopover && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999,
+              cursor: 'default',
+              backgroundColor: 'transparent'
+            }}
+            onClick={() => setShowProfilePopover(false)}
+          />
+        )}
+
+        {/* Popover Card */}
+        {user && showProfilePopover && (
+          <div 
+            className="popover-enter popover-active"
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 8px)',
+              left: '12px',
+              right: '12px',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '16px',
+              boxShadow: 'var(--shadow-lg)',
+              zIndex: 1000,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            {/* Popover Header / Brand Strip */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={14} style={{ color: user.isMock ? 'var(--warning)' : 'var(--success)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: user.isMock ? 'var(--warning)' : 'var(--success)' }}>
+                  {user.isMock ? '模擬測試帳戶' : 'Google 驗證帳戶'}
+                </span>
+              </div>
+            </div>
+
+            {/* Profile Detail */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               {user.picture ? (
                 <img 
                   src={user.picture} 
                   alt="avatar" 
-                  style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} 
+                  style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} 
                 />
               ) : (
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', flexShrink: 0 }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
+              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.name}
+                </span>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.email}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Actions (Developer Copy Token) */}
+            {user.token && (
+              <button
+                onClick={(e) => handleCopyToken(user.token, e)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  fontSize: '11.5px',
+                  color: 'var(--text-secondary)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+              >
+                {copiedToken ? (
+                  <>
+                    <Check size={12} style={{ color: 'var(--success)' }} />
+                    已複製金鑰至剪貼簿
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    複製 Google JWT 金鑰
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Logout Trigger */}
+            <button
+              onClick={() => {
+                setShowProfilePopover(false);
+                if (onLogout) onLogout();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: '#ffffff',
+                backgroundColor: 'var(--danger)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              <LogOut size={13} />
+              登出 Google 帳戶
+            </button>
+          </div>
+        )}
+
+        {/* Profile Card Main Area */}
+        {user ? (
+          <div 
+            onClick={() => setShowProfilePopover(!showProfilePopover)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              width: '100%', 
+              gap: '10px',
+              padding: '6px 8px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1 }}>
+              <div 
+                className={user.isMock ? 'avatar-glow-mock' : 'avatar-glow-real'}
+                style={{ 
+                  borderRadius: '50%', 
+                  padding: '2px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0 
+                }}
+              >
+                {user.picture ? (
+                  <img 
+                    src={user.picture} 
+                    alt="avatar" 
+                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+                  />
+                ) : (
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.name}
@@ -362,36 +538,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </div>
             </div>
-            <button 
-              className="btn" 
-              onClick={onLogout}
-              style={{ padding: '4px 8px', fontSize: '11.5px', minHeight: 'auto', border: '1px solid var(--border-color)', height: '26px' }}
-            >
-              登出
-            </button>
+            {/* Micro chevron arrow indicating clickable action */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-muted)'
+            }}>
+              <ChevronRight size={14} style={{ transform: showProfilePopover ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button 
               className="btn btn-primary" 
               onClick={onTriggerLogin}
-              style={{ width: '100%', padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderRadius: '8px' }}
             >
-              <LogIn size={13} />
+              <LogIn size={14} />
               登入 Google 帳戶
             </button>
-            {localStorage.getItem('antigravity_google_client_id') && (
-              <div 
-                id="google-signin-btn-container" 
-                style={{ 
-                  marginTop: '4px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  width: '100%',
-                  overflow: 'hidden'
-                }}
-              ></div>
-            )}
           </div>
         )}
       </div>
