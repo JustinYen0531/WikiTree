@@ -502,11 +502,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         pathPts.push({ x: finalX, y: finalY, z: finalZ, tx: finalX, ty: finalY, tz: finalZ });
       }
 
-      // 每條洋流上有 3 個流動粒子，速度降至先前的 1/4，讓流動更像深層觀測資料。
+      // 每條洋流上有 3 個流動粒子，速度回調至目前的 2 倍，保留慢速但不至於停滯。
       const particles = [
-        { progress: 0.0, speed: 0.000125 + Math.random() * 0.00005 },
-        { progress: 0.33, speed: 0.000125 + Math.random() * 0.00005 },
-        { progress: 0.66, speed: 0.000125 + Math.random() * 0.00005 }
+        { progress: 0.0, speed: 0.00025 + Math.random() * 0.0001 },
+        { progress: 0.33, speed: 0.00025 + Math.random() * 0.0001 },
+        { progress: 0.66, speed: 0.00025 + Math.random() * 0.0001 }
       ];
 
       currentPaths.push({ points: pathPts, particles });
@@ -884,6 +884,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       ctx.beginPath();
       ctx.arc(centerX, centerY, glowRadius * 1.25, 0, Math.PI * 2);
       ctx.fill();
+
+      // 【縮小視角衛星】：倍率拉遠時才浮現三顆不同軌道半徑的衛星，像外圍觀測資料點。
+      const satelliteVisibility = Math.max(0, Math.min(1, (1.65 - state.zoom) / 0.85));
+      if (satelliteVisibility > 0.01) {
+        const satellites = [
+          { orbit: 1.55, size: 4.4, speed: 0.00012, phase: 0.2, tilt: 0.86 },
+          { orbit: 1.88, size: 3.4, speed: -0.0001, phase: 2.35, tilt: 0.78 },
+          { orbit: 2.2, size: 5.2, speed: 0.00008, phase: 4.25, tilt: 0.92 }
+        ];
+        const satelliteAlpha = satelliteVisibility * globalBreathe;
+
+        satellites.forEach((sat, index) => {
+          const orbitRadius = glowRadius * sat.orbit;
+          const angle = now * sat.speed + state.ry * 0.18 + sat.phase;
+          const sx = centerX + Math.cos(angle) * orbitRadius;
+          const sy = centerY + Math.sin(angle) * orbitRadius * sat.tilt;
+
+          ctx.beginPath();
+          ctx.ellipse(centerX, centerY, orbitRadius, orbitRadius * sat.tilt, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(255, 255, 255, ${(0.075 * satelliteAlpha).toFixed(3)})`;
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
+
+          const satellitePulse = 0.82 + Math.sin(now * 0.0024 + index * 1.7) * 0.18;
+          const satelliteSize = sat.size * (0.85 + Math.sqrt(Math.max(state.zoom, 0.6)) * 0.18);
+
+          ctx.beginPath();
+          ctx.arc(sx, sy, satelliteSize * 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${(0.1 * satelliteAlpha * satellitePulse).toFixed(3)})`;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(sx, sy, satelliteSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(248, 249, 250, ${(0.72 * satelliteAlpha).toFixed(3)})`;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(sx - satelliteSize * 0.24, sy - satelliteSize * 0.22, satelliteSize * 0.36, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${(0.78 * satelliteAlpha).toFixed(3)})`;
+          ctx.fill();
+        });
+      }
 
       // 【星球內部層】：用呼吸的內核與偏白地盤，表現「地表板塊 / 地核」的觀測分界。
       const coreGrad = ctx.createRadialGradient(
