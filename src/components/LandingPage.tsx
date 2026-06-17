@@ -107,7 +107,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const connections: Connection[] = [];
     let pointIdCounter = 0;
 
-    // 定義 5 個板塊中心，分別對應政大學院
+    // 定義 5 個板塊中心 (經度 phi, 緯度 theta)，分別對應政大學院
     const continentsData = [
       { id: 0, lat: 0.45, lon: 1.2, nameZh: '商學院', nameEn: 'COMMERCE' },
       { id: 1, lat: 0.1, lon: -0.2, nameZh: '社科院', nameEn: 'SOCIAL SCI' },
@@ -294,14 +294,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const render = () => {
       const state = stateRef.current;
       
-      // 自動自轉 (當沒有拖曳時僅自轉 ry，絕對不強行重設或覆寫俯仰角 rx，保證拖曳放手後的流暢手感！)
+      // 自動自轉
       if (!state.isDragging) {
         state.ry += 0.0006;
       }
 
       state.pulseProgress = (state.pulseProgress + 0.03) % (Math.PI * 2);
 
-      // 全域慢速呼吸光暈係數 (週期約為 3.5秒，介於 0.75 到 1.0 之間平滑變換，帶給點線與標籤極佳的呼吸感)
+      // 全域慢速呼吸光暈係數
       const globalBreathe = 0.85 + Math.sin(Date.now() * 0.0018) * 0.15;
 
       // 清除 Canvas 為純黑背景
@@ -314,11 +314,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 動態計算地球中心 centerY：當 zoom 變大時，地球向下移動，在畫面下方形成地平線邊緣
       let centerY = height / 2;
       if (state.zoom > 1.0) {
-        const t = Math.min(1.0, (state.zoom - 1.0) / 3.0); // zoom 介於 1.0X 到 4.0X 間過渡
+        const t = Math.min(1.0, (state.zoom - 1.0) / 3.0);
         centerY = (height / 2) * (1.0 - t) + (height * 0.96) * t;
       }
 
-      // A. 投影計算背景星塵 (加上平滑閃爍效果)
+      // A. 投影計算背景星塵
       stars.forEach((star) => {
         const slowRy = state.ry * 0.03;
         const x1 = star.x * Math.cos(slowRy) - star.z * Math.sin(slowRy);
@@ -329,9 +329,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const sy = (height / 2) + star.y * scale;
 
         if (sx >= 0 && sx <= width && sy >= 0 && sy <= height && z1 < 300) {
-          // 星塵呼吸閃爍
           const brightness = (0.12 + (Math.sin(Date.now() * 0.0012 + star.x) * 0.08)) * globalBreathe;
-          ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${brightness.toFixed(3)})`;
           ctx.fillRect(sx, sy, 1.2, 1.2);
         }
       });
@@ -362,15 +361,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         return 1.0 - (tz - fadeStart) / (fadeEnd - fadeStart);
       };
 
-      // C. 繪製連接線 (Connections)
+      // C. 繪製連接線 (優化：使用 Path2D 分組 Batch 繪製，解決單獨呼叫 stroke() 的效能黑洞與白線消失問題)
+      const activeTreePath = new Path2D();
+      const inactiveTreePath = new Path2D();
+      const activeLandPath = new Path2D();
+      const inactiveLandPath = new Path2D();
+
+      let hasActiveTree = false;
+      let hasInactiveTree = false;
+      let hasActiveLand = false;
+      let hasInactiveLand = false;
+
       connections.forEach((conn) => {
         const p1 = points[conn.p1];
         const p2 = points[conn.p2];
 
+        // 深度消隱：後半球大於 50 則過濾
         const avgTz = (p1.tz + p2.tz) / 2;
-        const opacity = getOpacity(avgTz);
+        if (avgTz > 50) return;
 
-        if (opacity <= 0.01) return;
+        const opacity = getOpacity(avgTz);
+        if (opacity < 0.1) return;
 
         const scale1 = D / (D + p1.tz);
         const scale2 = D / (D + p2.tz);
@@ -381,31 +392,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const y2_scr = centerY + p2.ty * scale2 * state.zoom;
 
         const isContinentActive = state.activeContinents[conn.continentId];
-        const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
 
         if (conn.type === 'tree') {
-          // 顯著調高樹木線條的透明度與寬度，確保Inactive狀態下也不會消失！
           if (isContinentActive) {
-            const pulse = 0.75 + Math.sin(Date.now() * 0.006 + conn.p1) * 0.25;
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.9 * pulse * globalBreathe})`;
-            ctx.lineWidth = 1.4 * zoomWidthScale;
+            activeTreePath.moveTo(x1_scr, y1_scr);
+            activeTreePath.lineTo(x2_scr, y2_scr);
+            hasActiveTree = true;
           } else {
-            // Inactive 樹幹與樹枝透明度大幅上調 (0.18 -> 0.45)，寬度從 0.6 -> 0.9，視覺感清晰紮實
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.45 * globalBreathe})`;
-            ctx.lineWidth = 0.9 * zoomWidthScale;
+            inactiveTreePath.moveTo(x1_scr, y1_scr);
+            inactiveTreePath.lineTo(x2_scr, y2_scr);
+            hasInactiveTree = true;
           }
         } else {
-          // 陸地格線
           if (isContinentActive) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.38 * globalBreathe})`;
-            ctx.lineWidth = 0.55 * zoomWidthScale;
+            activeLandPath.moveTo(x1_scr, y1_scr);
+            activeLandPath.lineTo(x2_scr, y2_scr);
+            hasActiveLand = true;
           } else {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.09 * globalBreathe})`;
-            ctx.lineWidth = 0.4 * zoomWidthScale;
+            inactiveLandPath.moveTo(x1_scr, y1_scr);
+            inactiveLandPath.lineTo(x2_scr, y2_scr);
+            hasInactiveLand = true;
           }
         }
-        ctx.stroke();
       });
+
+      const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
+
+      // 1. 繪製未啟動的陸地格線 (微弱底色)
+      if (hasInactiveLand) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.08 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.4 * zoomWidthScale;
+        ctx.stroke(inactiveLandPath);
+      }
+
+      // 2. 繪製已啟動的陸地格線 (清晰)
+      if (hasActiveLand) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.32 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.55 * zoomWidthScale;
+        ctx.stroke(activeLandPath);
+      }
+
+      // 3. 繪製未啟動的樹木線條 (樹幹與樹枝，大幅調亮到 0.62，線寬 1.15，保證點線面立體感完全顯現！)
+      if (hasInactiveTree) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.62 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 1.15 * zoomWidthScale;
+        ctx.stroke(inactiveTreePath);
+      }
+
+      // 4. 繪製已啟動的樹木線條 (極亮白光)
+      if (hasActiveTree) {
+        ctx.beginPath();
+        const pulse = 0.85 + Math.sin(Date.now() * 0.005) * 0.15;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.92 * pulse * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 1.8 * zoomWidthScale;
+        ctx.stroke(activeTreePath);
+      }
 
       // D. 繪製節點 (Nodes)
       points.forEach((p) => {
@@ -420,8 +464,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const zoomDotScale = Math.max(1.0, Math.sqrt(state.zoom) * 0.85);
 
         if (p.type === 'tree_leaf') {
-          // 樹葉/末梢節點：調大點的半徑並提升未啟動時的亮度，帶有微幅呼吸
-          const radius = isContinentActive ? (2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8) : 1.6;
+          // 樹葉節點：調大點的半徑並大幅提升未啟動時的亮度，與白線呼應
+          const radius = isContinentActive ? (2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8) : 1.8;
           ctx.beginPath();
           ctx.arc(px, py, radius * state.zoom * 0.55, 0, Math.PI * 2);
           
@@ -430,16 +474,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             ctx.shadowColor = '#ffffff';
             ctx.shadowBlur = 6 * zoomDotScale;
           } else {
-            // Inactive 樹梢亮度上調 (0.35 -> 0.55)
-            ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.55 * globalBreathe})`;
+            // Inactive 樹梢亮度提升到 0.7，呈現白色的實體節點
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7 * globalBreathe})`;
           }
           ctx.fill();
           ctx.shadowBlur = 0;
         } else if (p.type === 'tree_trunk' || p.type === 'tree_branch') {
-          // 樹幹節點
+          // 樹幹/樹枝節點：調大點的半徑，確保骨架關節明顯
           ctx.beginPath();
-          ctx.arc(px, py, (isContinentActive ? 1.2 : 0.8) * state.zoom * 0.7, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.65 : 0.4) * globalBreathe})`;
+          ctx.arc(px, py, (isContinentActive ? 1.4 : 1.0) * state.zoom * 0.65, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.75 : 0.55) * globalBreathe})`;
           ctx.fill();
         } else {
           // 普通陸地格點
@@ -450,7 +494,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       });
 
-      // E. 行星大氣層發光圓環 (隨呼吸律動)
+      // E. 行星大氣層發光圓環
       ctx.beginPath();
       const radius = R * state.zoom;
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -460,14 +504,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         centerX, centerY, radius * 1.05
       );
       const ringOpacity = 0.08 * globalBreathe;
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${ringOpacity})`);
-      gradient.addColorStop(0.2, `rgba(255, 255, 255, ${ringOpacity * 0.5})`);
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${ringOpacity.toFixed(3)})`);
+      gradient.addColorStop(0.2, `rgba(255, 255, 255, ${(ringOpacity * 0.5).toFixed(3)})`);
       gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
       
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // F. 繪製 3D 學院資訊標籤 (Leader Lines & 3D Labels，帶有平滑呼吸)
+      // F. 繪製 3D 學院資訊標籤
       continentsData.forEach((continent) => {
         const cosY = Math.cos(state.ry);
         const sinY = Math.sin(state.ry);
@@ -500,8 +544,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.lineTo(scrX + 15 * dirX, scrY - 15);
         ctx.lineTo(scrX + 70 * dirX, scrY - 15);
         ctx.strokeStyle = isContinentActive 
-          ? `rgba(255, 255, 255, ${labelOpacity})`
-          : `rgba(255, 255, 255, ${opacity * 0.2 * globalBreathe})`;
+          ? `rgba(255, 255, 255, ${labelOpacity.toFixed(3)})`
+          : `rgba(255, 255, 255, ${(opacity * 0.2 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = isContinentActive ? 1.0 : 0.6;
         ctx.stroke();
 
@@ -509,12 +553,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const textOffset = dirX > 0 ? 20 : -20;
 
         // 第一行：學院中文名稱
-        ctx.fillStyle = `rgba(255, 255, 255, ${isContinentActive ? opacity * 0.95 : opacity * 0.45 * globalBreathe})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.95 : opacity * 0.45 * globalBreathe).toFixed(3)})`;
         ctx.font = `500 11px "Roboto Mono", "PingFang TC", "Microsoft JhengHei", sans-serif`;
         ctx.fillText(continent.nameZh, scrX + textOffset, scrY - 20);
 
         // 第二行：英文學院簡寫
-        ctx.fillStyle = `rgba(255, 255, 255, ${isContinentActive ? opacity * 0.6 : opacity * 0.25 * globalBreathe})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.6 : opacity * 0.25 * globalBreathe).toFixed(3)})`;
         ctx.font = `400 8px "Roboto Mono", monospace`;
         ctx.fillText(continent.nameEn, scrX + textOffset, scrY - 7);
       });
@@ -544,7 +588,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       state.ry += dx * dragSensitivity;
       state.rx += dy * dragSensitivity;
 
-      // 限制 X 軸旋轉以防球體翻轉
       state.rx = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, state.rx));
 
       state.startX = e.clientX;
