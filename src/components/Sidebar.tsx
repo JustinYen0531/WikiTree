@@ -72,16 +72,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const getAvatarGradient = (name: string) => {
-    const colors = [
-      'linear-gradient(135deg, #FF5722 0%, #FF9800 100%)',
-      'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)',
-      'linear-gradient(135deg, #00BCD4 0%, #009688 100%)',
-      'linear-gradient(135deg, #3F51B5 0%, #2196F3 100%)',
-      'linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)',
-      'linear-gradient(135deg, #b31b1b 0%, #1c3b57 100%)'
-    ];
-    const index = Math.abs((name || 'A').charCodeAt(0) % colors.length);
-    return colors[index];
+    const phase = Math.abs((name || 'A').charCodeAt(0) % 4) * 8;
+    return `radial-gradient(circle at ${38 + phase}% ${30 + phase}%, rgba(255,255,255,0.94), rgba(255,255,255,0.34) 38%, rgba(255,255,255,0.08) 72%, rgba(0,0,0,0.2))`;
   };
 
   const toggleExpand = (path: string, e: React.MouseEvent) => {
@@ -232,7 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-header">
         <span className="workspace-title" title={workspaceName}>
           <BookOpen size={16} style={{ color: 'var(--accent)' }} />
-          {isWorkshopTab ? (workspaceName || '創意工房尚未開啟') : 'NCCU Hub'}
+          {isWorkshopTab ? (workspaceName || 'FOREST NOT CONNECTED') : 'WIKITREE ORBIT'}
         </span>
       </div>
 
@@ -244,7 +236,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => setActiveTab('courses')}
         >
           <BookOpen size={14} />
-          線上探索
+          ORBIT
         </button>
         <button
           className={`btn ${isWorkshopTab ? 'btn-primary' : ''}`}
@@ -252,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => setActiveTab('files')}
         >
           <FileText size={14} />
-          創意工房
+          FOREST
         </button>
       </div>
 
@@ -264,7 +256,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setActiveTab('files')}
           >
             <FileText size={14} />
-            筆記
+            LEAVES
           </button>
           <button
             className={`btn ${activeTab === 'history' ? 'btn-primary' : ''}`}
@@ -272,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setActiveTab('history')}
           >
             <History size={14} />
-            版本
+            EVOLVE
           </button>
           <button
             className={`btn ${activeTab === 'publish' ? 'btn-primary' : ''}`}
@@ -280,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setActiveTab('publish')}
           >
             <Globe size={14} />
-            發布
+            SIGNAL
           </button>
         </div>
       )}
@@ -331,7 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
               <Plus size={13} />
-              新增筆記
+              新增葉片
             </button>
             <button 
               className="btn" 
@@ -339,7 +331,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
               <FolderPlus size={13} />
-              新增資料夾
+              新增森林
             </button>
           </div>
 
@@ -352,7 +344,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <input 
                     type="text" 
                     className="form-input" 
-                    placeholder="快速搜尋..."
+                    placeholder="SCAN KNOWLEDGE..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ width: '100%', paddingLeft: '28px', height: '30px', fontSize: '12px' }}
@@ -362,14 +354,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Root Level Actions Title */}
               <div className="sidebar-section-title" style={{ padding: '4px 12px 2px 12px' }}>
-                <span>工作區檔案</span>
+                <span>FOREST STRUCTURE</span>
               </div>
 
               {/* File Tree */}
               <div className="tree-container">
                 {filteredFiles.length === 0 ? (
                   <div style={{ padding: '20px 8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    未找到任何筆記
+                    未找到任何葉片
                   </div>
                 ) : (
                   filteredFiles.map(node => renderTreeNode(node, 0))
@@ -378,7 +370,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           ) : (
             <div style={{ padding: '20px 12px', fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', lineHeight: '1.5' }}>
-              請先進入創意工房，建立新筆記，或開啟一個工房資料夾來載入筆記。
+              請先連接一座森林，建立知識葉片，或開啟既有知識群落。
             </div>
           )}
         </>

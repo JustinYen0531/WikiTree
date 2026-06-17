@@ -85,25 +85,25 @@ const categoryTypes: Array<{
 }> = [
   {
     type: 'course',
-    label: '政大課程',
-    description: '用課名、老師、課號查找課程筆記',
+    label: '課程生態',
+    description: '用課名、老師、課號定位知識葉片',
     icon: <BookOpen size={16} />,
   },
   {
     type: 'exam',
-    label: '考試',
-    description: '英檢、研究所、檢定考試',
+    label: '考試分枝',
+    description: '英檢、研究所、檢定考試脈絡',
     icon: <GraduationCap size={16} />,
   },
   {
     type: 'certification',
-    label: '證照',
+    label: '證照星群',
     description: 'CFA、CPA、金融與專業證照',
     icon: <Award size={16} />,
   },
   {
     type: 'custom',
-    label: '自訂主題',
+    label: '自訂群落',
     description: '讀書會、專案、個人知識主題',
     icon: <Tag size={16} />,
   },
@@ -611,12 +611,12 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
     <div className="course-page">
       <div className="course-topbar">
         <div>
-          <h1>筆記分類與課程搜尋</h1>
-          <p>先選筆記類型，再查詢該課程或主題底下是否已有筆記。</p>
+          <h1>知識生態探索</h1>
+          <p>先選一片知識地形，再定位課程、主題與既有葉片。</p>
         </div>
         <button className="btn" onClick={resetFilters} disabled={!hasFilters}>
           <RotateCcw size={14} />
-          清除篩選
+          RESET SCAN
         </button>
       </div>
 
@@ -640,8 +640,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
         >
           <span className="note-type-icon"><Hash size={16} /></span>
           <span>
-            <strong>依ID查詢</strong>
-            <small>輸入課號或分類ID查找筆記</small>
+            <strong>ID 定位</strong>
+            <small>輸入課號或分類ID定位葉片</small>
           </span>
         </button>
         <button
@@ -650,8 +650,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
         >
           <span className="note-type-icon"><Globe size={16} /></span>
           <span>
-            <strong>社群筆記</strong>
-            <small>瀏覽政大同學分享的筆記</small>
+            <strong>共享星域</strong>
+            <small>瀏覽政大同學分享的知識葉片</small>
           </span>
         </button>
       </div>

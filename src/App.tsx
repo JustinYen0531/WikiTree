@@ -659,10 +659,10 @@ function App() {
               <FolderOpen className="empty-state-icon" style={{ marginBottom: '16px' }} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>
-                  開啟創意工房
+                  連接知識森林
                 </h2>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
-                  創意工房會使用你的本機資料夾來撰寫、整理、版本管理與發布 Markdown 筆記。線上探索不會碰到本機檔案。
+                  選擇一個本機根系作為森林入口。知識會在這裡生長、分枝、演化，線上探索不會碰到你的本機根系。
                 </p>
               </div>
               <h2 style={{ display: 'none', fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', marginBottom: '8px' }}>
@@ -684,16 +684,16 @@ function App() {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981' }}>創意工房 CLI 已連線</span>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.82)' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>FOREST LINK ONLINE</span>
                   </div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    輸入要開啟或新建的創意工房路徑：
+                    輸入要連接或生成的森林根路徑：
                   </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input 
                       type="text" 
-                      placeholder="例如：C:\Users\user\Desktop\我的創意工房"
+                      placeholder="例如：C:\Users\user\Desktop\WikiTree-Forest"
                       value={cliPathInput}
                       onChange={(e) => setCliPathInput(e.target.value)}
                       style={{ 
@@ -712,14 +712,14 @@ function App() {
                       disabled={isBrowsing}
                       style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
-                      {isBrowsing ? '瀏覽中...' : '瀏覽...'}
+                      {isBrowsing ? 'SCANNING...' : 'BROWSE'}
                     </button>
                     <button className="btn btn-primary" onClick={handleOpenOrCreateCliWorkspace}>
-                      開啟 / 新建
+                      CONNECT
                     </button>
                   </div>
                   <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>
-                    若路徑不存在，創意工房會為你建立資料夾。這只影響本機工作區，不會修改線上探索資料。
+                    若路徑不存在，WikiTree 會生成新的森林根系。這只影響本機知識森林，不會修改線上探索資料。
                   </span>
                 </div>
               ) : (
@@ -735,7 +735,7 @@ function App() {
                   color: 'var(--text-secondary)',
                   lineHeight: '1.5'
                 }}>
-                  未偵測到創意工房 CLI。你仍可用瀏覽器 Picker 選擇既有資料夾；若要直接輸入路徑新建資料夾，請先啟動 CLI：<br/>
+                  未偵測到森林連接器。你仍可用瀏覽器 Picker 選擇既有根系；若要直接輸入路徑生成根系，請先啟動 CLI：<br/>
                   <code style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', marginTop: '8px', fontFamily: 'monospace', fontSize: '12px' }}>
                     node cli-server.cjs
                   </code>
@@ -744,10 +744,10 @@ function App() {
 
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                  {cliConnected ? '也可以直接用下方 Picker 選擇既有資料夾。' : ''}
+                  {cliConnected ? '也可以直接用下方 Picker 選擇既有森林根系。' : ''}
                 </span>
                 <button className="btn" onClick={handleSelectDirectory} style={{ padding: '10px 20px', fontSize: '14px' }}>
-                  選擇創意工房資料夾
+                  選擇森林根系
                 </button>
               </div>
             </div>
@@ -768,7 +768,7 @@ function App() {
             <div className="top-navbar">
               <div className="navbar-left">
                 <span style={{ fontWeight: '500' }}>
-                  {activeFile ? activeFile.path.split('/').join(' / ') : '選擇一篇筆記'}
+                  {activeFile ? activeFile.path.split('/').join(' / ') : '選擇一片葉'}
                 </span>
                 {!isSaved && (
                   <span style={{ 
@@ -780,7 +780,7 @@ function App() {
                     marginLeft: '8px',
                     fontWeight: '600'
                   }}>
-                    已修改
+                    EVOLVING
                   </span>
                 )}
               </div>
@@ -789,24 +789,24 @@ function App() {
                 {activeFile && (
                   <button className="btn" onClick={handleSaveFile} disabled={isSaved}>
                     <Save size={14} />
-                    儲存筆記
+                    固定葉片
                   </button>
                 )}
                 
                 <button className="btn" onClick={handleCreateSnapshot}>
                   <History size={14} />
-                  儲存版本
+                  記錄演化
                 </button>
 
                 {snapshots.length > 0 && (
                   <button className="btn" onClick={() => setShowHistoryPanel(true)}>
-                    歷史版本 ({snapshots.length})
+                    演化層 ({snapshots.length})
                   </button>
                 )}
 
                 <button className="btn btn-primary" onClick={() => setShowPublishModal(true)}>
                   <Globe size={14} />
-                  發布筆記
+                  發送訊號
                 </button>
 
                 <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
@@ -828,13 +828,13 @@ function App() {
               />
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
-                <p>未開啟任何筆記。</p>
+                <p>尚未選擇任何知識葉片。</p>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button className="btn" onClick={() => handleCreateFile('')}>
-                    <Plus size={14} /> 新增筆記
+                    <Plus size={14} /> 生成葉片
                   </button>
                   <button className="btn" onClick={() => handleCreateFolder('')}>
-                    <FolderPlus size={14} /> 新增資料夾
+                    <FolderPlus size={14} /> 生成分枝
                   </button>
                 </div>
               </div>
