@@ -1080,67 +1080,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
         }
 
-        .btn-sci-fi {
-          background: rgba(248, 246, 240, 0.35);
-          border: 1px solid rgba(30, 30, 30, 0.4);
-          color: rgba(20, 20, 20, 0.85);
-          padding: 12px 40px;
+        /* 每個可點擊項目都是一個獨立的實心區塊按鈕，自帶不透明底色，
+           不論後方是淺色樹冠或深色樹幹，文字都絕不被樹遮住 */
+        .btn-block {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+          width: 250px;
+          background: rgba(244, 242, 236, 0.92);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+          border: 1px solid rgba(0, 0, 0, 0.22);
+          border-radius: 9px;
+          color: #141414;
           font-family: 'Roboto Mono', monospace;
-          font-size: 14px;
           letter-spacing: 0.15em;
           text-transform: uppercase;
-          transition: all 0.3s ease;
-          position: relative;
           cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 5px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6);
         }
 
-        .btn-sci-fi::before, .btn-sci-fi::after {
-          content: '';
-          position: absolute;
-          width: 4px;
-          height: 4px;
-          border: 1px solid #101010;
-          transition: all 0.3s ease;
-          opacity: 0;
+        .btn-block:hover {
+          background: rgba(255, 255, 255, 0.98);
+          border-color: rgba(0, 0, 0, 0.55);
+          box-shadow: 0 7px 20px rgba(0, 0, 0, 0.55), 0 0 14px rgba(255, 255, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          transform: translateY(-1px);
         }
 
-        .btn-sci-fi::before {
-          top: -2px; left: -2px;
-          border-right: none; border-bottom: none;
+        /* 主要動作：登入，較大、加重 */
+        .btn-block-primary {
+          padding: 14px 24px;
+          font-size: 15px;
+          font-weight: 700;
+          color: #0c0c0c;
         }
 
-        .btn-sci-fi::after {
-          bottom: -2px; right: -2px;
-          border-left: none; border-top: none;
-        }
-
-        .btn-sci-fi:hover {
-          color: #000000;
-          background: rgba(248, 246, 240, 0.6);
-          border-color: rgba(10, 10, 10, 0.9);
-          box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-sci-fi:hover::before, .btn-sci-fi:hover::after {
-          opacity: 1;
-        }
-
-        .btn-link-sci-fi {
-          background: transparent;
-          border: none;
-          color: rgba(20, 20, 20, 0.7);
-          font-family: 'Roboto Mono', monospace;
-          font-size: 12px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-link-sci-fi:hover {
-          color: #000000;
-          letter-spacing: 0.18em;
-          text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 6px rgba(255, 255, 255, 0.8);
+        /* 次要動作：註冊、訪客瀏覽，略小、較輕 */
+        .btn-block-ghost {
+          padding: 11px 24px;
+          font-size: 12.5px;
+          font-weight: 500;
+          color: #1c1c1c;
+          background: rgba(238, 236, 230, 0.86);
         }
       `}</style>
 
@@ -1277,34 +1260,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             一人種樹，億人乘涼
           </p>
 
-          {/* 主登入與導覽按鈕 */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            <button 
+          {/* 主登入與導覽按鈕：每個都是獨立實心區塊 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+            <button
               onClick={onLoginClick}
-              className="btn-sci-fi"
-              style={{
-                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
-              }}
+              className="btn-block btn-block-primary"
             >
               [ LOGIN ]
             </button>
-            
-            <button 
+
+            <button
               onClick={onLoginClick}
-              className="btn-link-sci-fi"
-              style={{
-                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
-              }}
+              className="btn-block btn-block-ghost"
             >
               SIGN UP
             </button>
 
-            <button 
+            <button
               onClick={onGuestClick}
-              className="btn-link-sci-fi"
-              style={{
-                textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff'
-              }}
+              className="btn-block btn-block-ghost"
             >
               EXPLORE AS GUEST
             </button>
