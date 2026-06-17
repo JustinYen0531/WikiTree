@@ -34,12 +34,10 @@ interface Triangle3D {
   continentId: number;
 }
 
-// 洋流流動線條定義
-interface CurrentLine {
-  baseLat: number; // 基準緯度
-  lon: number;     // 經度
-  offset: number;  // 波動相位差
-  trail: { x: number; y: number; z: number; tx: number; ty: number; tz: number }[];
+// 洋流路徑與粒子定義
+interface CurrentPath {
+  points: { x: number; y: number; z: number; tx: number; ty: number; tz: number }[];
+  particles: { progress: number; speed: number }[];
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -135,7 +133,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成陸地表面點與密集樹木
     continentsData.forEach((continent) => {
-      // 陸地表面點 (130-160 個點)
+      // 陸地表面點 (60-70 個點)
       const numPoints = 60 + Math.floor(Math.random() * 10);
       const landPoints: Point3D[] = [];
 
@@ -164,7 +162,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         landPoints.push(pt);
       }
 
-      // 大陸內部的點進行距離檢測連線 (臨界值 30，減少線段重疊數)
+      // 大陸內部的點進行距離檢測連線 (臨界值 30)
       for (let i = 0; i < landPoints.length; i++) {
         for (let j = i + 1; j < landPoints.length; j++) {
           const p1 = landPoints[i];
@@ -209,7 +207,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 樹木森林：每個板塊種植 12 棵樹，分布密集且效能優良
+      // 樹木森林：每個板塊種植 12 棵樹
       const numTrees = 12;
       for (let t = 0; t < numTrees; t++) {
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
@@ -321,25 +319,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       }
     });
 
-    // 洋流初始化：條數 18 條，軌跡長度 4，以大幅提昇性能並保證平滑流動
-    const currentLines: CurrentLine[] = [];
-    const numCurrents = 18;
-    for (let c = 0; c < numCurrents; c++) {
-      const baseLat = (Math.random() - 0.5) * 1.4;
-      const lon = Math.random() * Math.PI * 2;
-      const offset = Math.random() * Math.PI * 2;
-      const trail: CurrentLine['trail'] = [];
-      
-      for (let i = 0; i < 4; i++) {
-        const pLon = lon - i * 0.035;
-        const pLat = baseLat + Math.sin(pLon * 4 + offset) * 0.05;
-        const x = R * Math.cos(pLat) * Math.sin(pLon);
-        const y = R * Math.sin(pLat);
-        const z = R * Math.cos(pLat) * Math.cos(pLon);
-        trail.push({ x, y, z, tx: x, ty: y, tz: z });
+    // 【全新洋流路徑與粒子流線設計】：
+    // 定義 6 條環繞地球的 3D 洋流路徑線路，每條包含 25 個點。這些點被綁定在地球上，隨著自轉而自轉！
+    const currentPaths: CurrentPath[] = [];
+    const numPaths = 6;
+    const pathParams = [
+      { baseLat: 0.0, freq: 3, amp: 0.22, phase: 0 },
+      { baseLat: 0.38, freq: 4, amp: 0.15, phase: 1.5 },
+      { baseLat: -0.38, freq: 3, amp: 0.18, phase: 3.0 },
+      { baseLat: 0.58, freq: 2, amp: 0.12, phase: 0.5 },
+      { baseLat: -0.62, freq: 3, amp: 0.08, phase: 2.0 },
+      { baseLat: -0.15, freq: 2, amp: 0.25, phase: 4.5 }
+    ];
+
+    pathParams.forEach((param) => {
+      const pathPts: CurrentPath['points'] = [];
+      const numPts = 24; // 24 段連線，構成平滑環流
+      for (let i = 0; i <= numPts; i++) {
+        const lon = (i / numPts) * Math.PI * 2;
+        const lat = param.baseLat + Math.sin(lon * param.freq + param.phase) * param.amp;
+        
+        // 微幅浮於地球表面上方 1.5px，確保不被低多邊形網格面遮擋
+        const r_p = R + 1.5;
+        const x = r_p * Math.cos(lat) * Math.sin(lon);
+        const y = r_p * Math.sin(lat);
+        const z = r_p * Math.cos(lat) * Math.cos(lon);
+        pathPts.push({ x, y, z, tx: x, ty: y, tz: z });
       }
-      currentLines.push({ baseLat, lon, offset, trail });
-    }
+
+      // 每條洋流上有 3 個緩慢滑動的粒子段 (相位均勻分布)
+      const particles = [
+        { progress: 0.0, speed: 0.0016 + Math.random() * 0.0006 },
+        { progress: 0.33, speed: 0.0016 + Math.random() * 0.0006 },
+        { progress: 0.66, speed: 0.0016 + Math.random() * 0.0006 }
+      ];
+
+      currentPaths.push({ points: pathPts, particles });
+    });
 
     // 生成背景星塵
     const stars: Point3D[] = [];
@@ -408,17 +424,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       points.forEach((p) => {
         const cosY = Math.cos(state.ry);
         const sinY = Math.sin(state.ry);
+        const cosX = Math.cos(state.rx);
+        const sinX = Math.sin(state.rx);
         let x1 = p.x * cosY - p.z * sinY;
         let z1 = p.x * sinY + p.z * cosY;
 
-        const cosX = Math.cos(state.rx);
-        const sinX = Math.sin(state.rx);
         let y2 = p.y * cosX - z1 * sinX;
         let z2 = p.y * sinX + z1 * cosX;
 
         p.tx = x1;
         p.ty = y2;
         p.tz = z2;
+      });
+
+      // 旋轉並投影洋流軌跡線上的所有點 (與自轉、拖曳 100% 同步)
+      currentPaths.forEach((path) => {
+        path.points.forEach((p) => {
+          const cosY = Math.cos(state.ry);
+          const sinY = Math.sin(state.ry);
+          const cosX = Math.cos(state.rx);
+          const sinX = Math.sin(state.rx);
+
+          let x1 = p.x * cosY - p.z * sinY;
+          let z1 = p.x * sinY + p.z * cosY;
+          let y2 = p.y * cosX - z1 * sinX;
+          let z2 = p.y * sinX + z1 * cosX;
+
+          p.tx = x1;
+          p.ty = y2;
+          p.tz = z2;
+        });
       });
 
       // 篩選出前半球與後半球
@@ -430,66 +465,86 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         return 1.0 - (tz - fadeStart) / (fadeEnd - fadeStart);
       };
 
-      // 【更新與繪製洋流流動線條】：修正投影 Y 軸坐標與 Zoom / CenterY 計算，讓洋流貼合地球表面旋轉與滑動！
-      currentLines.forEach((line) => {
-        // 更新位置
-        line.lon += 0.0012; 
-        
-        const newLon = line.lon;
-        const newLat = line.baseLat + Math.sin(newLon * 4 + line.offset) * 0.05;
-        const nx = R * Math.cos(newLat) * Math.sin(newLon);
-        const ny = R * Math.sin(newLat);
-        const nz = R * Math.cos(newLat) * Math.cos(newLon);
-        
-        line.trail.unshift({ x: nx, y: ny, z: nz, tx: nx, ty: ny, tz: nz });
-        if (line.trail.length > 4) {
-          line.trail.pop();
+      const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
+
+      // 【全新洋流繪製系統】：
+      // 1. 先用 Path2D 批次繪製極淡的「洋流軌跡管道底線」
+      const currentBgPath = new Path2D();
+      let hasCurrentBg = false;
+
+      currentPaths.forEach((path) => {
+        for (let i = 0; i < path.points.length - 1; i++) {
+          const p1 = path.points[i];
+          const p2 = path.points[i + 1];
+          const avgTz = (p1.tz + p2.tz) / 2;
+          if (avgTz > 45) continue; // 後半球消隱
+
+          const opacity = getOpacity(avgTz);
+          if (opacity < 0.15) continue;
+
+          const scale1 = D / (D + p1.tz);
+          const scale2 = D / (D + p2.tz);
+          const x1 = centerX + p1.tx * scale1 * state.zoom;
+          const y1 = centerY + p1.ty * scale1 * state.zoom;
+          const x2 = centerX + p2.tx * scale2 * state.zoom;
+          const y2 = centerY + p2.ty * scale2 * state.zoom;
+
+          currentBgPath.moveTo(x1, y1);
+          currentBgPath.lineTo(x2, y2);
+          hasCurrentBg = true;
         }
+      });
 
-        const cosY = Math.cos(state.ry);
-        const sinY = Math.sin(state.ry);
-        const cosX = Math.cos(state.rx);
-        const sinX = Math.sin(state.rx);
+      if (hasCurrentBg) {
+        ctx.beginPath();
+        // 極淡的白灰色底流管道，只在非大陸處低調漂浮
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.05 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 0.75 * zoomWidthScale;
+        ctx.stroke(currentBgPath);
+      }
 
-        const scrPoints: { x: number; y: number; opacity: number }[] = [];
-
-        line.trail.forEach((p) => {
-          // 繞 Y 軸旋轉
-          let x1 = p.x * cosY - p.z * sinY;
-          let z1 = p.x * sinY + p.z * cosY;
-          // 繞 X 軸旋轉
-          let y2 = p.y * cosX - z1 * sinX;
-          let z2 = p.y * sinX + z1 * cosX;
-
-          p.tx = x1; p.ty = y2; p.tz = z2;
-
-          const opacity = getOpacity(z2);
-          const scale = D / (D + z2);
-          
-          // 【修正投影 Bug】：使用跟地球完全同步的 centerY、旋轉後的 p.ty，以及乘上 state.zoom
-          const px = centerX + p.tx * scale * state.zoom;
-          const py = centerY + p.ty * scale * state.zoom;
-          scrPoints.push({ x: px, y: py, opacity });
-        });
-
-        // 繪製漸淡軌跡段
-        for (let i = 0; i < scrPoints.length - 1; i++) {
-          const pStart = scrPoints[i];
-          const pEnd = scrPoints[i + 1];
-          const avgOpacity = (pStart.opacity + pEnd.opacity) / 2;
-          if (avgOpacity < 0.15) continue;
-
-          const tailFade = (1.0 - i / (scrPoints.length - 1));
-          // 大幅調亮洋流不透明度 (從 0.13 升至 0.24) 確保灰白流動感清晰可見！
-          const currentAlpha = 0.24 * avgOpacity * tailFade * globalBreathe;
+      // 2. 更新粒子進度，並在軌跡線上繪製「沿著流向流動的亮白色粒子絲帶段」，還原洋流流況箭頭的視覺感！
+      currentPaths.forEach((path) => {
+        path.particles.forEach((part) => {
+          // 隨著時間前進
+          part.progress = (part.progress + part.speed) % 1.0;
 
           ctx.beginPath();
-          ctx.moveTo(pStart.x, pStart.y);
-          ctx.lineTo(pEnd.x, pEnd.y);
-          ctx.strokeStyle = `rgba(200, 200, 200, ${currentAlpha.toFixed(3)})`;
-          ctx.lineWidth = 1.0 * Math.max(0.8, Math.sqrt(state.zoom) * 0.7);
+          let first = true;
+          
+          // 粒子當前位於 24 段軌跡中的起始索引
+          const startIndex = Math.floor(part.progress * 24);
+          const tailLen = 3; // 拖尾線長度 (3段連線)
+          
+          for (let j = 0; j <= tailLen; j++) {
+            // 往後取得拖尾點的索引 (考慮循環)
+            const idx = (startIndex - j + 25) % 25;
+            const p = path.points[idx];
+            
+            // 深度消隱，轉到背面時不畫
+            if (p.tz > 45) continue;
+            
+            const opacity = getOpacity(p.tz);
+            if (opacity < 0.15) continue;
+
+            const scale = D / (D + p.tz);
+            const px = centerX + p.tx * scale * state.zoom;
+            const py = centerY + p.ty * scale * state.zoom;
+            
+            if (first) {
+              ctx.moveTo(px, py);
+              first = false;
+            } else {
+              ctx.lineTo(px, py);
+            }
+          }
+          
+          // 粒子拖尾顏色：較亮，帶有漸淡效果與呼吸感
+          const alpha = 0.28 * globalBreathe;
+          ctx.strokeStyle = `rgba(240, 240, 240, ${alpha.toFixed(3)})`;
+          ctx.lineWidth = 1.25 * zoomWidthScale;
           ctx.stroke();
-        }
+        });
       });
 
       // 【繪製陸地摺紙皺褶面 (Origami Low-Poly Faces)】：
@@ -597,8 +652,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           }
         }
       });
-
-      const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
 
       // 1. 繪製未啟動的陸地格線
       if (hasInactiveLand) {
