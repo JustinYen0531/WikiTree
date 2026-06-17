@@ -1127,7 +1127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
         <defs>
           <clipPath id="tree-clip">
-            <path d="M 160 530 Q 200 420, 205 340 C 160 340, 110 320, 110 270 C 110 210, 60 210, 60 160 C 60 110, 120 70, 170 90 C 170 50, 230 50, 250 80 C 280 50, 330 70, 340 120 C 380 120, 390 170, 390 210 C 390 270, 340 310, 300 320 C 260 330, 250 340, 245 340 Q 250 420, 290 530 Z" />
+            <path d="M 110 530 Q 135 420, 135 340 C 90 340, 50 320, 50 270 C 50 210, 20 210, 20 160 C 20 110, 90 70, 150 90 C 150 50, 210 50, 225 80 C 240 50, 300 50, 300 90 C 360 70, 430 110, 430 160 C 430 210, 400 210, 400 270 C 400 320, 360 340, 315 340 Q 315 420, 340 530 Z" />
           </clipPath>
         </defs>
       </svg>
@@ -1206,26 +1206,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           pointerEvents: 'auto',
           textAlign: 'center',
           marginTop: '-40px',
-          width: '450px', // 放寬至 450px，完全解決 W 和 E 貼著線的擠壓感，呈現修長優雅比例
+          width: '450px', // 寬度放寬至 450px，完全解決 W 和 E 貼著線的擠壓感，呈現修長優雅比例
           alignSelf: 'center', // 確保在父容器中水平居中，防拉伸
           boxSizing: 'border-box'
         }}>
-          {/* 精確樹形裁剪的毛玻璃與強烈灰色遮罩底層 (遮罩範圍只在樹的形狀內，不再是長方形) */}
+          {/* 精確樹形裁剪的 100% 不透明灰色遮罩底層 (遮罩範圍只在樹的形狀內，完全遮擋後面點線) */}
           <div style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: 'rgba(10, 10, 10, 0.94)', // 樹內部的深灰色填充
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            clipPath: 'url(#tree-clip)', // 使用 clip-path 精確將毛玻璃與遮罩裁切成樹的形狀！
+            backgroundColor: 'rgba(13, 13, 13, 1.0)', // 樹內部改為 100% 不透明深灰色，徹底遮擋後方格線
+            clipPath: 'url(#tree-clip)', // 使用 clip-path 精確將遮罩裁切成樹的形狀，完美對齊
             zIndex: -2,
             pointerEvents: 'none'
           }} />
 
-          {/* 精緻素描樹背景外框與內部素描樹枝木紋 SVG (真實素描樹風格) */}
+          {/* 精緻素描樹背景外框與內部素描樹枝木紋 SVG (真實素描樹風格，加寬樹幹) */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -1247,19 +1245,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.9))'
               }}
             >
-              {/* 1. 樹的主輪廓外框（不封底，粗手繪線） */}
+              {/* 1. 樹的主輪廓外框（不封底，粗手繪線，拓寬樹幹至 180px 以包裹按鈕） */}
               <path
-                d="M 160 530 
-                   Q 200 420, 205 340 
-                   C 160 340, 110 320, 110 270 
-                   C 110 210, 60 210, 60 160 
-                   C 60 110, 120 70, 170 90 
-                   C 170 50, 230 50, 250 80 
-                   C 280 50, 330 70, 340 120 
-                   C 380 120, 390 170, 390 210 
-                   C 390 270, 340 310, 300 320 
-                   C 260 330, 250 340, 245 340 
-                   Q 250 420, 290 530"
+                d="M 110 530 
+                   Q 135 420, 135 340 
+                   C 90 340, 50 320, 50 270 
+                   C 50 210, 20 210, 20 160 
+                   C 20 110, 90 70, 150 90 
+                   C 150 50, 210 50, 225 80 
+                   C 240 50, 300 50, 300 90 
+                   C 360 70, 430 110, 430 160 
+                   C 430 210, 400 210, 400 270 
+                   C 400 320, 360 340, 315 340 
+                   Q 315 420, 340 530"
                 fill="none" 
                 stroke="rgba(255, 255, 255, 0.85)" 
                 strokeWidth="3.2" 
@@ -1267,11 +1265,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 strokeLinejoin="round"
               />
               
-              {/* 2. 樹幹內部的 Y 字形主分岔樹枝 (粗細過渡 1.8px) */}
+              {/* 2. 樹幹內部的 Y 字形主分岔樹枝 (樹枝起點拓寬) */}
               <path
-                d="M 215 355 Q 210 290, 170 230
+                d="M 175 355 Q 165 290, 130 230
                    M 225 355 L 225 250
-                   M 235 355 Q 240 290, 280 230"
+                   M 275 355 Q 285 290, 320 230"
                 fill="none"
                 stroke="rgba(255, 255, 255, 0.65)"
                 strokeWidth="1.8"
@@ -1279,22 +1277,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 strokeLinejoin="round"
               />
 
-              {/* 3. 樹幹內部的縱向素描木紋排線 (細線 1.0px) */}
+              {/* 3. 樹幹內部的縱向素描木紋排線 (排線位置相應拓寬) */}
               <path
-                d="M 190 495 Q 208 430, 212 375
-                   M 260 495 Q 242 430, 238 375
-                   M 225 515 L 225 415"
+                d="M 155 495 Q 178 430, 182 375
+                   M 295 495 Q 272 430, 268 375
+                   M 225 515 L 225 415
+                   M 190 495 Q 200 440, 202 390
+                   M 260 495 Q 250 440, 248 390"
                 fill="none"
                 stroke="rgba(255, 255, 255, 0.35)"
                 strokeWidth="1.0"
                 strokeLinecap="round"
               />
 
-              {/* 4. 樹冠內部的層次葉片素描線 (細線 1.2px) */}
+              {/* 4. 樹冠內部的層次葉片素描線 (位置適度拓寬) */}
               <path
-                d="M 145 185 C 155 165, 195 165, 205 185
-                   M 245 195 C 255 175, 295 175, 305 195
-                   M 180 235 C 190 215, 230 215, 240 235"
+                d="M 125 185 C 135 165, 175 165, 185 185
+                   M 265 195 C 275 175, 315 175, 325 195
+                   M 180 235 C 190 215, 260 215, 270 235"
                 fill="none"
                 stroke="rgba(255, 255, 255, 0.45)"
                 strokeWidth="1.2"
