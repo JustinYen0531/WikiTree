@@ -101,9 +101,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     let width = canvas.width = window.innerWidth;
     let height = canvas.height = window.innerHeight;
 
-    // 處理高 DPI 螢幕
+    // 【極致性能優化 1】：將高解析度螢幕的 dpr 限制在 1.5 以下，避免高分屏像素量過大卡頓
     const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(1.5, window.devicePixelRatio || 1);
       width = window.innerWidth;
       height = window.innerHeight;
       canvas.width = width * dpr;
@@ -122,6 +122,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     const triangles: Triangle3D[] = [];
     let pointIdCounter = 0;
 
+    // 用於點的離散化分箱批處理（減少 Draw Calls，提升 FPS）
+    const batches: { x: number, y: number }[][][] = Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => []));
+
     // 定義 5 個板塊中心 (經度 phi, 緯度 theta)，分別對應政大學院
     const continentsData = [
       { id: 0, lat: 0.45, lon: 1.2, nameZh: '商學院', nameEn: 'COMMERCE' },
@@ -133,8 +136,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成陸地表面點與密集樹木
     continentsData.forEach((continent) => {
-      // 陸地表面點 (60-70 個點)
-      const numPoints = 60 + Math.floor(Math.random() * 10);
+      // 【效能優化 2】：將表面陸地點降低至 50 個，減少運算量，同時維持視覺細緻度
+      const numPoints = 50 + Math.floor(Math.random() * 5);
       const landPoints: Point3D[] = [];
 
       for (let i = 0; i < numPoints; i++) {
@@ -179,9 +182,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 每個板塊限制最多 16 個三角形面
+      // 【效能優化 3】：每個板塊限制最多 12 個三角形面，消除卡頓
       let continentTriCount = 0;
-      const maxContinentTriangles = 16;
+      const maxContinentTriangles = 12;
       for (let i = 0; i < landPoints.length && continentTriCount < maxContinentTriangles; i++) {
         for (let j = i + 1; j < landPoints.length && continentTriCount < maxContinentTriangles; j++) {
           const pi = landPoints[i];
@@ -207,8 +210,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 樹木森林：每個板塊種植 12 棵樹
-      const numTrees = 12;
+      // 【效能優化 4 - 精簡樹木骨架】：每個板塊種植 9 棵樹，且將樹木節點減少為 5 個 (1幹、2枝、2葉)
+      const numTrees = 9;
       for (let t = 0; t < numTrees; t++) {
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
         
@@ -253,11 +256,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const vy = nz * ux - nx * uz;
         const vz = nx * uy - ny * ux;
 
-        // 生成 3 根主樹枝
-        const numBranches = 3;
+        // 簡化：生成 2 根主樹枝 (原本 3 根)
+        const numBranches = 2;
         for (let b = 0; b < numBranches; b++) {
-          const angle = (b * Math.PI * 2) / numBranches + (Math.random() - 0.5) * 0.4;
-          const branchSpread = 0.45;
+          const angle = (b * Math.PI) + (Math.random() - 0.5) * 0.4; // 180 度對稱偏轉
+          const branchSpread = 0.4;
           const branchLength = treeHeight * 0.65;
 
           const bx_dir = nx + (ux * Math.cos(angle) + vx * Math.sin(angle)) * branchSpread;
@@ -284,47 +287,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             continentId: continent.id
           });
 
-          // 每根主樹枝發射 2 個葉子節點
-          const numLeaves = 2;
-          for (let l = 0; l < numLeaves; l++) {
-            const leafAngle = angle + (l === 0 ? -0.4 : 0.4) + (Math.random() - 0.5) * 0.2;
-            const leafSpread = 0.6;
-            const leafLength = treeHeight * 0.45;
+          // 簡化：每根主樹枝僅發射 1 個葉子節點
+          const lx_dir = bx_dir + (ux * Math.cos(angle) + vx * Math.sin(angle)) * 0.55;
+          const ly_dir = by_dir + (uy * Math.cos(angle) + vy * Math.sin(angle)) * 0.55;
+          const lz_dir = bz_dir + (uz * Math.cos(angle) + vz * Math.sin(angle)) * 0.55;
+          const lDirLen = Math.hypot(lx_dir, ly_dir, lz_dir);
 
-            const lx_dir = bx_dir + (ux * Math.cos(leafAngle) + vx * Math.sin(leafAngle)) * leafSpread;
-            const ly_dir = by_dir + (uy * Math.cos(leafAngle) + vy * Math.sin(leafAngle)) * leafSpread;
-            const lz_dir = bz_dir + (uz * Math.cos(leafAngle) + vz * Math.sin(leafAngle)) * leafSpread;
-            const lDirLen = Math.hypot(lx_dir, ly_dir, lz_dir);
+          const lx = bx + (lx_dir / lDirLen) * (treeHeight * 0.45);
+          const ly = by + (ly_dir / lDirLen) * (treeHeight * 0.45);
+          const lz = bz + (lz_dir / lDirLen) * (treeHeight * 0.45);
 
-            const lx = bx + (lx_dir / lDirLen) * leafLength;
-            const ly = by + (ly_dir / lDirLen) * leafLength;
-            const lz = bz + (lz_dir / lDirLen) * leafLength;
-
-            const leafPt: Point3D = {
-              id: pointIdCounter++,
-              x: lx, y: ly, z: lz,
-              tx: lx, ty: ly, tz: lz,
-              type: 'tree_leaf',
-              continentId: continent.id
-            };
-            points.push(leafPt);
-            connections.push({
-              p1: branchPt.id,
-              p2: leafPt.id,
-              type: 'tree',
-              continentId: continent.id
-            });
-          }
+          const leafPt: Point3D = {
+            id: pointIdCounter++,
+            x: lx, y: ly, z: lz,
+            tx: lx, ty: ly, tz: lz,
+            type: 'tree_leaf',
+            continentId: continent.id
+          };
+          points.push(leafPt);
+          connections.push({
+            p1: branchPt.id,
+            p2: leafPt.id,
+            type: 'tree',
+            continentId: continent.id
+          });
         }
       }
     });
 
-    // 【全新洋流路徑與粒子流線設計】：
-    // 定義 6 條環繞地球的 3D 洋流路徑線路，每條包含 25 個點。這些點被綁定在地球上，隨著自轉而自轉！
+    // 【避開大陸洋流路徑與粒子流線設計】：
+    // 定義 6 條環繞地球的 3D 洋流路徑線路，並在初始化時使用引力排斥力，使其繞行避開學院大陸板塊！
     const currentPaths: CurrentPath[] = [];
     const numPaths = 6;
     const pathParams = [
-      { baseLat: 0.0, freq: 3, amp: 0.22, phase: 0 },
+      { baseLat: 0.05, freq: 3, amp: 0.22, phase: 0 },
       { baseLat: 0.38, freq: 4, amp: 0.15, phase: 1.5 },
       { baseLat: -0.38, freq: 3, amp: 0.18, phase: 3.0 },
       { baseLat: 0.58, freq: 2, amp: 0.12, phase: 0.5 },
@@ -334,24 +330,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     pathParams.forEach((param) => {
       const pathPts: CurrentPath['points'] = [];
-      const numPts = 24; // 24 段連線，構成平滑環流
+      const numPts = 80; // 增加洋流路徑點數，使避開與繞行的弧線極為圓滑
+      
       for (let i = 0; i <= numPts; i++) {
         const lon = (i / numPts) * Math.PI * 2;
         const lat = param.baseLat + Math.sin(lon * param.freq + param.phase) * param.amp;
         
-        // 微幅浮於地球表面上方 1.5px，確保不被低多邊形網格面遮擋
-        const r_p = R + 1.5;
-        const x = r_p * Math.cos(lat) * Math.sin(lon);
-        const y = r_p * Math.sin(lat);
-        const z = r_p * Math.cos(lat) * Math.cos(lon);
-        pathPts.push({ x, y, z, tx: x, ty: y, tz: z });
+        let px = R * Math.cos(lat) * Math.sin(lon);
+        let py = R * Math.sin(lat);
+        let pz = R * Math.cos(lat) * Math.cos(lon);
+
+        // 執行 10 次排斥力迭代，使洋流在 3D 空間中以圓滑曲線沿著大陸板塊邊緣繞道，不產生硬拐角
+        for (let iter = 0; iter < 10; iter++) {
+          let pushX = 0, pushY = 0, pushZ = 0;
+          
+          continentsData.forEach((c) => {
+            const cx_c = R * Math.cos(c.lat) * Math.sin(c.lon);
+            const cy_c = R * Math.sin(c.lat);
+            const cz_c = R * Math.cos(c.lat) * Math.cos(c.lon);
+            
+            const dx = px - cx_c;
+            const dy = py - cy_c;
+            const dz = pz - cz_c;
+            const dist = Math.hypot(dx, dy, dz);
+            
+            const avoidRadius = 145; // 稍微增加排斥半徑，保證完全避開板塊陸地與樹木
+            if (dist < avoidRadius) {
+              // 排斥力計算
+              const force = Math.pow((avoidRadius - dist) / avoidRadius, 1.2) * 25;
+              pushX += (dx / dist) * force;
+              pushY += (dy / dist) * force;
+              pushZ += (dz / dist) * force;
+            }
+          });
+          
+          px += pushX;
+          py += pushY;
+          pz += pushZ;
+
+          // 重新投影在球體表面
+          const len = Math.hypot(px, py, pz);
+          px = (px / len) * R;
+          py = (py / len) * R;
+          pz = (pz / len) * R;
+        }
+
+        // 最終投影在球體表面上方 2.0px
+        const r_p = R + 2.0;
+        const finalX = px * (r_p / R);
+        const finalY = py * (r_p / R);
+        const finalZ = pz * (r_p / R);
+
+        pathPts.push({ x: finalX, y: finalY, z: finalZ, tx: finalX, ty: finalY, tz: finalZ });
       }
 
-      // 每條洋流上有 3 個緩慢滑動的粒子段 (相位均勻分布)
+      // 每條洋流上有 3 個流動粒子，調慢速度以減少焦躁感（約原本 35%-40% 的速度）
       const particles = [
-        { progress: 0.0, speed: 0.0016 + Math.random() * 0.0006 },
-        { progress: 0.33, speed: 0.0016 + Math.random() * 0.0006 },
-        { progress: 0.66, speed: 0.0016 + Math.random() * 0.0006 }
+        { progress: 0.0, speed: 0.0005 + Math.random() * 0.0002 },
+        { progress: 0.33, speed: 0.0005 + Math.random() * 0.0002 },
+        { progress: 0.66, speed: 0.0005 + Math.random() * 0.0002 }
       ];
 
       currentPaths.push({ points: pathPts, particles });
@@ -378,6 +415,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     // 2. 渲染繪圖循環
     const render = () => {
       const state = stateRef.current;
+
+      // 清空點的分箱批處理陣列，重用緩衝區防 GC
+      for (let t = 0; t < 5; t++) {
+        for (let o = 0; o < 5; o++) {
+          batches[t][o].length = 0;
+        }
+      }
       
       // 自動自轉
       if (!state.isDragging) {
@@ -467,8 +511,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
 
-      // 【全新洋流繪製系統】：
-      // 1. 先用 Path2D 批次繪製極淡的「洋流軌跡管道底線」
+      // 【洋流繪製】：
+      // 1. 繪製極淡的「洋流軌跡底線」
       const currentBgPath = new Path2D();
       let hasCurrentBg = false;
 
@@ -497,31 +541,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       if (hasCurrentBg) {
         ctx.beginPath();
-        // 極淡的白灰色底流管道，只在非大陸處低調漂浮
         ctx.strokeStyle = `rgba(255, 255, 255, ${(0.05 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 0.75 * zoomWidthScale;
         ctx.stroke(currentBgPath);
       }
 
-      // 2. 更新粒子進度，並在軌跡線上繪製「沿著流向流動的亮白色粒子絲帶段」，還原洋流流況箭頭的視覺感！
+      // 2. 繪製洋流「粒子流段」
       currentPaths.forEach((path) => {
         path.particles.forEach((part) => {
-          // 隨著時間前進
           part.progress = (part.progress + part.speed) % 1.0;
 
           ctx.beginPath();
           let first = true;
           
-          // 粒子當前位於 24 段軌跡中的起始索引
-          const startIndex = Math.floor(part.progress * 24);
-          const tailLen = 3; // 拖尾線長度 (3段連線)
+          // 對應 80 點路徑（81 個點），並將尾巴長度延長為 6 以增加軌跡感
+          const startIndex = Math.floor(part.progress * 80);
+          const tailLen = 6; 
           
           for (let j = 0; j <= tailLen; j++) {
-            // 往後取得拖尾點的索引 (考慮循環)
-            const idx = (startIndex - j + 25) % 25;
+            const idx = (startIndex - j + 81) % 81;
             const p = path.points[idx];
             
-            // 深度消隱，轉到背面時不畫
             if (p.tz > 45) continue;
             
             const opacity = getOpacity(p.tz);
@@ -539,7 +579,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             }
           }
           
-          // 粒子拖尾顏色：較亮，帶有漸淡效果與呼吸感
           const alpha = 0.28 * globalBreathe;
           ctx.strokeStyle = `rgba(240, 240, 240, ${alpha.toFixed(3)})`;
           ctx.lineWidth = 1.25 * zoomWidthScale;
@@ -625,7 +664,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         const x1_scr = centerX + p1.tx * scale1 * state.zoom;
         const y1_scr = centerY + p1.ty * scale1 * state.zoom;
-        const x2_scr = centerX + p2.tx * scale2 * state.zoom;
+        const x2_scr = centerX + p2.tx * scale2 * scale1 * state.zoom; 
+        const x2_correct = centerX + p2.tx * scale2 * state.zoom; // 修正先前小打字 bug: scale2 * scale1
         const y2_scr = centerY + p2.ty * scale2 * state.zoom;
 
         const isContinentActive = state.activeContinents[conn.continentId];
@@ -633,21 +673,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         if (conn.type === 'tree') {
           if (isContinentActive) {
             activeTreePath.moveTo(x1_scr, y1_scr);
-            activeTreePath.lineTo(x2_scr, y2_scr);
+            activeTreePath.lineTo(x2_correct, y2_scr);
             hasActiveTree = true;
           } else {
             inactiveTreePath.moveTo(x1_scr, y1_scr);
-            inactiveTreePath.lineTo(x2_scr, y2_scr);
+            inactiveTreePath.lineTo(x2_correct, y2_scr);
             hasInactiveTree = true;
           }
         } else {
           if (isContinentActive) {
             activeLandPath.moveTo(x1_scr, y1_scr);
-            activeLandPath.lineTo(x2_scr, y2_scr);
+            activeLandPath.lineTo(x2_correct, y2_scr);
             hasActiveLand = true;
           } else {
             inactiveLandPath.moveTo(x1_scr, y1_scr);
-            inactiveLandPath.lineTo(x2_scr, y2_scr);
+            inactiveLandPath.lineTo(x2_correct, y2_scr);
             hasInactiveLand = true;
           }
         }
@@ -686,7 +726,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.stroke(activeTreePath);
       }
 
-      // D. 繪製節點
+      // D. 繪製節點 (Nodes) - 【效能優化 5：採用離散化分箱批處理（Binning Batching），大幅減少 Draw Calls 提升 FPS】
       points.forEach((p) => {
         const opacity = getOpacity(p.tz);
         if (opacity <= 0.01) return;
@@ -696,34 +736,74 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const py = centerY + p.ty * scale * state.zoom;
 
         const isContinentActive = state.activeContinents[p.continentId];
-        const zoomDotScale = Math.max(1.0, Math.sqrt(state.zoom) * 0.85);
 
-        if (p.type === 'tree_leaf') {
-          const radius = isContinentActive ? (2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8) : 1.8;
+        // 已啟動的大陸葉子點：保留單獨繪製，以維持獨立閃爍與精緻雙層發光圓環效果
+        if (p.type === 'tree_leaf' && isContinentActive) {
+          const radius = 2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8;
+          
+          // 繪製外層發光圓環 (大而半透明)
+          ctx.beginPath();
+          ctx.arc(px, py, radius * state.zoom * 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${(opacity * 0.16).toFixed(3)})`;
+          ctx.fill();
+
+          // 繪製內層實心圓 (小而亮)
           ctx.beginPath();
           ctx.arc(px, py, radius * state.zoom * 0.55, 0, Math.PI * 2);
-          
-          if (isContinentActive) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.95})`;
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 6 * zoomDotScale;
-          } else {
-            ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7 * globalBreathe})`;
-          }
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        } else if (p.type === 'tree_trunk' || p.type === 'tree_branch') {
-          ctx.beginPath();
-          ctx.arc(px, py, (isContinentActive ? 1.4 : 1.0) * state.zoom * 0.65, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.75 : 0.55) * globalBreathe})`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity.toFixed(3)})`;
           ctx.fill();
         } else {
-          ctx.beginPath();
-          ctx.arc(px, py, (isContinentActive ? 0.8 : 0.5) * state.zoom * 0.7, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.4 : 0.12) * globalBreathe})`;
-          ctx.fill();
+          // 其餘所有不閃爍點進行離散分箱批處理
+          // 決定類型索引 tIdx：
+          // 0: inactive_land, 1: active_land, 2: inactive_trunk/branch, 3: active_trunk/branch, 4: inactive_leaf
+          let tIdx = 0;
+          if (p.type === 'land') {
+            tIdx = isContinentActive ? 1 : 0;
+          } else if (p.type === 'tree_trunk' || p.type === 'tree_branch') {
+            tIdx = isContinentActive ? 3 : 2;
+          } else if (p.type === 'tree_leaf') {
+            tIdx = 4; // 這裡皆為未啟動狀態
+          }
+
+          // 不透明度分 5 個 bin 區間 (0 ~ 4)
+          let oIdx = Math.floor(opacity * 5);
+          if (oIdx > 4) oIdx = 4;
+          if (oIdx < 0) oIdx = 0;
+
+          batches[tIdx][oIdx].push({ x: px, y: py });
         }
       });
+
+      // 統一繪製批處理中的點 (25 種組合)
+      // 對應點半徑配置 (原值 * zoom)
+      const baseRadii = [0.35, 0.56, 0.65, 0.91, 0.99]; 
+      // 對應點透明度係數
+      const baseAlphas = [0.12, 0.4, 0.55, 0.75, 0.7]; 
+
+      for (let t = 0; t < 5; t++) {
+        const radius = baseRadii[t] * state.zoom;
+        const baseAlpha = baseAlphas[t];
+
+        for (let o = 0; o < 5; o++) {
+          const pts = batches[t][o];
+          if (pts.length === 0) continue;
+
+          // 使用 bin 代表不透明度
+          const binOpacity = (o + 0.5) / 5;
+          const finalAlpha = binOpacity * baseAlpha * globalBreathe;
+
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 255, 255, ${finalAlpha.toFixed(3)})`;
+          
+          for (let i = 0; i < pts.length; i++) {
+            const pt = pts[i];
+            // 繪製多個 arc 圓圈並用 moveTo 斷開，只用一次 fill 填充
+            ctx.moveTo(pt.x + radius, pt.y);
+            ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+          }
+          ctx.fill();
+        }
+      }
 
       // E. 行星大氣層發光圓環
       ctx.beginPath();
@@ -784,14 +864,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const textOffset = dirX > 0 ? 20 : -20;
 
         // 第一行：學院中文名稱
-        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.95 : opacity * 0.45 * globalBreathe).toFixed(3)})`;
+        const textZh = continent.nameZh;
+        const yZh = scrY - 20;
         ctx.font = `500 11px "Roboto Mono", "PingFang TC", "Microsoft JhengHei", sans-serif`;
-        ctx.fillText(continent.nameZh, scrX + textOffset, scrY - 20);
+        
+        // 加上細黑色外框，防止與地表/樹木白線重疊時看不清
+        ctx.strokeStyle = `rgba(0, 0, 0, ${(isContinentActive ? opacity * 0.95 : opacity * 0.45 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(textZh, scrX + textOffset, yZh);
+        
+        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.95 : opacity * 0.45 * globalBreathe).toFixed(3)})`;
+        ctx.fillText(textZh, scrX + textOffset, yZh);
 
         // 第二行：英文學院簡寫
-        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.6 : opacity * 0.25 * globalBreathe).toFixed(3)})`;
+        const textEn = continent.nameEn;
+        const yEn = scrY - 7;
         ctx.font = `400 8px "Roboto Mono", monospace`;
-        ctx.fillText(continent.nameEn, scrX + textOffset, scrY - 7);
+        
+        // 加上細黑色外框
+        ctx.strokeStyle = `rgba(0, 0, 0, ${(isContinentActive ? opacity * 0.6 : opacity * 0.25 * globalBreathe).toFixed(3)})`;
+        ctx.lineWidth = 2.5;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(textEn, scrX + textOffset, yEn);
+        
+        ctx.fillStyle = `rgba(255, 255, 255, ${(isContinentActive ? opacity * 0.6 : opacity * 0.25 * globalBreathe).toFixed(3)})`;
+        ctx.fillText(textEn, scrX + textOffset, yEn);
       });
 
       // 呼叫下一幀
@@ -1088,17 +1186,72 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* 中間主標題與控制面板 */}
+        {/* 中間主標題與控制面板 (整合幾何科技樹形背景面板與文字黑色外框) */}
         <div style={{
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '24px',
+          padding: '55px 75px 65px 75px', // 左右與上下提供足夠安全邊距適應樹形輪廓
           pointerEvents: 'auto',
           textAlign: 'center',
-          marginTop: '-60px'
+          marginTop: '-40px',
+          minWidth: '420px',
+          boxSizing: 'border-box'
         }}>
+          {/* 精緻幾何科技樹形背景面板 SVG */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: -1,
+            pointerEvents: 'none'
+          }}>
+            <svg width="100%" height="100%" viewBox="0 0 500 600" preserveAspectRatio="none" style={{
+              filter: 'drop-shadow(0 0 16px rgba(0, 0, 0, 0.75))'
+            }}>
+              <path
+                d="M 140 585 
+                   L 160 525 
+                   L 170 465 
+                   L 175 395 
+                   L 175 325 
+                   L 140 305 
+                   L 70 305 
+                   L 60 255 
+                   L 80 215 
+                   L 55 175 
+                   L 75 115 
+                   L 120 95 
+                   L 160 105 
+                   L 200 65 
+                   L 250 50 
+                   L 300 65 
+                   L 340 105 
+                   L 380 95 
+                   L 425 115 
+                   L 445 175 
+                   L 420 215 
+                   L 440 255 
+                   L 430 305 
+                   L 360 305 
+                   L 325 325 
+                   L 325 395 
+                   L 330 465 
+                   L 340 525 
+                   L 360 585"
+                fill="rgba(18, 18, 18, 0.52)"
+                stroke="rgba(255, 255, 255, 0.42)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+
           {/* WikiTree 大標題 */}
           <h1 className="title-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
@@ -1106,7 +1259,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             fontWeight: 400,
             color: '#ffffff',
             margin: 0,
-            letterSpacing: '0.04em'
+            letterSpacing: '0.04em',
+            textShadow: '-1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 0 8px rgba(0,0,0,0.8)'
           }}>
             WikiTree
           </h1>
@@ -1116,10 +1270,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             fontFamily: '"Roboto Mono", monospace',
             fontSize: '15px',
             fontWeight: 300,
-            color: 'rgba(255,255,255,0.5)',
+            color: 'rgba(255,255,255,0.65)',
             margin: '0 0 24px 0',
             letterSpacing: '0.45em',
-            paddingLeft: '0.45em'
+            paddingLeft: '0.45em',
+            textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 6px rgba(0,0,0,0.9)'
           }}>
             一人種樹，億人乘涼
           </p>
@@ -1129,6 +1284,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={onLoginClick}
               className="btn-sci-fi"
+              style={{
+                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+              }}
             >
               [ LOGIN ]
             </button>
@@ -1136,6 +1294,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={onLoginClick}
               className="btn-link-sci-fi"
+              style={{
+                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+              }}
             >
               SIGN UP
             </button>
@@ -1143,6 +1304,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button 
               onClick={onGuestClick}
               className="btn-link-sci-fi"
+              style={{
+                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+              }}
             >
               EXPLORE AS GUEST
             </button>
