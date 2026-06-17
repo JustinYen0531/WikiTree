@@ -35,7 +35,7 @@ interface SidebarProps {
   onDelete: (node: FileNode) => void;
   activeTab: 'files' | 'history' | 'publish' | 'antigravity';
   setActiveTab: (tab: 'files' | 'history' | 'publish' | 'antigravity') => void;
-  user?: { name: string; email: string; picture: string; token: string; isMock?: boolean } | null;
+  user?: { username: string; nickname: string; college: string; department: string; grade: string } | null;
   onLogout?: () => void;
   onTriggerLogin?: () => void;
 }
@@ -70,20 +70,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleLoginClick = () => {
-    const savedClientId = localStorage.getItem('antigravity_google_client_id');
-    if (savedClientId) {
-      if (onTriggerLogin) onTriggerLogin();
-    } else {
-      const width = 515;
-      const height = 580;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-      window.open(
-        '/google-login-mock.html',
-        'GoogleLoginPopup',
-        `width=${width},height=${height},top=${top},left=${left},scrollbars=no,resizable=no`
-      );
-    }
+    if (onTriggerLogin) onTriggerLogin();
+  };
+
+  const getAvatarGradient = (name: string) => {
+    const colors = [
+      'linear-gradient(135deg, #FF5722 0%, #FF9800 100%)',
+      'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)',
+      'linear-gradient(135deg, #00BCD4 0%, #009688 100%)',
+      'linear-gradient(135deg, #3F51B5 0%, #2196F3 100%)',
+      'linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)',
+      'linear-gradient(135deg, #b31b1b 0%, #1c3b57 100%)'
+    ];
+    const index = Math.abs((name || 'A').charCodeAt(0) % colors.length);
+    return colors[index];
   };
 
   const toggleExpand = (path: string, e: React.MouseEvent) => {
@@ -407,71 +407,80 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Popover Header / Brand Strip */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldCheck size={14} style={{ color: user.isMock ? 'var(--warning)' : 'var(--success)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: user.isMock ? 'var(--warning)' : 'var(--success)' }}>
-                  {user.isMock ? '模擬測試帳戶' : 'Google 驗證帳戶'}
+                <ShieldCheck size={14} style={{ color: 'var(--success)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success)' }}>
+                  政大本地驗證帳戶
                 </span>
               </div>
             </div>
 
             {/* Profile Detail */}
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              {user.picture ? (
-                <img 
-                  src={user.picture} 
-                  alt="avatar" 
-                  style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} 
-                />
-              ) : (
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <div style={{ 
+                width: '42px', 
+                height: '42px', 
+                borderRadius: '50%', 
+                background: getAvatarGradient(user.nickname), 
+                color: '#fff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontSize: '18px', 
+                fontWeight: 'bold',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                {user.nickname.charAt(0).toUpperCase()}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.name}
+                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.nickname}
                 </span>
                 <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.email}
+                  @{user.username}
                 </span>
               </div>
             </div>
 
-            {/* Quick Actions (Developer Copy Token) */}
-            {user.token && (
-              <button
-                onClick={(e) => handleCopyToken(user.token, e)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  width: '100%',
-                  padding: '6px 10px',
-                  fontSize: '11.5px',
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
-              >
-                {copiedToken ? (
-                  <>
-                    <Check size={12} style={{ color: 'var(--success)' }} />
-                    已複製金鑰至剪貼簿
-                  </>
-                ) : (
-                  <>
-                    <Copy size={12} />
-                    複製 Google JWT 金鑰
-                  </>
-                )}
-              </button>
-            )}
+            {/* Detailed NCCU Info Table */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '6px', 
+              fontSize: '12px', 
+              borderTop: '1px solid var(--border-color)', 
+              borderBottom: '1px solid var(--border-color)', 
+              padding: '10px 0', 
+              color: 'var(--text-secondary)' 
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>帳號學號：</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{user.username}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>所屬學院：</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{user.college}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
+                <span>主修科系：</span>
+                <strong 
+                  style={{ 
+                    color: 'var(--text-primary)', 
+                    textAlign: 'right', 
+                    maxWidth: '70%', 
+                    textOverflow: 'ellipsis', 
+                    overflow: 'hidden', 
+                    whiteSpace: 'nowrap' 
+                  }} 
+                  title={user.department}
+                >
+                  {user.department}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>年級學制：</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{user.grade}</strong>
+              </div>
+            </div>
 
             {/* Logout Trigger */}
             <button
@@ -499,7 +508,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             >
               <LogOut size={13} />
-              登出 Google 帳戶
+              登出政大帳戶
             </button>
           </div>
         )}
@@ -524,7 +533,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1 }}>
               <div 
-                className={user.isMock ? 'avatar-glow-mock' : 'avatar-glow-real'}
+                className="avatar-glow-real"
                 style={{ 
                   borderRadius: '50%', 
                   padding: '2px', 
@@ -534,24 +543,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   flexShrink: 0 
                 }}
               >
-                {user.picture ? (
-                  <img 
-                    src={user.picture} 
-                    alt="avatar" 
-                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
-                  />
-                ) : (
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div style={{ 
+                  width: '28px', 
+                  height: '28px', 
+                  borderRadius: '50%', 
+                  background: getAvatarGradient(user.nickname), 
+                  color: '#fff', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  fontSize: '12px', 
+                  fontWeight: 'bold' 
+                }}>
+                  {user.nickname.charAt(0).toUpperCase()}
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.name}
+                  {user.nickname}
                 </span>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.email}
+                  {user.department} {user.grade.split(' ')[1] || user.grade}
                 </span>
               </div>
             </div>
@@ -573,7 +585,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               style={{ width: '100%', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderRadius: '8px' }}
             >
               <LogIn size={14} />
-              登入 Google 帳戶
+              登入政大帳戶
             </button>
           </div>
         )}

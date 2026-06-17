@@ -50,13 +50,10 @@ function App() {
   const [cliConnected, setCliConnected] = useState(false);
   const [cliPathInput, setCliPathInput] = useState('');
 
-  // Google Sign-In States
+  // Local Sign-In States
   const [user, setUser] = useState<any>(() => {
     const saved = localStorage.getItem('antigravity_user');
     return saved ? JSON.parse(saved) : null;
-  });
-  const [googleClientId, setGoogleClientId] = useState<string>(() => {
-    return localStorage.getItem('antigravity_google_client_id') || '';
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -74,61 +71,17 @@ function App() {
     }
   }, [toast]);
 
-  // Helper to decode Google JWT token client-side
-  const decodeGoogleJwt = (token: string) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      console.error('Failed to decode JWT', e);
-      return null;
-    }
-  };
-
-  const handleSaveClientId = (id: string) => {
-    setGoogleClientId(id);
-    localStorage.setItem('antigravity_google_client_id', id);
-    showToast('💾 Client ID 設定已儲存', 'success');
-  };
-
   const handleLoginSuccess = (loggedUser: any) => {
     setUser(loggedUser);
     localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
-    showToast(`🎉 歡迎回來，${loggedUser.name}！`, 'success');
+    showToast(`🎉 歡迎回來，${loggedUser.nickname}！`, 'success');
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('antigravity_user');
-    if ((window as any).google?.accounts?.id) {
-      (window as any).google.accounts.id.disableAutoSelect();
-    }
-    showToast('🔒 已安全登出 Google 帳戶', 'info');
+    showToast('🔒 已安全登出政大 Hub 帳戶', 'info');
   };
-
-  // Listen for login messages from Google Mock Popup window
-  useEffect(() => {
-    const handleMockLoginMessage = (event: MessageEvent) => {
-      // Validate origin to match current app's origin
-      if (event.origin !== window.location.origin) return;
-
-      if (event.data?.type === 'GOOGLE_MOCK_LOGIN_SUCCESS' && event.data.user) {
-        handleLoginSuccess(event.data.user);
-      } else if (event.data?.type === 'OPEN_CLIENT_ID_CONFIG') {
-        setShowLoginModal(true);
-      }
-    };
-
-    window.addEventListener('message', handleMockLoginMessage);
-    return () => window.removeEventListener('message', handleMockLoginMessage);
-  }, [user]);
 
   // Check CLI status on load and periodically
   const checkCliStatus = async () => {
@@ -802,13 +755,11 @@ function App() {
         />
       )}
 
-      {/* Google Sign-In Modal */}
+      {/* NCCU Local Account Modal */}
       {showLoginModal && (
         <LoginModal 
           onClose={() => setShowLoginModal(false)}
           onLoginSuccess={handleLoginSuccess}
-          clientId={googleClientId}
-          onSaveClientId={handleSaveClientId}
         />
       )}
 
