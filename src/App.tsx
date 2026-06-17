@@ -44,6 +44,7 @@ import { LoginModal } from './components/LoginModal';
 import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
+import { CustomCursor } from './components/CustomCursor';
 
 function App() {
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -587,6 +588,7 @@ function App() {
   if (!user && !isGuest) {
     return (
       <>
+        <CustomCursor />
         <LandingPage 
           onLoginClick={() => setShowLoginModal(true)} 
           onGuestClick={() => setIsGuest(true)} 
@@ -627,6 +629,7 @@ function App() {
 
   return (
     <div className="app-container">
+      <CustomCursor />
       {/* Sidebar - file explorer & search */}
       <Sidebar 
         rootHandle={rootHandle}
