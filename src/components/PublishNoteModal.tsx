@@ -84,8 +84,8 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0,0,0,0.78)',
+        backdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -98,8 +98,8 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
         style={{
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          boxShadow: 'var(--shadow-lg)',
+          borderRadius: '4px',
+          boxShadow: 'none',
           width: '100%',
           maxWidth: '480px',
           overflow: 'hidden',
@@ -118,7 +118,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Globe size={18} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-primary)' }}>
-              發布筆記到社群
+              BROADCAST LEAF
             </span>
           </div>
           <button className="theme-toggle-btn" onClick={onClose}>
@@ -136,13 +136,13 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                 alignItems: 'center',
                 gap: '12px',
                 padding: '24px 0',
-                color: 'var(--success)',
+                color: 'var(--text-primary)',
               }}
             >
               <Check size={40} />
-              <span style={{ fontSize: '15px', fontWeight: '600' }}>發布成功！</span>
+              <span style={{ fontSize: '15px', fontWeight: '600' }}>SIGNAL SENT</span>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                其他政大同學現在可以在「線上探索 → 社群筆記」看到你的筆記。
+                其他探索者現在可以在共享星域看見這片知識葉片。
               </span>
             </div>
           ) : (
@@ -154,14 +154,14 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     alignItems: 'flex-start',
                     gap: '8px',
                     padding: '10px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '3px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.055)',
+                    border: '1px solid var(--border-color)',
                     marginBottom: '16px',
                   }}
                 >
-                  <AlertCircle size={15} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: '1px' }} />
-                  <span style={{ fontSize: '13px', color: 'var(--danger)', lineHeight: '1.5' }}>
+                  <AlertCircle size={15} style={{ color: 'rgba(255,255,255,0.72)', flexShrink: 0, marginTop: '1px' }} />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                     {!isSupabaseConfigured()
                       ? '此環境未連線至 Supabase，無法發布。'
                       : '請使用政大雲端帳戶（@g.nccu.edu.tw）登入後才能發布筆記。'}
@@ -173,14 +173,14 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                 <label
                   style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}
                 >
-                  筆記標題
+                  LEAF TITLE
                 </label>
                 <input
                   type="text"
                   className="form-input"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="輸入要顯示給大家看的標題"
+                  placeholder="輸入要顯示給探索者看的標題"
                   style={{ width: '100%' }}
                   disabled={!canPublish}
                 />
@@ -190,7 +190,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                 <label
                   style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}
                 >
-                  筆記預覽（前 200 字）
+                  LEAF PREVIEW / FIRST 200 GLYPHS
                 </label>
                 <div
                   style={{
@@ -214,7 +214,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
 
               {user && (
                 <div style={{ marginBottom: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  將以 <strong style={{ color: 'var(--text-primary)' }}>{user.nickname}</strong>（{user.username}）的名義發布。
+                  將以 <strong style={{ color: 'var(--text-primary)' }}>{user.nickname}</strong>（{user.username}）的訊號署名發送。
                 </div>
               )}
 
@@ -225,20 +225,20 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     alignItems: 'flex-start',
                     gap: '8px',
                     padding: '10px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '3px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.055)',
+                    border: '1px solid var(--border-color)',
                     marginBottom: '16px',
                   }}
                 >
-                  <AlertCircle size={15} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: '1px' }} />
-                  <span style={{ fontSize: '13px', color: 'var(--danger)' }}>{error}</span>
+                  <AlertCircle size={15} style={{ color: 'rgba(255,255,255,0.72)', flexShrink: 0, marginTop: '1px' }} />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{error}</span>
                 </div>
               )}
 
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button className="btn" onClick={onClose} disabled={isPublishing}>
-                  取消
+                  CANCEL
                 </button>
                 <button
                   className="btn btn-primary"
@@ -248,12 +248,12 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                   {isPublishing ? (
                     <>
                       <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                      發布中...
+                      SENDING...
                     </>
                   ) : (
                     <>
                       <Globe size={14} />
-                      發布筆記
+                      SEND SIGNAL
                     </>
                   )}
                 </button>

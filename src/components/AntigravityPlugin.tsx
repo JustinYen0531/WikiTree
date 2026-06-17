@@ -108,7 +108,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         body: JSON.stringify({ initialPrompt: opts.initialPrompt || '' }),
       });
       if (response.ok) {
-        flash({ kind: 'success', text: '已開啟 AI 對話視窗！請看新跳出來的終端機視窗，直接在裡面打字就能跟 AI 聊。' }, 9000);
+        flash({ kind: 'success', text: 'SIGNAL CHANNEL OPENED. 新的 AI 對話視窗已啟動。' }, 9000);
       } else {
         const data = await response.json().catch(() => ({}));
         flash({ kind: 'error', text: data.error || '開啟終端機失敗，請再試一次。' });
@@ -142,9 +142,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   ];
 
   const statusColor =
-    status === 'connected' ? 'var(--success)' : status === 'testing' ? 'var(--warning)' : 'var(--danger)';
+    status === 'connected' ? 'rgba(255,255,255,0.88)' : status === 'testing' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.24)';
   const statusLabel =
-    status === 'connected' ? 'AI 已連線' : status === 'testing' ? '連線中…' : 'AI 未連線';
+    status === 'connected' ? 'SIGNAL ONLINE' : status === 'testing' ? 'SCANNING SIGNAL' : 'SIGNAL OFFLINE';
   const busy = launching !== null;
 
   return (
@@ -169,7 +169,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               style={{ color: 'var(--text-secondary)', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}
               title={workspace || cliUrl}
             >
-              {status === 'connected' ? workspace || cliUrl : '請先執行 npm run dev'}
+              {status === 'connected' ? workspace || cliUrl : 'RUN npm run dev TO LINK'}
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           style={{ padding: '12px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-sidebar)', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}
         >
           <div className="form-group">
-            <label className="form-label">AI 服務位置</label>
+            <label className="form-label">SIGNAL ENDPOINT</label>
             <input
               type="text"
               className="form-input"
@@ -201,10 +201,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           </div>
           <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
             <button className="btn btn-primary" onClick={() => { testConnection(cliUrl); setShowSettings(false); }} style={{ flex: 1, padding: '4px' }}>
-              連線
+              LINK
             </button>
             <button className="btn" onClick={() => setShowSettings(false)} style={{ padding: '4px' }}>
-              關閉
+              CLOSE
             </button>
           </div>
         </div>
@@ -213,8 +213,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       {/* Body */}
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.5 }}>
-          <Sparkles size={15} style={{ flexShrink: 0, marginTop: '1px', color: 'var(--success)' }} />
-          <span>點下面的按鈕，就會自動跳出一個 AI 對話視窗（終端機），你直接在那個視窗裡用中文打字，就能跟 AI 聊天。</span>
+          <Sparkles size={15} style={{ flexShrink: 0, marginTop: '1px', color: 'rgba(255,255,255,0.62)' }} />
+          <span>開啟一條 AI 訊號通道，讓目前知識葉片可以被整理、翻譯、摘要或延伸。</span>
         </div>
 
         {/* Main launch button */}
@@ -222,22 +222,22 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           className="btn btn-primary"
           onClick={() => openTerminal({ id: 'open' })}
           disabled={busy}
-          style={{ padding: '14px', fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '10px' }}
+          style={{ padding: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '3px' }}
         >
           {launching === 'open' ? <Loader2 size={18} className="spin" /> : <MessageSquare size={18} />}
-          開啟 AI 對話視窗
+          OPEN SIGNAL CHANNEL
         </button>
 
         {/* Type a message -> opens agy in a terminal with that message */}
         <form onSubmit={handleSendMessage} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-            或，先打好訊息再開（會帶進對話視窗）
+            SEED MESSAGE
           </label>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <input
               type="text"
               className="form-input"
-              placeholder="例如：幫我解釋什麼是遞迴…"
+              placeholder="例如：幫我解釋什麼是遞迴..."
               value={messageInput}
               onChange={(event) => setMessageInput(event.target.value)}
               style={{ flex: 1, padding: '8px 12px', height: '36px', fontSize: '13px' }}
@@ -257,11 +257,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         {/* Note-aware quick starts */}
         <div>
           <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-secondary)' }}>
-            針對目前筆記，一鍵開始
+            CURRENT LEAF ACTIONS
           </div>
           {!currentNotePath && (
             <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              （先開啟一則筆記，下面的按鈕就會幫你把問題準備好）
+              （先開啟一片知識葉片，下面的訊號才會啟用）
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -277,7 +277,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   style={{
                     textAlign: 'left',
                     border: '1px solid var(--border-color)',
-                    borderRadius: '10px',
+                    borderRadius: '3px',
                     backgroundColor: 'var(--bg-secondary)',
                     padding: '10px',
                     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -300,12 +300,12 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         {notice && (
           <div
             style={{
-              border: `1px solid ${notice.kind === 'error' ? 'var(--danger)' : 'var(--success)'}`,
-              borderRadius: '8px',
+              border: '1px solid var(--border-color)',
+              borderRadius: '3px',
               padding: '10px 12px',
               fontSize: '12px',
               lineHeight: 1.5,
-              color: notice.kind === 'error' ? 'var(--danger)' : 'var(--text-primary)',
+              color: notice.kind === 'error' ? 'rgba(255,255,255,0.78)' : 'var(--text-primary)',
               backgroundColor: 'var(--bg-secondary)',
             }}
           >
@@ -315,9 +315,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
         {/* How-to */}
         <div style={{ marginTop: 'auto', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-          <div style={{ fontWeight: 700, marginBottom: '4px' }}>小提醒</div>
-          • 第一次用 agy 會請你用 Google 帳號登入一次。<br />
-          • 在對話視窗裡直接打中文問問題，按 Enter 送出。<br />
+          <div style={{ fontWeight: 700, marginBottom: '4px' }}>SIGNAL NOTE</div>
+          • 第一次用 agy 會請你登入一次。<br />
+          • 在訊號視窗裡直接輸入問題，按 Enter 送出。<br />
           • 想結束時，在那個視窗按 Ctrl + C，或直接關掉視窗。
         </div>
       </div>
@@ -327,7 +327,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           style={{ padding: '8px 12px', borderTop: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}
           title={currentNoteContent ? currentNotePath : undefined}
         >
-          目前筆記：{currentNotePath}
+          CURRENT LEAF: {currentNotePath}
         </div>
       )}
     </div>

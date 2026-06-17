@@ -472,8 +472,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(10, 10, 10, 0.65)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.78)',
+        backdropFilter: 'blur(14px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -487,20 +487,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         style={{
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid var(--border-color)',
-          borderRadius: '16px',
+          borderRadius: '4px',
           width: '100%',
           maxWidth: '460px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset',
+          boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* NCCU Theme Colored Header Bar */}
+        {/* Monochrome signal header bar */}
         <div style={{
-          height: '4px',
-          background: 'linear-gradient(90deg, #b31b1b 0%, #1c3b57 50%, #b31b1b 100%)',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.62), transparent)',
           width: '100%'
         }} />
 
@@ -509,7 +509,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ 
               backgroundColor: 'var(--accent-bg)', 
-              borderRadius: '8px', 
+              borderRadius: '50%', 
               padding: '6px', 
               display: 'flex', 
               alignItems: 'center', 
@@ -517,8 +517,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             }}>
               <Shield size={18} style={{ color: 'var(--accent)' }} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
-              {activeTab === 'forgot' ? '找回密碼' : '政大 Hub 本地帳戶'}
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '0.08em' }}>
+              {activeTab === 'forgot' ? 'RECOVER ACCESS' : 'WIKITREE ACCESS'}
             </h3>
           </div>
           <button 
@@ -529,7 +529,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               color: 'var(--text-secondary)', 
               cursor: 'pointer',
               padding: '6px',
-              borderRadius: '50%',
+              borderRadius: '3px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -556,7 +556,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               padding: '12px 0',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'login' ? '2px solid var(--accent)' : '2px solid transparent',
+              borderBottom: activeTab === 'login' ? '1px solid var(--accent)' : '1px solid transparent',
               color: activeTab === 'login' ? 'var(--text-primary)' : 'var(--text-secondary)',
               fontWeight: activeTab === 'login' ? '600' : '400',
               fontSize: '13.5px',
@@ -569,7 +569,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             }}
           >
             <LogIn size={14} />
-            登入帳戶
+            ACCESS
           </button>
           <button
             onClick={() => setActiveTab('register')}
@@ -578,7 +578,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               padding: '12px 0',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === 'register' ? '2px solid var(--accent)' : '2px solid transparent',
+              borderBottom: activeTab === 'register' ? '1px solid var(--accent)' : '1px solid transparent',
               color: activeTab === 'register' ? 'var(--text-primary)' : 'var(--text-secondary)',
               fontWeight: activeTab === 'register' ? '600' : '400',
               fontSize: '13.5px',
@@ -709,7 +709,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   padding: '12px', 
                   fontSize: '14px', 
                   fontWeight: '600',
-                  borderRadius: '10px',
+                  borderRadius: '3px',
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -719,7 +719,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 }}
               >
                 <LogIn size={15} />
-                {isLoading ? '驗證登入中...' : '登入帳戶'}
+                {isLoading ? 'VERIFYING...' : 'ACCESS'}
               </button>
             </form>
           )}
@@ -1084,16 +1084,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {forgotStep === 2 && (
                 <form onSubmit={handleForgotStep2} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{ 
-                    backgroundColor: 'rgba(35, 131, 226, 0.04)', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.055)', 
                     border: '1px solid var(--border-color)', 
-                    borderRadius: '8px', 
+                    borderRadius: '3px', 
                     padding: '12px 16px' 
                   }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <HelpCircle size={12} />
                       您的密碼提示問題：
                     </div>
-                    <div style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--accent)' }}>
+                    <div style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--text-primary)' }}>
                       {forgotQuestion}
                     </div>
                   </div>
@@ -1153,17 +1153,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {forgotStep === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center', padding: '10px 0' }}>
                   <div style={{
-                    backgroundColor: 'rgba(46, 168, 101, 0.05)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.055)',
                     border: '1px solid var(--success-border)',
-                    borderRadius: '10px',
+                    borderRadius: '3px',
                     padding: '20px 16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '12px'
                   }}>
-                    <span style={{ fontSize: '14px', color: 'var(--success)', fontWeight: 'bold' }}>
-                      🎉 驗證成功！
+                    <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 'bold' }}>
+                      ACCESS VERIFIED
                     </span>
                     <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       您的登入密碼為：
