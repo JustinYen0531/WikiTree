@@ -135,7 +135,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
     // 生成陸地表面點與密集樹木
     continentsData.forEach((continent) => {
-      // 【效能優化】：將表面陸地點降低至 65 個，減少運算量，同時維持視覺細緻度
+      // 陸地表面點 (130-160 個點)
       const numPoints = 60 + Math.floor(Math.random() * 10);
       const landPoints: Point3D[] = [];
 
@@ -181,7 +181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 【極致優化】：每個板塊限制最多 16 個三角形面，以防 CPU 每一影格計算卡頓，並形成更美觀的破碎線面感！
+      // 每個板塊限制最多 16 個三角形面
       let continentTriCount = 0;
       const maxContinentTriangles = 16;
       for (let i = 0; i < landPoints.length && continentTriCount < maxContinentTriangles; i++) {
@@ -321,7 +321,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       }
     });
 
-    // 【洋流優化】：條數降為 18 條，軌跡長度縮減至 4，以大幅提昇性能並保證平滑流動
+    // 洋流初始化：條數 18 條，軌跡長度 4，以大幅提昇性能並保證平滑流動
     const currentLines: CurrentLine[] = [];
     const numCurrents = 18;
     for (let c = 0; c < numCurrents; c++) {
@@ -341,7 +341,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       currentLines.push({ baseLat, lon, offset, trail });
     }
 
-    // 生成背景星塵 (降至 150 個)
+    // 生成背景星塵
     const stars: Point3D[] = [];
     for (let i = 0; i < 150; i++) {
       const theta = (Math.random() - 0.5) * Math.PI;
@@ -430,10 +430,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         return 1.0 - (tz - fadeStart) / (fadeEnd - fadeStart);
       };
 
-      // 【更新與繪製洋流流動線條】：像海水洋流一樣在非學院海洋區域緩慢流動 (優化後無卡頓，能流暢前行)
+      // 【更新與繪製洋流流動線條】：修正投影 Y 軸坐標與 Zoom / CenterY 計算，讓洋流貼合地球表面旋轉與滑動！
       currentLines.forEach((line) => {
-        // 更新當前位置
-        line.lon += 0.0012; // 緩慢自西向東前進
+        // 更新位置
+        line.lon += 0.0012; 
         
         const newLon = line.lon;
         const newLat = line.baseLat + Math.sin(newLon * 4 + line.offset) * 0.05;
@@ -454,8 +454,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const scrPoints: { x: number; y: number; opacity: number }[] = [];
 
         line.trail.forEach((p) => {
+          // 繞 Y 軸旋轉
           let x1 = p.x * cosY - p.z * sinY;
           let z1 = p.x * sinY + p.z * cosY;
+          // 繞 X 軸旋轉
           let y2 = p.y * cosX - z1 * sinX;
           let z2 = p.y * sinX + z1 * cosX;
 
@@ -463,8 +465,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           const opacity = getOpacity(z2);
           const scale = D / (D + z2);
-          const px = centerX + x1 * scale * state.zoom;
-          const py = centerY + y2 * scale * state.zoom;
+          
+          // 【修正投影 Bug】：使用跟地球完全同步的 centerY、旋轉後的 p.ty，以及乘上 state.zoom
+          const px = centerX + p.tx * scale * state.zoom;
+          const py = centerY + p.ty * scale * state.zoom;
           scrPoints.push({ x: px, y: py, opacity });
         });
 
@@ -475,21 +479,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           const avgOpacity = (pStart.opacity + pEnd.opacity) / 2;
           if (avgOpacity < 0.15) continue;
 
-          // 洋流流線為極淡的灰光
           const tailFade = (1.0 - i / (scrPoints.length - 1));
-          const currentAlpha = 0.13 * avgOpacity * tailFade * globalBreathe;
+          // 大幅調亮洋流不透明度 (從 0.13 升至 0.24) 確保灰白流動感清晰可見！
+          const currentAlpha = 0.24 * avgOpacity * tailFade * globalBreathe;
 
           ctx.beginPath();
           ctx.moveTo(pStart.x, pStart.y);
           ctx.lineTo(pEnd.x, pEnd.y);
-          ctx.strokeStyle = `rgba(180, 180, 180, ${currentAlpha.toFixed(3)})`;
-          ctx.lineWidth = 0.8 * Math.max(0.8, Math.sqrt(state.zoom) * 0.7);
+          ctx.strokeStyle = `rgba(200, 200, 200, ${currentAlpha.toFixed(3)})`;
+          ctx.lineWidth = 1.0 * Math.max(0.8, Math.sqrt(state.zoom) * 0.7);
           ctx.stroke();
         }
       });
 
       // 【繪製陸地摺紙皺褶面 (Origami Low-Poly Faces)】：
-      // 利用 Path2D 將三角形面一次性 batch fill 繪製，因為高度有微幅隨機起伏，會產生非常高級的幾何折疊皺褶感！
       const activeFacePath = new Path2D();
       const inactiveFacePath = new Path2D();
       let hasActiveFaces = false;
@@ -501,7 +504,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const p3 = points[tri.p3];
 
         const avgTz = (p1.tz + p2.tz + p3.tz) / 3;
-        if (avgTz > 50) return; // 深度遮擋
+        if (avgTz > 50) return;
 
         const opacity = getOpacity(avgTz);
         if (opacity < 0.15) return;
@@ -541,7 +544,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.fill(activeFacePath);
       }
 
-      // C. 繪製連接線 (優化：使用 Path2D 分組 Batch 繪製，解決單舊呼叫 stroke() 的效能黑洞與白線消失問題)
+      // C. 繪製連接線
       const activeTreePath = new Path2D();
       const inactiveTreePath = new Path2D();
       const activeLandPath = new Path2D();
@@ -556,7 +559,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const p1 = points[conn.p1];
         const p2 = points[conn.p2];
 
-        // 深度消隱：後半球大於 50 則過濾
         const avgTz = (p1.tz + p2.tz) / 2;
         if (avgTz > 50) return;
 
@@ -598,7 +600,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       const zoomWidthScale = Math.max(1.0, Math.sqrt(state.zoom));
 
-      // 1. 繪製未啟動的陸地格線 (微弱底色)
+      // 1. 繪製未啟動的陸地格線
       if (hasInactiveLand) {
         ctx.beginPath();
         ctx.strokeStyle = `rgba(255, 255, 255, ${(0.07 * globalBreathe).toFixed(3)})`;
@@ -606,7 +608,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.stroke(inactiveLandPath);
       }
 
-      // 2. 繪製已啟動的陸地格線 (清晰)
+      // 2. 繪製已啟動的陸地格線
       if (hasActiveLand) {
         ctx.beginPath();
         ctx.strokeStyle = `rgba(255, 255, 255, ${(0.32 * globalBreathe).toFixed(3)})`;
@@ -614,7 +616,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.stroke(activeLandPath);
       }
 
-      // 3. 繪製未啟動的樹木線條 (樹幹與樹枝，大幅調亮到 0.62，線寬 1.15，保證點線面立體感完全顯現！)
+      // 3. 繪製未啟動的樹木線條
       if (hasInactiveTree) {
         ctx.beginPath();
         ctx.strokeStyle = `rgba(255, 255, 255, ${(0.62 * globalBreathe).toFixed(3)})`;
@@ -622,7 +624,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.stroke(inactiveTreePath);
       }
 
-      // 4. 繪製已啟動的樹木線條 (極亮白光)
+      // 4. 繪製已啟動的樹木線條
       if (hasActiveTree) {
         ctx.beginPath();
         const pulse = 0.85 + Math.sin(Date.now() * 0.005) * 0.15;
@@ -631,7 +633,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         ctx.stroke(activeTreePath);
       }
 
-      // D. 繪製節點 (Nodes)
+      // D. 繪製節點
       points.forEach((p) => {
         const opacity = getOpacity(p.tz);
         if (opacity <= 0.01) return;
@@ -644,7 +646,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         const zoomDotScale = Math.max(1.0, Math.sqrt(state.zoom) * 0.85);
 
         if (p.type === 'tree_leaf') {
-          // 樹葉節點
           const radius = isContinentActive ? (2.8 + Math.sin(Date.now() * 0.005 + p.id) * 0.8) : 1.8;
           ctx.beginPath();
           ctx.arc(px, py, radius * state.zoom * 0.55, 0, Math.PI * 2);
@@ -659,13 +660,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           ctx.fill();
           ctx.shadowBlur = 0;
         } else if (p.type === 'tree_trunk' || p.type === 'tree_branch') {
-          // 樹幹/樹枝節點
           ctx.beginPath();
           ctx.arc(px, py, (isContinentActive ? 1.4 : 1.0) * state.zoom * 0.65, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.75 : 0.55) * globalBreathe})`;
           ctx.fill();
         } else {
-          // 普通陸地格點
           ctx.beginPath();
           ctx.arc(px, py, (isContinentActive ? 0.8 : 0.5) * state.zoom * 0.7, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(255, 255, 255, ${opacity * (isContinentActive ? 0.4 : 0.12) * globalBreathe})`;
