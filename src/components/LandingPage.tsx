@@ -1186,39 +1186,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* 中間主標題與控制面板 (整合平滑曲線樹形背景面板與強灰色遮罩) */}
+        {/* 中間主標題與控制面板 (圓潤卡通雲朵樹背景面板與強灰色遮罩) */}
         <div style={{
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '75px 50px 75px 50px', 
+          padding: '70px 25px 80px 25px', 
           pointerEvents: 'auto',
           textAlign: 'center',
-          marginTop: '-40px',
-          width: '100%',
-          maxWidth: '420px', // 限制最大寬度防止扁平拉伸，維持樹木黃金比例
-          minHeight: '530px',
+          marginTop: '-45px',
+          width: '320px', // 寫死寬度為 320px，保證在任何寬螢幕下皆呈修長好看的黃金比例
+          alignSelf: 'center', // 確保在父容器中水平居中，防拉伸
+          backdropFilter: 'blur(10px)', // 套用毛玻璃效果
+          WebkitBackdropFilter: 'blur(10px)',
+          borderRadius: '30px',
           boxSizing: 'border-box'
         }}>
-          {/* 強烈灰色底層遮罩與毛玻璃效果 (完全阻擋後面雜線，增強對比) */}
-          <div style={{
-            position: 'absolute',
-            top: '35px',
-            bottom: '45px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '320px', // 比樹冠稍窄，剛好嵌入樹幹內部，形成視覺一體
-            backgroundColor: 'rgba(10, 10, 10, 0.93)', // 強化灰色遮罩感
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            borderRadius: '24px',
-            zIndex: -2,
-            pointerEvents: 'none'
-          }} />
-
-          {/* 精緻平滑貝氏曲線樹形背景外框 SVG */}
+          {/* 精緻卡通雲朵樹背景外框 SVG (平滑圓潤卡通手繪風格) */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -1229,41 +1215,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             pointerEvents: 'none'
           }}>
             <svg 
-              width="400" 
-              height="550" 
-              viewBox="0 0 400 550" 
+              width="320" 
+              height="480" 
+              viewBox="0 0 320 480" 
               style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)', // 居中定位，確保高寬比例永不變形
-                filter: 'drop-shadow(0 0 12px rgba(0, 0, 0, 0.85))'
+                transform: 'translate(-50%, -50%)', // 居中對齊比例永不變形
+                filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.9))'
               }}
             >
               <path
-                d="M 90 530
-                   Q 125 450, 130 360
-                   Q 130 300, 115 270
-                   C 70 270, 30 230, 30 170
-                   C 30 100, 90 60, 150 75
-                   Q 200 40, 250 75
-                   C 310 60, 370 100, 370 170
-                   C 370 230, 330 270, 285 270
-                   Q 270 300, 270 360
-                   Q 275 450, 310 530"
-                fill="rgba(12, 12, 12, 0.88)" // 深灰色遮罩填充
-                stroke="rgba(255, 255, 255, 0.72)" // 提升線條亮度
-                strokeWidth="3.5" // 大幅增加外框線條粗度，與後面細線產生明顯反差
+                d="M 75 460
+                   Q 100 390, 100 310
+                   C 50 310, 20 270, 20 220
+                   C 20 160, 70 110, 120 130
+                   C 130 80, 190 80, 200 130
+                   C 250 110, 300 160, 300 220
+                   C 300 270, 270 310, 220 310
+                   Q 220 390, 245 460"
+                fill="rgba(10, 10, 10, 0.94)" // 強化灰色不透明遮罩感 (0.94)，完美阻擋背景格線
+                stroke="rgba(255, 255, 255, 0.85)" // 提亮白線，營造手繪卡通粉筆質感
+                strokeWidth="3.5" // 粗外框，與後面筆直細線產生反差
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </div>
 
-          {/* WikiTree 大標題 */}
+          {/* WikiTree 大標題 (適度縮小至 48px 以完美包裹於卡通樹冠內) */}
           <h1 className="title-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
-            fontSize: '64px',
+            fontSize: '48px',
             fontWeight: 400,
             color: '#ffffff',
             margin: 0,
@@ -1276,12 +1260,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* 副標題 一人種樹，億人乘涼 */}
           <p className="hud-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
-            fontSize: '15px',
+            fontSize: '13px',
             fontWeight: 300,
-            color: 'rgba(255,255,255,0.65)',
+            color: 'rgba(255,255,255,0.7)',
             margin: '0 0 24px 0',
-            letterSpacing: '0.45em',
-            paddingLeft: '0.45em',
+            letterSpacing: '0.35em',
+            paddingLeft: '0.35em',
             textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 6px rgba(0,0,0,0.9)'
           }}>
             一人種樹，億人乘涼
