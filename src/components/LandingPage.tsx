@@ -1599,6 +1599,246 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           color: #1c1c1c;
           background: rgba(238, 236, 230, 0.86);
         }
+
+        @keyframes reticleScan {
+          0% { transform: translateY(-115%); opacity: 0; }
+          16% { opacity: 0.45; }
+          52% { opacity: 0.16; }
+          100% { transform: translateY(115%); opacity: 0; }
+        }
+
+        @keyframes gaugePulse {
+          0%, 100% { opacity: 0.34; }
+          50% { opacity: 0.72; }
+        }
+
+        .dashboard-frame {
+          position: absolute;
+          inset: 18px;
+          z-index: 4;
+          pointer-events: none;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+            inset 0 0 42px rgba(255, 255, 255, 0.035);
+        }
+
+        .dashboard-frame::before,
+        .dashboard-frame::after {
+          content: '';
+          position: absolute;
+          left: 10%;
+          right: 10%;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+          opacity: 0.55;
+        }
+
+        .dashboard-frame::before { top: 72px; }
+        .dashboard-frame::after { bottom: 72px; }
+
+        .hud-corner {
+          position: absolute;
+          width: 74px;
+          height: 74px;
+          border-color: rgba(255, 255, 255, 0.62);
+          opacity: 0.82;
+        }
+
+        .hud-corner::before,
+        .hud-corner::after {
+          content: '';
+          position: absolute;
+          background: rgba(255, 255, 255, 0.58);
+        }
+
+        .hud-corner::before { width: 28px; height: 1px; }
+        .hud-corner::after { width: 1px; height: 28px; }
+
+        .hud-corner.top-left {
+          top: 0;
+          left: 0;
+          border-top: 1px solid;
+          border-left: 1px solid;
+        }
+
+        .hud-corner.top-left::before { top: 12px; left: 44px; }
+        .hud-corner.top-left::after { top: 44px; left: 12px; }
+
+        .hud-corner.top-right {
+          top: 0;
+          right: 0;
+          border-top: 1px solid;
+          border-right: 1px solid;
+        }
+
+        .hud-corner.top-right::before { top: 12px; right: 44px; }
+        .hud-corner.top-right::after { top: 44px; right: 12px; }
+
+        .hud-corner.bottom-left {
+          bottom: 0;
+          left: 0;
+          border-bottom: 1px solid;
+          border-left: 1px solid;
+        }
+
+        .hud-corner.bottom-left::before { bottom: 12px; left: 44px; }
+        .hud-corner.bottom-left::after { bottom: 44px; left: 12px; }
+
+        .hud-corner.bottom-right {
+          right: 0;
+          bottom: 0;
+          border-right: 1px solid;
+          border-bottom: 1px solid;
+        }
+
+        .hud-corner.bottom-right::before { right: 44px; bottom: 12px; }
+        .hud-corner.bottom-right::after { right: 12px; bottom: 44px; }
+
+        .gauge-ruler {
+          position: absolute;
+          top: 130px;
+          bottom: 130px;
+          width: 34px;
+          opacity: 0.54;
+          background-image:
+            linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.42)),
+            repeating-linear-gradient(
+              to bottom,
+              rgba(255, 255, 255, 0.54) 0 1px,
+              transparent 1px 18px
+            );
+          background-repeat: no-repeat, repeat-y;
+          background-size: 1px 100%, 18px 100%;
+        }
+
+        .gauge-ruler.left {
+          left: 24px;
+          background-position: left center, right top;
+        }
+
+        .gauge-ruler.right {
+          right: 24px;
+          background-position: right center, left top;
+        }
+
+        .center-reticle {
+          position: absolute;
+          left: 50%;
+          top: 52%;
+          width: min(58vw, 620px);
+          aspect-ratio: 1;
+          transform: translate(-50%, -50%);
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 50%;
+          opacity: 0.76;
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+            0 0 54px rgba(255, 255, 255, 0.035);
+        }
+
+        .center-reticle::before,
+        .center-reticle::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(255, 255, 255, 0.17);
+        }
+
+        .center-reticle::before { width: 88%; height: 1px; }
+        .center-reticle::after { width: 1px; height: 88%; }
+
+        .reticle-ring {
+          position: absolute;
+          inset: 12%;
+          border: 1px dashed rgba(255, 255, 255, 0.14);
+          border-radius: 50%;
+          animation: gaugePulse 7s infinite ease-in-out;
+        }
+
+        .reticle-scan {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          border-radius: 50%;
+        }
+
+        .reticle-scan::before {
+          content: '';
+          position: absolute;
+          left: 12%;
+          right: 12%;
+          top: 50%;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.44), transparent);
+          animation: reticleScan 8s infinite ease-in-out;
+        }
+
+        .instrument-panel {
+          position: relative;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 32%),
+            rgba(0, 0, 0, 0.08);
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+            0 0 30px rgba(255, 255, 255, 0.035);
+        }
+
+        .instrument-panel::before,
+        .instrument-panel::after {
+          content: '';
+          position: absolute;
+          left: 18px;
+          right: 18px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+          opacity: 0.7;
+        }
+
+        .instrument-panel::before { top: 18px; }
+        .instrument-panel::after { bottom: 18px; }
+
+        .micro-gauge {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          min-width: 118px;
+          padding: 7px 9px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(0, 0, 0, 0.18);
+          box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.025);
+        }
+
+        .micro-gauge-bars {
+          display: grid;
+          grid-template-columns: repeat(7, 3px);
+          align-items: end;
+          gap: 3px;
+          height: 18px;
+        }
+
+        .micro-gauge-bars span {
+          width: 3px;
+          background: rgba(255, 255, 255, 0.56);
+        }
+
+        @media (max-width: 760px) {
+          .dashboard-frame { inset: 12px; }
+          .gauge-ruler { display: none; }
+          .top-status-gauges { display: none !important; }
+          .center-reticle {
+            width: 86vw;
+            top: 51%;
+          }
+          .instrument-panel::before,
+          .instrument-panel::after {
+            left: 12px;
+            right: 12px;
+          }
+        }
       `}</style>
 
       {/* 3D 渲染的背景 Canvas */}
@@ -1614,6 +1854,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           display: 'block'
         }}
       />
+
+      {/* 望遠鏡式 Dashboard 儀表框：純裝飾，不攔截互動 */}
+      <div className="dashboard-frame" aria-hidden="true">
+        <div className="hud-corner top-left" />
+        <div className="hud-corner top-right" />
+        <div className="hud-corner bottom-left" />
+        <div className="hud-corner bottom-right" />
+        <div className="gauge-ruler left" />
+        <div className="gauge-ruler right" />
+        <div className="center-reticle">
+          <div className="reticle-ring" />
+          <div className="reticle-scan" />
+        </div>
+      </div>
 
       {/* HUD 覆蓋層 */}
       <div style={{
@@ -1664,18 +1918,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
+        {/* 中上方 Dashboard 狀態儀表 */}
+        <div className="top-status-gauges" style={{
+          position: 'absolute',
+          top: '38px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        }}>
+          <div className="micro-gauge">
+            <div className="micro-gauge-bars" aria-hidden="true">
+              <span style={{ height: '42%' }} />
+              <span style={{ height: '66%' }} />
+              <span style={{ height: '50%' }} />
+              <span style={{ height: '88%' }} />
+              <span style={{ height: '58%' }} />
+              <span style={{ height: '74%' }} />
+              <span style={{ height: '38%' }} />
+            </div>
+            <span className="hud-text" style={{ fontSize: '8px', color: 'rgba(255,255,255,0.58)' }}>SIGNAL</span>
+          </div>
+          <div className="micro-gauge">
+            <span className="hud-text" style={{ fontSize: '8px', color: 'rgba(255,255,255,0.58)' }}>ORBIT</span>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(255,255,255,0.55), transparent)' }} />
+            <span className="hud-text" style={{ fontSize: '8px', color: '#ffffff' }}>{zoom.toFixed(1)}X</span>
+          </div>
+        </div>
+
         {/* 中間主標題與控制面板 (整合真實素描風樹形背景面板與強灰色樹形遮罩) */}
-        <div style={{
+        <div className="instrument-panel" style={{
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '85px 45px 85px 45px', // 提供充足內邊距，防文字貼線
+          padding: 'clamp(64px, 10vh, 85px) clamp(22px, 7vw, 45px)', // 提供充足內邊距，防文字貼線
           pointerEvents: 'auto',
           textAlign: 'center',
           marginTop: '-40px',
-          width: '450px', // 寬度放寬至 450px，完全解決 W 和 E 貼著線的擠壓感，呈現修長優雅比例
+          width: 'min(450px, 92vw)', // 寬度放寬並保留手機彈性，完全解決 W 和 E 貼著線的擠壓感
           alignSelf: 'center', // 確保在父容器中水平居中，防拉伸
           boxSizing: 'border-box'
         }}>
