@@ -69,6 +69,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setTimeout(() => setCopiedToken(false), 2000);
   };
 
+  const handleLoginClick = () => {
+    const savedClientId = localStorage.getItem('antigravity_google_client_id');
+    if (savedClientId) {
+      if (onTriggerLogin) onTriggerLogin();
+    } else {
+      const width = 515;
+      const height = 580;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      window.open(
+        '/google-login-mock.html',
+        'GoogleLoginPopup',
+        `width=${width},height=${height},top=${top},left=${left},scrollbars=no,resizable=no`
+      );
+    }
+  };
+
   const toggleExpand = (path: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const newExpanded = new Set(expandedPaths);
@@ -552,7 +569,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button 
               className="btn btn-primary" 
-              onClick={onTriggerLogin}
+              onClick={handleLoginClick}
               style={{ width: '100%', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderRadius: '8px' }}
             >
               <LogIn size={14} />

@@ -113,6 +113,23 @@ function App() {
     showToast('🔒 已安全登出 Google 帳戶', 'info');
   };
 
+  // Listen for login messages from Google Mock Popup window
+  useEffect(() => {
+    const handleMockLoginMessage = (event: MessageEvent) => {
+      // Validate origin to match current app's origin
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data?.type === 'GOOGLE_MOCK_LOGIN_SUCCESS' && event.data.user) {
+        handleLoginSuccess(event.data.user);
+      } else if (event.data?.type === 'OPEN_CLIENT_ID_CONFIG') {
+        setShowLoginModal(true);
+      }
+    };
+
+    window.addEventListener('message', handleMockLoginMessage);
+    return () => window.removeEventListener('message', handleMockLoginMessage);
+  }, [user]);
+
   // Check CLI status on load and periodically
   const checkCliStatus = async () => {
     const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
