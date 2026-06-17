@@ -142,6 +142,34 @@ function App() {
     }
   };
 
+  const [isBrowsing, setIsBrowsing] = useState(false);
+
+  const handleBrowseCliWorkspace = async () => {
+    if (isBrowsing) return;
+    setIsBrowsing(true);
+    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
+    try {
+      const response = await fetch(`${cliUrl}/api/workspace/browse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.path) {
+          setCliPathInput(data.path);
+        }
+      } else {
+        const err = await response.json();
+        alert(err.error || '瀏覽資料夾失敗');
+      }
+    } catch (e: any) {
+      console.error('Failed to browse workspace via CLI', e);
+      alert(`無法開啟本機瀏覽視窗：${e.message}`);
+    } finally {
+      setIsBrowsing(false);
+    }
+  };
+
   // App views and panels
   const [sidebarTab, setSidebarTab] = useState<'files' | 'history' | 'publish' | 'antigravity'>('files');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
@@ -545,6 +573,14 @@ function App() {
                         fontSize: '14px' 
                       }}
                     />
+                    <button 
+                      className="btn" 
+                      onClick={handleBrowseCliWorkspace} 
+                      disabled={isBrowsing}
+                      style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {isBrowsing ? '瀏覽中...' : '瀏覽...'}
+                    </button>
                     <button className="btn btn-primary" onClick={handleOpenOrCreateCliWorkspace}>
                       開啟 / 建立
                     </button>
