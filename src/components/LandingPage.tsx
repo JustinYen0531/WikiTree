@@ -510,7 +510,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       state.pulseProgress = (state.pulseProgress + 0.03) % (Math.PI * 2);
 
       // 全域慢速呼吸光暈係數
-      const globalBreathe = 0.85 + Math.sin(Date.now() * 0.0018) * 0.15;
+      const globalBreathe = 0.94 + Math.sin(Date.now() * 0.0018) * 0.06;
 
       // 清除 Canvas 為純黑背景
       ctx.fillStyle = '#000000';
@@ -712,15 +712,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         path.closePath();
       });
 
-      // 1. 填充 Inactive 板塊的面 (極為微弱透明的白色，凸顯皺褶)
+      // 1. 填充 Inactive 板塊的面 (淡灰著色，讓板塊內部更有被上色的質感)
       if (hasInactiveFaces) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${(0.02 * globalBreathe).toFixed(3)})`;
+        ctx.fillStyle = `rgba(185, 188, 190, ${(0.055 * globalBreathe).toFixed(3)})`;
         ctx.fill(inactiveFacePath);
       }
 
-      // 2. 填充 Active 板塊的面 (稍微明亮，形成光暈摺紙面)
+      // 2. 填充 Active 板塊的面 (更明顯的灰白著色，形成光暈摺紙面)
       if (hasActiveFaces) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${(0.08 * globalBreathe).toFixed(3)})`;
+        ctx.fillStyle = `rgba(205, 208, 210, ${(0.14 * globalBreathe).toFixed(3)})`;
         ctx.fill(activeFacePath);
       }
 
@@ -762,24 +762,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       if (hasInactiveBoundary) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.12 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(220, 222, 224, ${(0.16 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 2.2 * zoomWidthScale;
         ctx.stroke(inactiveBoundaryPath);
 
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.32 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(245, 246, 247, ${(0.4 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 0.8 * zoomWidthScale;
         ctx.stroke(inactiveBoundaryPath);
       }
 
       if (hasActiveBoundary) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.24 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(230, 232, 234, ${(0.32 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 3.4 * zoomWidthScale;
         ctx.stroke(activeBoundaryPath);
 
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.7 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.82 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 1.15 * zoomWidthScale;
         ctx.stroke(activeBoundaryPath);
       }
@@ -842,7 +842,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 1. 繪製未啟動的陸地格線
       if (hasInactiveLand) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.07 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(235, 236, 238, ${(0.11 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 0.4 * zoomWidthScale;
         ctx.stroke(inactiveLandPath);
       }
@@ -850,7 +850,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 2. 繪製已啟動的陸地格線
       if (hasActiveLand) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.32 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.42 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 0.55 * zoomWidthScale;
         ctx.stroke(activeLandPath);
       }
@@ -858,7 +858,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 3. 繪製未啟動的樹木線條
       if (hasInactiveTree) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.62 * globalBreathe).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.76 * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 1.15 * zoomWidthScale;
         ctx.stroke(inactiveTreePath);
       }
@@ -866,8 +866,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 4. 繪製已啟動的樹木線條
       if (hasActiveTree) {
         ctx.beginPath();
-        const pulse = 0.85 + Math.sin(Date.now() * 0.005) * 0.15;
-        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.92 * pulse * globalBreathe).toFixed(3)})`;
+        const pulse = 0.93 + Math.sin(Date.now() * 0.005) * 0.07;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${(0.98 * pulse * globalBreathe).toFixed(3)})`;
         ctx.lineWidth = 1.8 * zoomWidthScale;
         ctx.stroke(activeTreePath);
       }
@@ -890,7 +890,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           // 繪製外層發光圓環 (大而半透明)
           ctx.beginPath();
           ctx.arc(px, py, radius * state.zoom * 1.2, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${(opacity * 0.16).toFixed(3)})`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${(opacity * 0.22).toFixed(3)})`;
           ctx.fill();
 
           // 繪製內層實心圓 (小而亮)
@@ -924,7 +924,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // 對應點半徑配置 (原值 * zoom)
       const baseRadii = [0.35, 0.56, 0.65, 0.91, 0.99]; 
       // 對應點透明度係數
-      const baseAlphas = [0.12, 0.4, 0.55, 0.75, 0.7]; 
+      const baseAlphas = [0.18, 0.5, 0.68, 0.88, 0.82]; 
 
       for (let t = 0; t < 5; t++) {
         const radius = baseRadii[t] * state.zoom;
@@ -960,7 +960,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         centerX, centerY, radius * 0.93,
         centerX, centerY, radius * 1.05
       );
-      const ringOpacity = 0.08 * globalBreathe;
+      const ringOpacity = 0.13 * globalBreathe;
       gradient.addColorStop(0, `rgba(255, 255, 255, ${ringOpacity.toFixed(3)})`);
       gradient.addColorStop(0.2, `rgba(255, 255, 255, ${(ringOpacity * 0.5).toFixed(3)})`);
       gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
