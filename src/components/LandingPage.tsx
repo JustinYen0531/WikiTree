@@ -1123,6 +1123,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       `}</style>
 
+      {/* 定義用於裁剪樹形遮罩的 clipPath */}
+      <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }}>
+        <defs>
+          <clipPath id="tree-clip">
+            <path d="M 160 530 Q 200 420, 205 340 C 160 340, 110 320, 110 270 C 110 210, 60 210, 60 160 C 60 110, 120 70, 170 90 C 170 50, 230 50, 250 80 C 280 50, 330 70, 340 120 C 380 120, 390 170, 390 210 C 390 270, 340 310, 300 320 C 260 330, 250 340, 245 340 Q 250 420, 290 530 Z" />
+          </clipPath>
+        </defs>
+      </svg>
+
       {/* 3D 渲染的背景 Canvas */}
       <canvas
         ref={canvasRef}
@@ -1186,25 +1195,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* 中間主標題與控制面板 (圓潤卡通雲朵樹背景面板與強灰色遮罩) */}
+        {/* 中間主標題與控制面板 (整合真實素描風樹形背景面板與強灰色樹形遮罩) */}
         <div style={{
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '70px 25px 80px 25px', 
+          padding: '85px 45px 85px 45px', // 提供充足內邊距，防文字貼線
           pointerEvents: 'auto',
           textAlign: 'center',
-          marginTop: '-45px',
-          width: '320px', // 寫死寬度為 320px，保證在任何寬螢幕下皆呈修長好看的黃金比例
+          marginTop: '-40px',
+          width: '450px', // 放寬至 450px，完全解決 W 和 E 貼著線的擠壓感，呈現修長優雅比例
           alignSelf: 'center', // 確保在父容器中水平居中，防拉伸
-          backdropFilter: 'blur(10px)', // 套用毛玻璃效果
-          WebkitBackdropFilter: 'blur(10px)',
-          borderRadius: '30px',
           boxSizing: 'border-box'
         }}>
-          {/* 精緻卡通雲朵樹背景外框 SVG (平滑圓潤卡通手繪風格) */}
+          {/* 精確樹形裁剪的毛玻璃與強烈灰色遮罩底層 (遮罩範圍只在樹的形狀內，不再是長方形) */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(10, 10, 10, 0.94)', // 樹內部的深灰色填充
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            clipPath: 'url(#tree-clip)', // 使用 clip-path 精確將毛玻璃與遮罩裁切成樹的形狀！
+            zIndex: -2,
+            pointerEvents: 'none'
+          }} />
+
+          {/* 精緻素描樹背景外框與內部素描樹枝木紋 SVG (真實素描樹風格) */}
           <div style={{
             position: 'absolute',
             top: 0,
@@ -1215,39 +1236,78 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             pointerEvents: 'none'
           }}>
             <svg 
-              width="320" 
-              height="480" 
-              viewBox="0 0 320 480" 
+              width="450" 
+              height="560" 
+              viewBox="0 0 450 560" 
               style={{
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
-                transform: 'translate(-50%, -50%)', // 居中對齊比例永不變形
+                transform: 'translate(-50%, -50%)', // 居中對齊，比例永不變形
                 filter: 'drop-shadow(0 0 10px rgba(0, 0, 0, 0.9))'
               }}
             >
+              {/* 1. 樹的主輪廓外框（不封底，粗手繪線） */}
               <path
-                d="M 75 460
-                   Q 100 390, 100 310
-                   C 50 310, 20 270, 20 220
-                   C 20 160, 70 110, 120 130
-                   C 130 80, 190 80, 200 130
-                   C 250 110, 300 160, 300 220
-                   C 300 270, 270 310, 220 310
-                   Q 220 390, 245 460"
-                fill="rgba(10, 10, 10, 0.94)" // 強化灰色不透明遮罩感 (0.94)，完美阻擋背景格線
-                stroke="rgba(255, 255, 255, 0.85)" // 提亮白線，營造手繪卡通粉筆質感
-                strokeWidth="3.5" // 粗外框，與後面筆直細線產生反差
+                d="M 160 530 
+                   Q 200 420, 205 340 
+                   C 160 340, 110 320, 110 270 
+                   C 110 210, 60 210, 60 160 
+                   C 60 110, 120 70, 170 90 
+                   C 170 50, 230 50, 250 80 
+                   C 280 50, 330 70, 340 120 
+                   C 380 120, 390 170, 390 210 
+                   C 390 270, 340 310, 300 320 
+                   C 260 330, 250 340, 245 340 
+                   Q 250 420, 290 530"
+                fill="none" 
+                stroke="rgba(255, 255, 255, 0.85)" 
+                strokeWidth="3.2" 
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              
+              {/* 2. 樹幹內部的 Y 字形主分岔樹枝 (粗細過渡 1.8px) */}
+              <path
+                d="M 215 355 Q 210 290, 170 230
+                   M 225 355 L 225 250
+                   M 235 355 Q 240 290, 280 230"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.65)"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* 3. 樹幹內部的縱向素描木紋排線 (細線 1.0px) */}
+              <path
+                d="M 190 495 Q 208 430, 212 375
+                   M 260 495 Q 242 430, 238 375
+                   M 225 515 L 225 415"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.35)"
+                strokeWidth="1.0"
+                strokeLinecap="round"
+              />
+
+              {/* 4. 樹冠內部的層次葉片素描線 (細線 1.2px) */}
+              <path
+                d="M 145 185 C 155 165, 195 165, 205 185
+                   M 245 195 C 255 175, 295 175, 305 195
+                   M 180 235 C 190 215, 230 215, 240 235"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.45)"
+                strokeWidth="1.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </div>
 
-          {/* WikiTree 大標題 (適度縮小至 48px 以完美包裹於卡通樹冠內) */}
+          {/* WikiTree 大標題 (適度調回 54px，在 450px 面板內有寬鬆的左右邊距，絕不貼線) */}
           <h1 className="title-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
-            fontSize: '48px',
+            fontSize: '54px',
             fontWeight: 400,
             color: '#ffffff',
             margin: 0,
@@ -1260,7 +1320,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* 副標題 一人種樹，億人乘涼 */}
           <p className="hud-breathe" style={{
             fontFamily: '"Roboto Mono", monospace',
-            fontSize: '13px',
+            fontSize: '14px',
             fontWeight: 300,
             color: 'rgba(255,255,255,0.7)',
             margin: '0 0 24px 0',
