@@ -214,19 +214,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         }
       }
 
-      // 【效能優化 4 - 精簡樹木骨架】：每個板塊種植 9 棵樹，且將樹木節點減少為 5 個 (1幹、2枝、2葉)
+      // 【樹木骨架 - 三種尺寸：小樹 / 中樹 / 大樹，採遞迴分支生成更茂密複雜的樹冠】
+      // 每棵樹自樹幹頂端遞迴展開多層分枝，越往上枝條越短、分叉越多，末端結成葉片節點。
       const numTrees = 9;
+
+      // 尺寸設定檔：小樹最常見、中樹次之、大樹最稀有（依 weight 加權抽樣）
+      // maxDepth=遞迴層數、rootChildren=樹幹頂端主枝數、childPerNode=每節再分叉數
+      const treeSizeProfiles = [
+        { kind: 'small',  weight: 5, maxDepth: 2, rootChildren: 2, childPerNode: 2, baseHeight: 18, heightVar: 8,  spread: 0.42, lengthFalloff: 0.74 },
+        { kind: 'medium', weight: 3, maxDepth: 3, rootChildren: 3, childPerNode: 2, baseHeight: 30, heightVar: 10, spread: 0.5,  lengthFalloff: 0.72 },
+        { kind: 'large',  weight: 1, maxDepth: 4, rootChildren: 3, childPerNode: 2, baseHeight: 44, heightVar: 14, spread: 0.56, lengthFalloff: 0.7 },
+      ];
+      const sizePool: typeof treeSizeProfiles = [];
+      treeSizeProfiles.forEach((p) => { for (let i = 0; i < p.weight; i++) sizePool.push(p); });
+
       for (let t = 0; t < numTrees; t++) {
         const rootPt = landPoints[Math.floor(Math.random() * landPoints.length)];
-        
+
         const rootR = Math.hypot(rootPt.x, rootPt.y, rootPt.z);
         const nx = rootPt.x / rootR;
         const ny = rootPt.y / rootR;
         const nz = rootPt.z / rootR;
 
-        const treeHeight = 22 + Math.random() * 10;
+        // 局部切平面基底 (u, v)，讓樹枝可在球面切向任意方位偏轉
+        let ux = -ny;
+        let uy = nx;
+        let uz = 0;
+        const uLen = Math.hypot(ux, uy, uz);
+        if (uLen < 0.001) {
+          ux = 1; uy = 0; uz = 0;
+        } else {
+          ux /= uLen; uy /= uLen;
+        }
+        const vx = ny * uz - nz * uy;
+        const vy = nz * ux - nx * uz;
+        const vz = nx * uy - ny * ux;
 
-        // 樹幹頂點
+        const profile = sizePool[Math.floor(Math.random() * sizePool.length)];
+        const treeHeight = profile.baseHeight + Math.random() * profile.heightVar;
+
+        // 樹幹頂點 (沿球面法線向外)
         const tx = rootPt.x + nx * treeHeight;
         const ty = rootPt.y + ny * treeHeight;
         const tz = rootPt.z + nz * treeHeight;
@@ -246,76 +273,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           continentId: continent.id
         });
 
-        // 局部垂直坐標軸，用於樹枝偏轉
-        let ux = -ny;
-        let uy = nx;
-        let uz = 0;
-        const uLen = Math.hypot(ux, uy, uz);
-        if (uLen < 0.001) {
-          ux = 1; uy = 0; uz = 0;
-        } else {
-          ux /= uLen; uy /= uLen;
-        }
-        const vx = ny * uz - nz * uy;
-        const vy = nz * ux - nx * uz;
-        const vz = nx * uy - ny * ux;
+        // 遞迴生長分枝：自 parentPt 沿 (dirX,dirY,dirZ) 展開 childCount 根子枝，
+        // 每根在切平面隨機偏轉並保留向外生長趨勢，到 maxDepth 時末端結成葉片。
+        const growBranch = (
+          parentPt: Point3D,
+          dirX: number, dirY: number, dirZ: number,
+          length: number, depth: number
+        ) => {
+          const childCount = depth === 0 ? profile.rootChildren : profile.childPerNode;
+          for (let c = 0; c < childCount; c++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spread = profile.spread * (0.8 + Math.random() * 0.5);
 
-        // 簡化：生成 2 根主樹枝 (原本 3 根)
-        const numBranches = 2;
-        for (let b = 0; b < numBranches; b++) {
-          const angle = (b * Math.PI) + (Math.random() - 0.5) * 0.4; // 180 度對稱偏轉
-          const branchSpread = 0.4;
-          const branchLength = treeHeight * 0.65;
+            const tanX = ux * Math.cos(ang) + vx * Math.sin(ang);
+            const tanY = uy * Math.cos(ang) + vy * Math.sin(ang);
+            const tanZ = uz * Math.cos(ang) + vz * Math.sin(ang);
 
-          const bx_dir = nx + (ux * Math.cos(angle) + vx * Math.sin(angle)) * branchSpread;
-          const by_dir = ny + (uy * Math.cos(angle) + vy * Math.sin(angle)) * branchSpread;
-          const bz_dir = nz + (uz * Math.cos(angle) + vz * Math.sin(angle)) * branchSpread;
-          const bDirLen = Math.hypot(bx_dir, by_dir, bz_dir);
-          
-          const bx = trunkPt.x + (bx_dir / bDirLen) * branchLength;
-          const by = trunkPt.y + (by_dir / bDirLen) * branchLength;
-          const bz = trunkPt.z + (bz_dir / bDirLen) * branchLength;
+            // 子方向 = 父方向 + 切向偏轉 (+ 些微法線外擴)，再正規化
+            let ndx = dirX + tanX * spread + nx * 0.12;
+            let ndy = dirY + tanY * spread + ny * 0.12;
+            let ndz = dirZ + tanZ * spread + nz * 0.12;
+            const nl = Math.hypot(ndx, ndy, ndz) || 1;
+            ndx /= nl; ndy /= nl; ndz /= nl;
 
-          const branchPt: Point3D = {
-            id: pointIdCounter++,
-            x: bx, y: by, z: bz,
-            tx: bx, ty: by, tz: bz,
-            type: 'tree_branch',
-            continentId: continent.id
-          };
-          points.push(branchPt);
-          connections.push({
-            p1: trunkPt.id,
-            p2: branchPt.id,
-            type: 'tree',
-            continentId: continent.id
-          });
+            const segLen = length * (0.85 + Math.random() * 0.3);
+            const ex = parentPt.x + ndx * segLen;
+            const ey = parentPt.y + ndy * segLen;
+            const ez = parentPt.z + ndz * segLen;
 
-          // 簡化：每根主樹枝僅發射 1 個葉子節點
-          const lx_dir = bx_dir + (ux * Math.cos(angle) + vx * Math.sin(angle)) * 0.55;
-          const ly_dir = by_dir + (uy * Math.cos(angle) + vy * Math.sin(angle)) * 0.55;
-          const lz_dir = bz_dir + (uz * Math.cos(angle) + vz * Math.sin(angle)) * 0.55;
-          const lDirLen = Math.hypot(lx_dir, ly_dir, lz_dir);
+            const isTip = depth + 1 >= profile.maxDepth;
+            const childPt: Point3D = {
+              id: pointIdCounter++,
+              x: ex, y: ey, z: ez,
+              tx: ex, ty: ey, tz: ez,
+              type: isTip ? 'tree_leaf' : 'tree_branch',
+              continentId: continent.id
+            };
+            points.push(childPt);
+            connections.push({
+              p1: parentPt.id,
+              p2: childPt.id,
+              type: 'tree',
+              continentId: continent.id
+            });
 
-          const lx = bx + (lx_dir / lDirLen) * (treeHeight * 0.45);
-          const ly = by + (ly_dir / lDirLen) * (treeHeight * 0.45);
-          const lz = bz + (lz_dir / lDirLen) * (treeHeight * 0.45);
+            if (!isTip) {
+              growBranch(childPt, ndx, ndy, ndz, segLen * profile.lengthFalloff, depth + 1);
+            }
+          }
+        };
 
-          const leafPt: Point3D = {
-            id: pointIdCounter++,
-            x: lx, y: ly, z: lz,
-            tx: lx, ty: ly, tz: lz,
-            type: 'tree_leaf',
-            continentId: continent.id
-          };
-          points.push(leafPt);
-          connections.push({
-            p1: branchPt.id,
-            p2: leafPt.id,
-            type: 'tree',
-            continentId: continent.id
-          });
-        }
+        // 自樹幹頂端開始遞迴，初始生長方向 = 球面法線
+        growBranch(trunkPt, nx, ny, nz, treeHeight * 0.72, 0);
       }
     });
 
