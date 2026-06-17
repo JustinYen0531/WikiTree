@@ -7,8 +7,12 @@ import {
   Plus, 
   Sun, 
   Moon,
-  FolderPlus
+  FolderPlus,
+  Sparkles,
+  X
 } from 'lucide-react';
+
+import { supabase, isSupabaseConfigured } from './utils/supabase';
 
 // Import local utilities
 import { 
@@ -35,8 +39,11 @@ import {
 import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
 import { VersionHistory } from './components/VersionHistory';
-import { PublishModal } from './components/PublishModal';
+import { PublishNoteModal } from './components/PublishNoteModal';
 import { LoginModal } from './components/LoginModal';
+import { LandingPage } from './components/LandingPage';
+import { CourseSearch } from './components/CourseSearch';
+import { AntigravityPlugin } from './components/AntigravityPlugin';
 
 function App() {
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -56,6 +63,7 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -71,14 +79,49 @@ function App() {
     }
   }, [toast]);
 
+  // Listen to Supabase auth state change to sync with our app user state
+  useEffect(() => {
+    if (isSupabaseConfigured() && supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          const metadata = session.user.user_metadata || {};
+          const loggedUser = {
+            username: metadata.username || session.user.email?.split('@')[0] || '',
+            nickname: metadata.nickname || session.user.email?.split('@')[0] || '',
+            college: metadata.college || '',
+            department: metadata.department || '',
+            grade: metadata.grade || '',
+            isSupabaseUser: true,
+          };
+          setUser(loggedUser);
+          localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          localStorage.removeItem('antigravity_user');
+        }
+      });
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
+
   const handleLoginSuccess = (loggedUser: any) => {
     setUser(loggedUser);
     localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
     showToast(`🎉 歡迎回來，${loggedUser.nickname}！`, 'success');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.error("Supabase signOut error:", e);
+      }
+    }
     setUser(null);
+    setIsGuest(false);
     localStorage.removeItem('antigravity_user');
     showToast('🔒 已安全登出政大 Hub 帳戶', 'info');
   };
@@ -205,7 +248,7 @@ function App() {
   };
 
   // App views and panels
-  const [sidebarTab, setSidebarTab] = useState<'files' | 'history' | 'publish' | 'antigravity'>('files');
+  const [sidebarTab, setSidebarTab] = useState<'courses' | 'files' | 'history' | 'publish' | 'antigravity'>('courses');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
@@ -541,6 +584,47 @@ function App() {
     return list;
   };
 
+  if (!user && !isGuest) {
+    return (
+      <>
+        <LandingPage 
+          onLoginClick={() => setShowLoginModal(true)} 
+          onGuestClick={() => setIsGuest(true)} 
+        />
+        {showLoginModal && (
+          <LoginModal 
+            onClose={() => setShowLoginModal(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        )}
+        {toast && (
+          <div 
+            className="animate-slide-in"
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+              backgroundColor: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
+              color: '#ffffff',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow-lg)',
+              zIndex: 11000,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            {toast.message}
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="app-container">
       {/* Sidebar - file explorer & search */}
@@ -549,7 +633,6 @@ function App() {
         workspaceName={workspaceName}
         files={files}
         activeFile={activeFile}
-        activeFileContent={content}
         onSelectFile={openFile}
         onCreateFile={handleCreateFile}
         onCreateFolder={handleCreateFolder}
@@ -564,15 +647,25 @@ function App() {
 
       {/* Main Panel View */}
       <div className="main-view-container">
-        {!rootHandle ? (
+        {sidebarTab === 'courses' ? (
+          <CourseSearch files={files} activeFile={activeFile} onOpenNote={openFile} />
+        ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
             <div className="empty-state-card" style={{ maxWidth: '600px', width: '90%', padding: '32px' }}>
               <FolderOpen className="empty-state-icon" style={{ marginBottom: '16px' }} />
-              <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>
+                  開啟創意工房
+                </h2>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
+                  創意工房會使用你的本機資料夾來撰寫、整理、版本管理與發布 Markdown 筆記。線上探索不會碰到本機檔案。
+                </p>
+              </div>
+              <h2 style={{ display: 'none', fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', marginBottom: '8px' }}>
                 開啟或新建筆記工作區
               </h2>
-              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
+              <p style={{ display: 'none', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
                 您可以透過本機 CLI 伺服器直接輸入路徑「建立全新的資料夾」作為工作區，或是使用瀏覽器原生檔案選擇器開啟現有的資料夾。
               </p>
 
@@ -589,15 +682,15 @@ function App() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981' }}>Antigravity CLI 伺服器已連線</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981' }}>創意工房 CLI 已連線</span>
                   </div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    輸入要「新建」或「開啟」的本機絕對路徑：
+                    輸入要開啟或新建的創意工房路徑：
                   </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <input 
                       type="text" 
-                      placeholder="例如：C:\Users\user\Desktop\我的新筆記"
+                      placeholder="例如：C:\Users\user\Desktop\我的創意工房"
                       value={cliPathInput}
                       onChange={(e) => setCliPathInput(e.target.value)}
                       style={{ 
@@ -619,11 +712,11 @@ function App() {
                       {isBrowsing ? '瀏覽中...' : '瀏覽...'}
                     </button>
                     <button className="btn btn-primary" onClick={handleOpenOrCreateCliWorkspace}>
-                      開啟 / 建立
+                      開啟 / 新建
                     </button>
                   </div>
                   <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>
-                    💡 若路徑資料夾不存在，系統將會為您<b>自動建立該全新資料夾</b>，免除手動建立的步驟！
+                    若路徑不存在，創意工房會為你建立資料夾。這只影響本機工作區，不會修改線上探索資料。
                   </span>
                 </div>
               ) : (
@@ -639,7 +732,7 @@ function App() {
                   color: 'var(--text-secondary)',
                   lineHeight: '1.5'
                 }}>
-                  ⚠️ 未偵測到 Antigravity CLI 伺服器。若要直接建立新資料夾工作區，請先啟動 CLI：<br/>
+                  未偵測到創意工房 CLI。你仍可用瀏覽器 Picker 選擇既有資料夾；若要直接輸入路徑新建資料夾，請先啟動 CLI：<br/>
                   <code style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', marginTop: '8px', fontFamily: 'monospace', fontSize: '12px' }}>
                     node cli-server.cjs
                   </code>
@@ -648,10 +741,10 @@ function App() {
 
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                  {cliConnected ? '— 或者使用瀏覽器原生方式 —' : ''}
+                  {cliConnected ? '也可以直接用下方 Picker 選擇既有資料夾。' : ''}
                 </span>
                 <button className="btn" onClick={handleSelectDirectory} style={{ padding: '10px 20px', fontSize: '14px' }}>
-                  選擇現有本地資料夾 (瀏覽器 Picker)
+                  選擇創意工房資料夾
                 </button>
               </div>
             </div>
@@ -710,7 +803,7 @@ function App() {
 
                 <button className="btn btn-primary" onClick={() => setShowPublishModal(true)}>
                   <Globe size={14} />
-                  發布網站
+                  發布筆記
                 </button>
 
                 <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
@@ -721,7 +814,8 @@ function App() {
 
             {/* Note Editor View */}
             {activeFile ? (
-              <Editor 
+              <Editor
+                key={activeFile.path}
                 content={content}
                 onChange={setContent}
                 onSave={handleSaveFile}
@@ -746,12 +840,50 @@ function App() {
         )}
       </div>
 
-      {/* Publish Config Modal */}
-      {showPublishModal && rootHandle && (
-        <PublishModal 
-          rootHandle={rootHandle}
-          files={files}
+      {sidebarTab !== 'antigravity' && (
+        <button
+          className="ai-dock-button"
+          onClick={() => setSidebarTab('antigravity')}
+          title="開啟 AI"
+        >
+          <Sparkles size={18} />
+          AI
+        </button>
+      )}
+
+      {sidebarTab === 'antigravity' && (
+        <aside className="ai-side-panel">
+          <div className="ai-side-panel-header">
+            <span>
+              <Sparkles size={15} />
+              AI
+            </span>
+            <button
+              className="theme-toggle-btn"
+              onClick={() => setSidebarTab('files')}
+              title="關閉 AI"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <AntigravityPlugin
+            currentNotePath={activeFile ? activeFile.path : ''}
+            currentNoteContent={content}
+          />
+        </aside>
+      )}
+
+      {/* Publish Note Modal */}
+      {showPublishModal && (
+        <PublishNoteModal
+          activeFile={activeFile}
+          content={content}
+          user={user}
           onClose={() => setShowPublishModal(false)}
+          onSuccess={(title) => {
+            setShowPublishModal(false);
+            showToast(`✅ 「${title}」已發布到社群！`, 'success');
+          }}
         />
       )}
 

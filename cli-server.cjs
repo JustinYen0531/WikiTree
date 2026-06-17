@@ -2,14 +2,80 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 
 const isWin = process.platform === 'win32';
 const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
+const utf8Decoder = new TextDecoder('utf-8');
 
 function decodeBuffer(buf) {
   if (!buf) return '';
   return decoder.decode(buf);
+}
+
+// Locate the Antigravity (agy) CLI binary. The installer puts it under the
+// user's local app data on Windows; otherwise we rely on it being on PATH.
+function resolveAgyPath() {
+  const candidates = [];
+  if (isWin) {
+    const local = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    candidates.push(path.join(local, 'agy', 'bin', 'agy.exe'));
+  } else {
+    candidates.push(path.join(os.homedir(), '.local', 'bin', 'agy'));
+    candidates.push('/usr/local/bin/agy');
+  }
+  for (const c of candidates) {
+    try {
+      if (fs.existsSync(c)) return c;
+    } catch (e) {}
+  }
+  return isWin ? 'agy.exe' : 'agy'; // fall back to PATH lookup
+}
+
+const AGY_PATH = resolveAgyPath();
+
+// Runs a single prompt through `agy --print` and returns the reply text.
+function runAgy(prompt, timeoutMs = 120000) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(AGY_PATH, ['--print', prompt, '--print-timeout', '110s'], {
+      cwd: currentWorkspace,
+      windowsHide: true,
+    });
+
+    const outChunks = [];
+    const errChunks = [];
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { child.kill(); } catch (e) {}
+      reject(new Error('AI 回應逾時，請再試一次，或把問題縮短一點。'));
+    }, timeoutMs);
+
+    child.stdout.on('data', (c) => outChunks.push(c));
+    child.stderr.on('data', (c) => errChunks.push(c));
+
+    child.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(new Error(`找不到或無法執行 agy（${err.message}）。請確認 Antigravity CLI 已安裝並已登入。`));
+    });
+
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      const out = utf8Decoder.decode(Buffer.concat(outChunks)).trim();
+      const errText = utf8Decoder.decode(Buffer.concat(errChunks)).trim();
+      if (code === 0 || out) {
+        resolve(out || '（agy 沒有回傳內容）');
+      } else {
+        reject(new Error(errText || `agy 結束代碼 ${code}`));
+      }
+    });
+  });
 }
 
 const PORT = 18080;
@@ -36,10 +102,54 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       status: 'connected',
       version: '1.2.4',
-      workspace: process.cwd(),
+      workspace: currentWorkspace,
       platform: process.platform,
       nodeVersion: process.version
     }));
+    return;
+  }
+
+  // Route: POST /api/open-terminal
+  // Opens a real terminal window with agy already running, so beginners can
+  // chat with the AI without opening a console or typing any command.
+  if (req.url === '/api/open-terminal' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      let initialPrompt = '';
+      try {
+        const payload = body ? JSON.parse(body) : {};
+        if (payload.initialPrompt && typeof payload.initialPrompt === 'string') {
+          // Keep it to a single safe line for the command shell.
+          initialPrompt = payload.initialPrompt.replace(/[\r\n]+/g, ' ').replace(/"/g, "'").trim();
+        }
+      } catch (e) {}
+
+      try {
+        if (isWin) {
+          // start "" opens a new console window; cmd /k keeps it open after agy exits.
+          let agyCmd = `"${AGY_PATH}"`;
+          if (initialPrompt) agyCmd += ` -i "${initialPrompt}"`;
+          const full = `start "AI 對話" cmd /k ${agyCmd}`;
+          spawn(full, { cwd: currentWorkspace, shell: true, detached: true, stdio: 'ignore' }).unref();
+        } else {
+          // Best-effort on non-Windows: try a few common terminals.
+          const inner = initialPrompt ? `${AGY_PATH} -i "${initialPrompt}"` : AGY_PATH;
+          const launchers = [
+            ['x-terminal-emulator', ['-e', 'bash', '-lc', `${inner}; exec bash`]],
+            ['gnome-terminal', ['--', 'bash', '-lc', `${inner}; exec bash`]],
+            ['xterm', ['-e', `bash -lc "${inner}; exec bash"`]],
+          ];
+          const [cmd, args] = launchers[0];
+          spawn(cmd, args, { cwd: currentWorkspace, detached: true, stdio: 'ignore' }).unref();
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: '無法開啟終端機：' + e.message }));
+      }
+    });
     return;
   }
 
@@ -51,45 +161,45 @@ const server = http.createServer((req, res) => {
     });
     
     req.on('end', async () => {
+      let payload;
       try {
-        const payload = JSON.parse(body);
-        const { message, context } = payload;
-        
-        let responseText = '';
-        
-        // Check if user has set up Gemini API key in environmental variables
-        if (process.env.GEMINI_API_KEY) {
-          responseText = await callGeminiAPI(process.env.GEMINI_API_KEY, message, context);
-        } else {
-          // Fallback: Smart local workspace assistant
-          let contextInfo = '';
-          if (context && context.path) {
-            const filePath = path.join(process.cwd(), context.path);
-            let size = 0;
-            try {
-              size = fs.statSync(filePath).size;
-            } catch(e) {}
-            contextInfo = `\n\nI detected that you attached the note **${context.path}** (${size} bytes on disk).`;
-          }
-
-          responseText = `### Antigravity Local CLI Server
-I received your query: "${message}"${contextInfo}
-
-**Note**: To enable real AI responses, please set the Gemini API Key in your terminal before starting the CLI:
-\`\`\`bash
-# On Windows PowerShell:
-$env:GEMINI_API_KEY="your_api_key_here"
-node cli-server.cjs
-\`\`\`
-
-Currently, I am running in **Workspace Integration Mode**. I can read files in \`${process.cwd()}\` and execute commands on your behalf!`;
-        }
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ reply: responseText }));
+        payload = JSON.parse(body);
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON payload: ' + e.message }));
+        return;
+      }
+
+      const { message, context } = payload;
+      if (!message || typeof message !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'message is required.' }));
+        return;
+      }
+
+      // Build the prompt, optionally including the open note's content so the
+      // AI can answer about whatever the user is looking at.
+      let prompt = message;
+      if (context && context.path) {
+        const filePath = path.join(currentWorkspace, context.path);
+        try {
+          const noteContent = fs.readFileSync(filePath, 'utf8');
+          prompt =
+            `以下是使用者目前開啟的筆記「${context.path}」內容：\n\n` +
+            `"""\n${noteContent}\n"""\n\n` +
+            `請依據上面的筆記回答以下問題或要求：\n${message}`;
+        } catch (e) {
+          // Note unreadable — fall back to the bare message.
+        }
+      }
+
+      try {
+        const reply = await runAgy(prompt);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ reply }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
       }
     });
     return;
@@ -113,7 +223,7 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
         }
 
         // Run the command directly in the host shell, returning raw buffer for proper decoding
-        exec(command, { encoding: 'buffer' }, (error, stdout, stderr) => {
+        exec(command, { encoding: 'buffer', cwd: currentWorkspace }, (error, stdout, stderr) => {
           const outStr = decodeBuffer(stdout);
           const errStr = decodeBuffer(stderr);
           
@@ -503,38 +613,6 @@ Currently, I am running in **Workspace Integration Mode**. I can read files in \
   res.end(JSON.stringify({ error: 'Route not found' }));
 });
 
-// Helper to query Gemini API using fetch
-async function callGeminiAPI(apiKey, prompt, context) {
-  try {
-    let systemInstruction = 'You are Antigravity, a helpful assistant integrated into a local markdown editor.';
-    if (context && context.path) {
-      systemInstruction += ` You have access to the user\'s currently opened note. Path: ${context.path}. Note Content:\n"""\n${context.content}\n"""`;
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    const payload = {
-      contents: [{ parts: [{ text: prompt }] }],
-      systemInstruction: { parts: [{ text: systemInstruction }] }
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
-    } else {
-      const errText = await response.text();
-      return `Gemini API returned error: ${errText}`;
-    }
-  } catch (e) {
-    return `Failed to query Gemini API: ${e.message}`;
-  }
-}
-
 // Helper to recursively list files matching client FileNode structure
 function getFilesRecursively(dir, relativeParentPath = '') {
   const nodes = [];
@@ -587,13 +665,19 @@ function getFilesRecursively(dir, relativeParentPath = '') {
   });
 }
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`ℹ️  Antigravity CLI daemon is already running on port ${PORT}. Reusing it.`);
+    process.exit(0);
+  }
+  throw err;
+});
+
 server.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`🚀 Antigravity CLI Server Daemon started on port ${PORT}`);
   console.log(`🔗 API endpoint: http://localhost:${PORT}`);
   console.log(`📂 Tracking workspace: ${process.cwd()}`);
   console.log(`====================================================`);
-  console.log(`To configure a real AI key, start with:`);
-  console.log(`  $env:GEMINI_API_KEY="AIzaSy..." ; node cli-server.cjs`);
   console.log(`====================================================`);
 });

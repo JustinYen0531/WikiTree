@@ -51,6 +51,7 @@ export const Editor: React.FC<EditorProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const hasAutoFocused = useRef(false);
 
   // Parse raw markdown string into blocks
   const parseMarkdownToBlocks = (markdown: string): Block[] => {
@@ -144,7 +145,13 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     const currentMd = blocksToMarkdown(blocks);
     if (content !== currentMd) {
-      setBlocks(parseMarkdownToBlocks(content));
+      const newBlocks = parseMarkdownToBlocks(content);
+      setBlocks(newBlocks);
+      // Auto-focus first block on initial load
+      if (!hasAutoFocused.current && viewMode === 'wysiwyg') {
+        hasAutoFocused.current = true;
+        setTimeout(() => setFocusedBlockIndex(0), 30);
+      }
     }
   }, [content]);
 
@@ -413,8 +420,9 @@ export const Editor: React.FC<EditorProps> = ({
       if (index === 0) return;
 
       const prevBlock = blocks[index - 1];
-      const prevLength = prevBlock.raw.length;
-      const currentRaw = value;
+      // Use display value (no prefix) so "# Title" merges as "Title" not "# Title"
+      const currentRaw = getBlockDisplayValue(blocks[index]);
+      const prevLength = getBlockDisplayValue(prevBlock).length;
 
       const newBlocks = [...blocks];
       newBlocks[index - 1].raw = prevBlock.raw + currentRaw;
@@ -593,8 +601,57 @@ export const Editor: React.FC<EditorProps> = ({
     }, 0);
   };
 
-  const handleCheckboxToggle = (index: number, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Return the text shown in the textarea (strips markdown prefix for header blocks)
+  const getBlockDisplayValue = (block: Block): string => {
+    switch (block.type) {
+      case 'header1': return block.raw.replace(/^#\s*/, '');
+      case 'header2': return block.raw.replace(/^##\s*/, '');
+      case 'header3': return block.raw.replace(/^###\s*/, '');
+      default: return block.raw;
+    }
+  };
+
+  const getBlockPlaceholder = (block: Block): string => {
+    switch (block.type) {
+      case 'header1': return '大標題...';
+      case 'header2': return '中標題...';
+      case 'header3': return '小標題...';
+      case 'todo': return '待辦事項...';
+      case 'code': return '```language\ncode...\n```';
+      default: return '輸入文字，或輸入「/」插入區塊...';
+    }
+  };
+
+  // Handle WYSIWYG block textarea input with Notion-style markdown shortcuts
+  const handleBlockInputChange = (index: number, displayVal: string) => {
+    const currentType = blocks[index].type;
+
+    if (currentType === 'paragraph') {
+      // Notion-style shortcuts: when typing a markdown prefix, convert block type
+      if (displayVal === '# ') { handleBlockChange(index, '# '); return; }
+      if (displayVal === '## ') { handleBlockChange(index, '## '); return; }
+      if (displayVal === '### ') { handleBlockChange(index, '### '); return; }
+      if (displayVal === '- ') { handleBlockChange(index, '- '); return; }
+      if (displayVal === '- [ ] ') { handleBlockChange(index, '- [ ] '); return; }
+      handleBlockChange(index, displayVal);
+      return;
+    }
+
+    // For header blocks: re-attach the stripped prefix before storing
+    const prefixMap: Record<string, string> = {
+      header1: '# ',
+      header2: '## ',
+      header3: '### ',
+    };
+    const prefix = prefixMap[currentType];
+    if (prefix) {
+      handleBlockChange(index, prefix + displayVal);
+    } else {
+      handleBlockChange(index, displayVal);
+    }
+  };
+
+  const handleCheckboxToggle = (index: number, _e?: any) => {
     const newBlocks = [...blocks];
     const raw = newBlocks[index].raw;
     if (raw.includes('- [ ]')) {
@@ -734,14 +791,9 @@ export const Editor: React.FC<EditorProps> = ({
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {viewMode === 'wysiwyg' ? (
           /* NOTION-STYLE INLINE WYSIWYG EDITOR */
-          <div 
+          <div
             className="wysiwyg-editor-canvas"
-            onClick={() => {
-              if (blocks.length > 0) {
-                setFocusedBlockIndex(blocks.length - 1);
-              }
-            }}
-            style={{ 
+            style={{
               flex: 1, 
               padding: '40px 60px', 
               overflowY: 'auto', 
@@ -749,99 +801,77 @@ export const Editor: React.FC<EditorProps> = ({
               cursor: 'text'
             }}
           >
-            <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {blocks.map((block, index) => {
-                const isFocused = focusedBlockIndex === index;
-
-                return (
-                  <div 
-                    key={block.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFocusedBlockIndex(index);
-                    }}
-                    style={{
-                      position: 'relative',
-                      minHeight: '26px',
-                      borderRadius: '4px',
-                      transition: 'background-color 0.2s',
-                    }}
-                  >
-                    {isFocused ? (
+            <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {blocks.map((block, index) => (
+                <div
+                  key={block.id}
+                  style={{ position: 'relative', minHeight: '26px' }}
+                >
+                  {block.type === 'todo' ? (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
+                      <input
+                        type="checkbox"
+                        checked={block.raw.includes('- [x]')}
+                        onChange={() => handleCheckboxToggle(index, { stopPropagation: () => {} } as any)}
+                        style={{ marginTop: '5px', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                      />
                       <textarea
                         ref={(el) => { blockRefs.current[index] = el; }}
-                        value={block.raw}
-                        onChange={(e) => handleBlockChange(index, e.target.value)}
-                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
-                        onBlur={() => {
-                          // Clean up slash menu if active
-                          setTimeout(() => {
-                            if (focusedBlockIndex === index) {
-                              setFocusedBlockIndex(null);
-                              setShowSlashMenu(false);
-                            }
-                          }, 180);
+                        value={block.raw.replace(/^-\s*\[[ x]\]\s*/i, '')}
+                        onChange={(e) => {
+                          const prefix = block.raw.includes('- [x]') ? '- [x] ' : '- [ ] ';
+                          handleBlockChange(index, prefix + e.target.value);
                         }}
-                        rows={block.raw.split('\n').length}
+                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                        onFocus={() => setFocusedBlockIndex(index)}
+                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                        rows={1}
+                        placeholder="待辦事項..."
                         style={{
-                          width: '100%',
+                          flex: 1,
                           border: 'none',
                           outline: 'none',
                           resize: 'none',
                           background: 'transparent',
-                          fontFamily: block.type === 'code' ? 'monospace' : 'inherit',
-                          fontSize: getBlockFontSize(block.type),
-                          fontWeight: getBlockFontWeight(block.type),
+                          fontSize: '15px',
+                          fontFamily: 'inherit',
                           color: 'var(--text-primary)',
-                          padding: '4px 0',
-                          margin: 0,
+                          opacity: block.raw.includes('- [x]') ? 0.45 : 1,
+                          textDecoration: block.raw.includes('- [x]') ? 'line-through' : 'none',
+                          padding: '2px 0',
                           lineHeight: '1.6',
                         }}
                       />
-                    ) : (
-                      <div 
-                        style={{
-                          fontSize: getBlockFontSize(block.type),
-                          fontWeight: getBlockFontWeight(block.type),
-                          color: 'var(--text-primary)',
-                          lineHeight: '1.6',
-                          padding: '4px 0',
-                          position: 'relative'
-                        }}
-                      >
-                        {block.type === 'todo' ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input 
-                              type="checkbox" 
-                              checked={block.raw.includes('- [x]')}
-                              onClick={(e) => handleCheckboxToggle(index, e)}
-                              onChange={() => {}}
-                              style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                            />
-                            <span 
-                              style={{ 
-                                textDecoration: block.raw.includes('- [x]') ? 'line-through' : 'none',
-                                opacity: block.raw.includes('- [x]') ? 0.5 : 1
-                              }}
-                              dangerouslySetInnerHTML={{ 
-                                __html: renderBlockToHtml({
-                                  ...block,
-                                  raw: block.raw.replace(/^-\s*\[[ x]\]\s*/i, '')
-                                }) 
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div 
-                            className="rendered-wysiwyg-block"
-                            dangerouslySetInnerHTML={{ __html: renderBlockToHtml(block) }} 
-                          />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  ) : (
+                    <textarea
+                      ref={(el) => { blockRefs.current[index] = el; }}
+                      value={getBlockDisplayValue(block)}
+                      onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                      onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                      onFocus={() => setFocusedBlockIndex(index)}
+                      onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                      rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
+                      placeholder={getBlockPlaceholder(block)}
+                      style={{
+                        width: '100%',
+                        border: 'none',
+                        outline: 'none',
+                        resize: 'none',
+                        background: 'transparent',
+                        fontFamily: block.type === 'code' ? 'var(--font-mono)' : 'inherit',
+                        fontSize: getBlockFontSize(block.type),
+                        fontWeight: getBlockFontWeight(block.type),
+                        color: block.type === 'callout' ? 'var(--text-secondary)' : 'var(--text-primary)',
+                        padding: '4px 0',
+                        margin: 0,
+                        lineHeight: '1.7',
+                        letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
             
             {/* Slash Popover Suggestion in WYSIWYG mode */}

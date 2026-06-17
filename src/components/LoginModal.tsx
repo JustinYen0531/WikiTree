@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, LogIn, UserPlus, Shield, User, Lock, Smile, GraduationCap, School, HelpCircle, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../utils/supabase';
 
 interface LoginModalProps {
   onClose: () => void;
-  onLoginSuccess: (user: { username: string; nickname: string; college: string; department: string; grade: string }) => void;
+  onLoginSuccess: (user: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean }) => void;
 }
 
 const NCCU_ACADEMIC_UNITS: Record<string, string[]> = {
@@ -88,6 +89,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onLoginSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Login states
   const [username, setUsername] = useState('');
@@ -137,11 +139,45 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   }, [activeTab]);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = username.trim();
     if (!cleanUser || !password) {
       alert('請輸入帳號與密碼');
+      return;
+    }
+
+    if (isSupabaseConfigured() && supabase) {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: `${cleanUser.toLowerCase()}@g.nccu.edu.tw`,
+          password: password,
+        });
+
+        if (error) {
+          alert(`登入失敗: ${error.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.user) {
+          const metadata = data.user.user_metadata || {};
+          onLoginSuccess({
+            username: metadata.username || cleanUser,
+            nickname: metadata.nickname || cleanUser,
+            college: metadata.college || '',
+            department: metadata.department || '',
+            grade: metadata.grade || '',
+            isSupabaseUser: true,
+          } as any);
+          onClose();
+        }
+      } catch (err: any) {
+        alert(`登入發生錯誤: ${err.message || err}`);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -172,7 +208,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     onClose();
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = regUsername.trim();
     const cleanNick = regNickname.trim();
@@ -194,6 +230,84 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     if (cleanUser.length < 3) {
       alert('帳號長度需至少 3 個字元。');
+      return;
+    }
+
+    if (isSupabaseConfigured() && supabase) {
+      setIsLoading(true);
+      try {
+        // 1. Sign up user in Supabase Auth
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: `${cleanUser.toLowerCase()}@g.nccu.edu.tw`,
+          password: regPassword,
+          options: {
+            data: {
+              username: cleanUser,
+              nickname: cleanNick,
+              name: cleanNick,
+              college: selectedCollege,
+              department: selectedDepartment,
+              grade: selectedGrade,
+            }
+          }
+        });
+
+        if (signUpError) {
+          alert(`註冊失敗: ${signUpError.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (signUpData.user) {
+          // 2. Save profile to public tables
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: signUpData.user.id,
+              username: cleanUser,
+              nickname: cleanNick,
+              college: selectedCollege,
+              department: selectedDepartment,
+              grade: selectedGrade,
+            });
+
+          if (profileError) {
+            alert(`⚠️ 帳戶已建立，但資料存入 profiles 失敗：${profileError.message}\n\n請截圖此訊息回報。`);
+          }
+
+          const { error: securityError } = await supabase
+            .from('user_security')
+            .insert({
+              id: signUpData.user.id,
+              username: cleanUser,
+              hint_question: finalHintQuestion,
+              hint_answer: cleanAnswer.toLowerCase(),
+              recovery_password: regPassword,
+            });
+
+          if (securityError) {
+            console.warn('user_security insert error:', securityError.message);
+          }
+
+          alert('🎉 帳戶註冊成功！已同步至 Supabase 雲端資料庫。請在登入分頁輸入您的帳號密碼。');
+          
+          // Reset inputs
+          setRegUsername('');
+          setRegPassword('');
+          setRegConfirmPassword('');
+          setRegNickname('');
+          setRegHintAnswer('');
+          setRegCustomHintQuestion('');
+          
+          // Switch back to login view
+          setActiveTab('login');
+          setUsername(cleanUser);
+        }
+      } catch (err: any) {
+        alert(`註冊發生錯誤: ${err.message || err}`);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -238,11 +352,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   // Forgot Password workflow: Step 1 (Find account and get question)
-  const handleForgotStep1 = (e: React.FormEvent) => {
+  const handleForgotStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = forgotUsername.trim();
     if (!cleanUser) {
       alert('請輸入帳號');
+      return;
+    }
+
+    if (isSupabaseConfigured() && supabase) {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.rpc('get_user_hint_question', {
+          username_input: cleanUser
+        });
+
+        if (error) {
+          alert(`查詢提示問題失敗: ${error.message}\n(若您尚未建立 SQL 表格，請參考專案根目錄的 supabase_setup.sql 並至 Supabase 執行)`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (!data) {
+          alert('找不到該帳戶，或該帳戶未設定密碼提示問題。');
+          setIsLoading(false);
+          return;
+        }
+
+        setForgotQuestion(data);
+        setForgotStep(2);
+      } catch (err: any) {
+        alert(`查詢發生錯誤: ${err.message || err}`);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -266,11 +409,39 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   // Forgot Password workflow: Step 2 (Verify answer and reveal password)
-  const handleForgotStep2 = (e: React.FormEvent) => {
+  const handleForgotStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanAnswerInput = forgotAnswerInput.trim().toLowerCase();
     if (!cleanAnswerInput) {
       alert('請輸入提示答案');
+      return;
+    }
+
+    if (isSupabaseConfigured() && supabase) {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.rpc('verify_hint_and_get_password', {
+          username_input: forgotUsername.trim(),
+          answer_input: cleanAnswerInput
+        });
+
+        if (error) {
+          alert(`驗證失敗: ${error.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data) {
+          setRevealedPassword(data);
+          setForgotStep(3);
+        } else {
+          alert('提示答案不正確，驗證失敗！');
+        }
+      } catch (err: any) {
+        alert(`驗證發生錯誤: ${err.message || err}`);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -531,6 +702,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <button 
                 type="submit"
                 className="btn btn-primary"
+                disabled={isLoading}
                 style={{ 
                   marginTop: '12px', 
                   width: '100%', 
@@ -541,11 +713,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  opacity: isLoading ? 0.7 : 1,
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
                 }}
               >
                 <LogIn size={15} />
-                登入帳戶
+                {isLoading ? '驗證登入中...' : '登入帳戶'}
               </button>
             </form>
           )}
@@ -822,6 +996,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <button 
                 type="submit"
                 className="btn btn-primary"
+                disabled={isLoading}
                 style={{ 
                   marginTop: '8px', 
                   width: '100%', 
@@ -832,11 +1007,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  opacity: isLoading ? 0.7 : 1,
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
                 }}
               >
                 <UserPlus size={14} />
-                註冊並建立帳戶
+                {isLoading ? '註冊中...' : '註冊並建立帳戶'}
               </button>
             </form>
           )}
@@ -886,9 +1063,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <button 
                       type="submit" 
                       className="btn btn-primary" 
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }}
+                      disabled={isLoading}
+                      style={{ 
+                        flex: 1, 
+                        padding: '10px', 
+                        borderRadius: '8px', 
+                        fontSize: '13px', 
+                        fontWeight: '600',
+                        opacity: isLoading ? 0.7 : 1,
+                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                      }}
                     >
-                      確認帳號
+                      {isLoading ? '查詢中...' : '確認帳號'}
                     </button>
                   </div>
                 </form>
@@ -946,9 +1132,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <button 
                       type="submit" 
                       className="btn btn-primary" 
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600' }}
+                      disabled={isLoading}
+                      style={{ 
+                        flex: 1, 
+                        padding: '10px', 
+                        borderRadius: '8px', 
+                        fontSize: '13px', 
+                        fontWeight: '600',
+                        opacity: isLoading ? 0.7 : 1,
+                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                      }}
                     >
-                      驗證答案
+                      {isLoading ? '驗證中...' : '驗證答案'}
                     </button>
                   </div>
                 </form>

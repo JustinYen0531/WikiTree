@@ -12,7 +12,6 @@ import {
   ChevronRight, 
   FolderPlus,
   BookOpen,
-  Sparkles,
   LogIn,
   Copy,
   Check,
@@ -20,22 +19,21 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
-import { AntigravityPlugin } from './AntigravityPlugin';
+import { isSupabaseConfigured } from '../utils/supabase';
 
 interface SidebarProps {
   rootHandle: FileSystemDirectoryHandle | string | null;
   workspaceName: string;
   files: FileNode[];
   activeFile: FileNode | null;
-  activeFileContent: string;
   onSelectFile: (file: FileNode) => void;
   onCreateFile: (parentPath: string) => void;
   onCreateFolder: (parentPath: string) => void;
   onRename: (node: FileNode, newName: string) => void;
   onDelete: (node: FileNode) => void;
-  activeTab: 'files' | 'history' | 'publish' | 'antigravity';
-  setActiveTab: (tab: 'files' | 'history' | 'publish' | 'antigravity') => void;
-  user?: { username: string; nickname: string; college: string; department: string; grade: string } | null;
+  activeTab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity';
+  setActiveTab: (tab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity') => void;
+  user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
   onTriggerLogin?: () => void;
 }
@@ -45,7 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   workspaceName,
   files,
   activeFile,
-  activeFileContent,
   onSelectFile,
   onCreateFile,
   onCreateFolder,
@@ -61,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
+  const isWorkshopTab = activeTab === 'files' || activeTab === 'history' || activeTab === 'publish' || activeTab === 'antigravity';
 
   const handleCopyToken = (token: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -234,15 +232,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-header">
         <span className="workspace-title" title={workspaceName}>
           <BookOpen size={16} style={{ color: 'var(--accent)' }} />
-          {workspaceName || '未選擇本地資料夾'}
+          {isWorkshopTab ? (workspaceName || '創意工房尚未開啟') : 'NCCU Hub'}
         </span>
       </div>
 
-      {/* Navigation Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', padding: '4px 8px' }}>
+      {/* Primary Navigation */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderBottom: '1px solid var(--border-color)', padding: '8px' }}>
+        <button
+          className={`btn ${activeTab === 'courses' ? 'btn-primary' : ''}`}
+          style={{ padding: '8px 6px', fontSize: '12px', border: 'none', background: activeTab === 'courses' ? undefined : 'transparent' }}
+          onClick={() => setActiveTab('courses')}
+        >
+          <BookOpen size={14} />
+          線上探索
+        </button>
+        <button
+          className={`btn ${isWorkshopTab ? 'btn-primary' : ''}`}
+          style={{ padding: '8px 6px', fontSize: '12px', border: 'none', background: isWorkshopTab ? undefined : 'transparent' }}
+          onClick={() => setActiveTab('files')}
+        >
+          <FileText size={14} />
+          創意工房
+        </button>
+      </div>
+
+      {isWorkshopTab && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', borderBottom: '1px solid var(--border-color)', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)' }}>
+          <button
+            className={`btn ${activeTab === 'files' ? 'btn-primary' : ''}`}
+            style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'files' ? undefined : 'transparent' }}
+            onClick={() => setActiveTab('files')}
+          >
+            <FileText size={14} />
+            筆記
+          </button>
+          <button
+            className={`btn ${activeTab === 'history' ? 'btn-primary' : ''}`}
+            style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'history' ? undefined : 'transparent' }}
+            onClick={() => setActiveTab('history')}
+          >
+            <History size={14} />
+            版本
+          </button>
+          <button
+            className={`btn ${activeTab === 'publish' ? 'btn-primary' : ''}`}
+            style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'publish' ? undefined : 'transparent' }}
+            onClick={() => setActiveTab('publish')}
+          >
+            <Globe size={14} />
+            發布
+          </button>
+        </div>
+      )}
+
+      {/* Legacy Navigation Tabs kept hidden while the UI migrates to dry/wet separation. */}
+      <div style={{ display: 'none' }}>
+        <button 
+          className={`btn ${activeTab === 'courses' ? 'btn-primary' : ''}`}
+          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'courses' ? undefined : 'transparent' }}
+          onClick={() => setActiveTab('courses')}
+        >
+          <BookOpen size={14} />
+          課程
+        </button>
         <button 
           className={`btn ${activeTab === 'files' ? 'btn-primary' : ''}`}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'files' ? undefined : 'transparent' }}
+          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'files' ? undefined : 'transparent' }}
           onClick={() => setActiveTab('files')}
         >
           <FileText size={14} />
@@ -250,7 +305,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button 
           className={`btn ${activeTab === 'history' ? 'btn-primary' : ''}`}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'history' ? undefined : 'transparent' }}
+          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'history' ? undefined : 'transparent' }}
           onClick={() => setActiveTab('history')}
         >
           <History size={14} />
@@ -258,19 +313,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button 
           className={`btn ${activeTab === 'publish' ? 'btn-primary' : ''}`}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'publish' ? undefined : 'transparent' }}
+          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'publish' ? undefined : 'transparent' }}
           onClick={() => setActiveTab('publish')}
         >
           <Globe size={14} />
           發布
-        </button>
-        <button 
-          className={`btn ${activeTab === 'antigravity' ? 'btn-primary' : ''}`}
-          style={{ flex: 1, padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'antigravity' ? undefined : 'transparent' }}
-          onClick={() => setActiveTab('antigravity')}
-        >
-          <Sparkles size={14} />
-          AI
         </button>
       </div>
 
@@ -331,23 +378,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           ) : (
             <div style={{ padding: '20px 12px', fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', lineHeight: '1.5' }}>
-              請點擊上方按鈕建立新項目，或點擊中央的按鈕開啟一個本地資料夾作為工作區來載入筆記。
+              請先進入創意工房，建立新筆記，或開啟一個工房資料夾來載入筆記。
             </div>
           )}
         </>
       )}
 
-      {activeTab === 'antigravity' && (
-        <AntigravityPlugin 
-          currentNotePath={activeFile ? activeFile.path : ''}
-          currentNoteContent={activeFileContent}
-        />
-      )}
-
       {(activeTab === 'history' || activeTab === 'publish') && (
         <div style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
           {!rootHandle ? (
-            <p>請先選擇本地資料夾以檢視歷史與發布筆記。</p>
+            <p>請先開啟創意工房資料夾，才能檢視版本與發布筆記。</p>
           ) : activeTab === 'history' ? (
             <p>請使用上方工具列的「歷史紀錄」按鈕檢視並還原手動快照快照，或在左側分頁中點擊快照記錄。</p>
           ) : (
@@ -409,7 +449,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ShieldCheck size={14} style={{ color: 'var(--success)' }} />
                 <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success)' }}>
-                  政大本地驗證帳戶
+                  {user.isSupabaseUser ? '政大雲端驗證帳戶 (Supabase)' : '政大本地驗證帳戶'}
                 </span>
               </div>
             </div>
@@ -533,7 +573,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1 }}>
               <div 
-                className="avatar-glow-real"
+                className={user.isSupabaseUser ? "avatar-glow-mock" : "avatar-glow-real"}
                 style={{ 
                   borderRadius: '50%', 
                   padding: '2px', 
