@@ -37,17 +37,45 @@ interface ParsedAssistantReply {
 }
 
 const SECTION_RE = /(?:^|\n)\s*(?:<{0,1}(opening|intro|body|main|answer|content|closing|outro|end|開場|正文|結尾)>{0,1}|(?:#{1,4}\s*)?(開場|正文|結尾|Opening|Body|Closing|Main answer|Answer)\s*[:：]?)\s*\n/gi;
+const SECTION_MARKER_LINE_RE = /^\s*(?:<{0,1}(?:opening|intro|body|main|answer|content|closing|outro|end)>{0,1}|(?:#{1,4}\s*)?(?:開場|正文|結尾|Opening|Body|Closing|Main answer|Answer)\s*[:：]?)\s*$/gim;
+
+const AI_OPENING_PATTERNS = [
+  /^(好的|好|可以|當然|沒問題|了解|收到|明白)[，,！!\s]*(以下|下面|這裡|我幫你|我會|根據|針對|這是)/,
+  /^(以下|下面|這裡)(是|為|整理|提供|列出)/,
+  /^(我幫你|我會|我可以|我來)(整理|改寫|摘要|翻譯|分析|列出|生成)/,
+  /^(根據|針對|依照|基於).{0,40}(整理|分析|回答|如下)/,
+  /^(Here|Sure|Of course|Certainly|Absolutely)[,.!\s]+(is|are|I|the|a)/i,
+];
+
+const AI_CLOSING_PATTERNS = [
+  /^(如果|若|假如).{0,60}(需要|想要|希望|可以|再)/,
+  /^(需要的話|如果你願意|你也可以|我也可以).{0,80}/,
+  /(我可以再|可以再|再幫你).{0,60}(整理|改寫|補充|濃縮|轉成|做成)/,
+  /(希望.{0,30}(有幫助|幫得上忙)|以上|完成)[。.!！\s]*$/,
+  /^(Let me know|Hope this helps|I can also|If you want|If needed)/i,
+];
 
 const stripSectionMarkers = (text: string) =>
-  text
-    .replace(/^\s*(?:<{0,1}(?:opening|intro|body|main|answer|content|closing|outro|end)>{0,1}|(?:#{1,4}\s*)?(?:開場|正文|結尾|Opening|Body|Closing|Main answer|Answer)\s*[:：]?)\s*$/gim, '')
-    .trim();
+  text.replace(SECTION_MARKER_LINE_RE, '').trim();
+
+const isProbablyCopyableContent = (text: string) =>
+  /^(\s*(#{1,6}\s+|[-*+]\s+|\d+[.)]\s+|>\s+|```|\|)|\s*\S+\s*[:：]\s*\S+)/.test(text);
+
+const isFillerParagraph = (
+  paragraph: string,
+  patterns: RegExp[],
+  maxLength: number,
+) => {
+  const text = stripSectionMarkers(paragraph).replace(/\s+/g, ' ').trim();
+  if (!text || text.length > maxLength || isProbablyCopyableContent(text)) return false;
+  return patterns.some((pattern) => pattern.test(text));
+};
 
 const looksLikeOpening = (paragraph: string) =>
-  /^(好的|可以|當然|沒問題|了解|以下|下面|這裡|我幫你|我會|根據|針對|這是|以下是|下面是|Here|Sure|Of course)\b/i.test(paragraph.trim());
+  isFillerParagraph(paragraph, AI_OPENING_PATTERNS, 140);
 
 const looksLikeClosing = (paragraph: string) =>
-  /(如果你|若你|需要我|你也可以|希望|以上|完成|可以再|告訴我|Let me know|Hope this helps)[。.!！?？\s]*$/i.test(paragraph.trim());
+  isFillerParagraph(paragraph, AI_CLOSING_PATTERNS, 180);
 
 const splitParagraphs = (text: string) =>
   text
@@ -55,6 +83,31 @@ const splitParagraphs = (text: string) =>
     .split(/\n\s*\n/)
     .map((part) => part.trim())
     .filter(Boolean);
+
+const stripFillerEnvelope = (text: string): ParsedAssistantReply | null => {
+  const lines = text.split('\n');
+  let start = 0;
+  let end = lines.length - 1;
+
+  while (start <= end && !lines[start].trim()) start += 1;
+  while (end >= start && !lines[end].trim()) end -= 1;
+  if (start > end) return null;
+
+  const opening = looksLikeOpening(lines[start]) ? lines[start].trim() : '';
+  if (opening) start += 1;
+
+  while (start <= end && !lines[start].trim()) start += 1;
+
+  const closing = end >= start && looksLikeClosing(lines[end]) ? lines[end].trim() : '';
+  if (closing) end -= 1;
+
+  while (end >= start && !lines[end].trim()) end -= 1;
+
+  const body = lines.slice(start, end + 1).join('\n').trim();
+  if (!body || (!opening && !closing)) return null;
+
+  return { opening, body, closing };
+};
 
 const parseAssistantReply = (content: string): ParsedAssistantReply => {
   const source = content.trim();
@@ -79,6 +132,9 @@ const parseAssistantReply = (content: string): ParsedAssistantReply => {
       closing: sections.closing || '',
     };
   }
+
+  const envelope = stripFillerEnvelope(source);
+  if (envelope) return envelope;
 
   const paragraphs = splitParagraphs(source);
   if (paragraphs.length < 2) return { opening: '', body: source, closing: '' };
