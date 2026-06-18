@@ -198,6 +198,47 @@ export const Editor: React.FC<EditorProps> = ({
     return blockArr.map(b => b.raw).join('\n');
   };
 
+  const looksLikeMarkdownPaste = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    return text.includes('\n') || /(^|\n)\s*(#{1,6}\s+|[-*+]\s+|\d+[.)]\s+|-\s*\[[ x]\]\s+|```|>\s+|\|.*\||-{3,}\s*$|\*{3,}\s*$|_{3,}\s*$)/m.test(text);
+  };
+
+  const displayValueToRaw = (block: Block, displayVal: string) => {
+    const prefixMap: Partial<Record<Block['type'], string>> = {
+      header1: '# ',
+      header2: '## ',
+      header3: '### ',
+    };
+    const prefix = prefixMap[block.type];
+    if (prefix) return prefix + displayVal;
+    if (block.type === 'todo') {
+      const todoPrefix = block.raw.includes('- [x]') ? '- [x] ' : '- [ ] ';
+      return todoPrefix + displayVal;
+    }
+    return displayVal;
+  };
+
+  const handleBlockPaste = (index: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasted = e.clipboardData.getData('text/plain');
+    if (!looksLikeMarkdownPaste(pasted)) return;
+
+    e.preventDefault();
+
+    const textarea = e.currentTarget;
+    const before = textarea.value.slice(0, textarea.selectionStart);
+    const after = textarea.value.slice(textarea.selectionEnd);
+    const mergedDisplay = before + pasted + after;
+    const mergedRaw = displayValueToRaw(blocks[index], mergedDisplay);
+    const pastedBlocks = parseMarkdownToBlocks(mergedRaw);
+    const nextBlocks = [...blocks];
+
+    nextBlocks.splice(index, 1, ...pastedBlocks);
+    updateContentFromBlocks(nextBlocks);
+    setFocusedBlockIndex(index);
+    setTimeout(() => blockRefs.current[index]?.focus(), 0);
+  };
+
   // Sync prop changes to local blocks, but ONLY when not editing or if external change occurs
   useEffect(() => {
     const currentMd = blocksToMarkdown(blocks);
@@ -901,6 +942,7 @@ export const Editor: React.FC<EditorProps> = ({
                           ref={(el) => { blockRefs.current[index] = el; }}
                           value={getBlockDisplayValue(block)}
                           onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onPaste={(e) => handleBlockPaste(index, e)}
                           onKeyDown={(e) => handleBlockKeyDown(index, e)}
                           onFocus={() => setFocusedBlockIndex(index)}
                           onBlur={() => {
@@ -944,6 +986,7 @@ export const Editor: React.FC<EditorProps> = ({
                           const prefix = block.raw.includes('- [x]') ? '- [x] ' : '- [ ] ';
                           handleBlockChange(index, prefix + e.target.value);
                         }}
+                        onPaste={(e) => handleBlockPaste(index, e)}
                         onKeyDown={(e) => handleBlockKeyDown(index, e)}
                         onFocus={() => setFocusedBlockIndex(index)}
                         onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
@@ -972,6 +1015,7 @@ export const Editor: React.FC<EditorProps> = ({
                       ref={(el) => { blockRefs.current[index] = el; }}
                       value={getBlockDisplayValue(block)}
                       onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                      onPaste={(e) => handleBlockPaste(index, e)}
                       onKeyDown={(e) => handleBlockKeyDown(index, e)}
                       onFocus={() => setFocusedBlockIndex(index)}
                       onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
