@@ -168,6 +168,37 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 const MODEL = 'llama-3.1-8b-instant';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+const agentChunks = [
+  {
+    label: '🎯 加入考點',
+    prompt: '在原筆記後補上「考點」區塊，列出最可能被考的定義、比較、因果關係、關鍵判斷與易混淆處。用條列呈現，語氣像考前複習筆記。',
+  },
+  {
+    label: '📈 補上圖形',
+    prompt: '在原筆記中補上適合幫助理解的圖形說明。優先使用 Mermaid、ASCII 流程圖、簡單表格或座標軸文字示意；如果不適合畫圖，請改用「圖形化描述」整理。',
+  },
+  {
+    label: '🧠 加入記憶技巧',
+    prompt: '補上好記的記憶技巧、口訣、聯想法或對照表。記憶技巧要短、直覺、能幫助考試回想，並保留原本概念的準確性。',
+  },
+  {
+    label: '📝 生成練習題',
+    prompt: '根據原筆記生成練習題。包含選擇題或簡答題、答案、簡短解析。題目要檢查概念理解，不要只考背誦。',
+  },
+  {
+    label: '🔗 連到前置概念',
+    prompt: '補上理解這段內容之前需要知道的前置概念，並說明每個前置概念如何連到原筆記。格式用「前置概念 -> 為什麼重要」。',
+  },
+  {
+    label: '⚠️ 常見誤解',
+    prompt: '補上學生常見誤解與正確觀念。用「誤解 / 正確理解 / 為什麼」的格式整理，幫助避免考試或作業中寫錯。',
+  },
+  {
+    label: '📚 教授上課補充',
+    prompt: '補上教授上課可能會延伸說明的補充觀點、例子、提醒或和現實情境的連結。請標成「課堂補充」，不要捏造具體教授或課程事件。',
+  },
+];
+
 const MarkdownSegment: React.FC<{ text: string; muted?: boolean; main?: boolean }> = ({ text, muted, main }) => (
   <div
     style={{
@@ -368,6 +399,27 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
   };
 
+  const sendAgentChunk = (label: string, instruction: string) => {
+    if (!editRequest || streaming) return;
+
+    setInput('');
+    const apiText = [
+      '你正在擔任 NCCU Hub 的 semi-agent 筆記改寫器。',
+      '請依照下方固定指令改寫「選取文字」。',
+      '只輸出可直接貼回筆記的內容；不要前言、不要結尾、不要解釋你的做法。',
+      '輸出可以使用 Markdown，但必須是原始 Markdown，不要包在程式碼區塊中。',
+      '保留原本重點，必要時補充，但不要捏造課堂沒有根據的事實。',
+      '',
+      '選取文字：',
+      editRequest.text,
+      '',
+      '固定指令：',
+      instruction,
+    ].join('\n');
+
+    sendMessage(apiText, true, label);
+  };
+
   const notePresets = [
     { id: 'outline', icon: ListChecks, label: '整理重點', prompt: '請把這份筆記整理成清楚的條列式重點。' },
     { id: 'summary', icon: FileText, label: '一段話摘要', prompt: '請用三句話摘要這份筆記的核心內容。' },
@@ -484,6 +536,33 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               {messages.length === 0 && editRequest && (
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '8px', lineHeight: 1.7 }}>
                   在下方輸入你的修改指令，例如：「改成更簡潔」、「翻成英文」
+                </div>
+              )}
+
+              {editRequest && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: messages.length === 0 ? '2px' : '0' }}>
+                  {agentChunks.map((chunk) => (
+                    <button
+                      key={chunk.label}
+                      type="button"
+                      onClick={() => sendAgentChunk(chunk.label, chunk.prompt)}
+                      disabled={streaming}
+                      title={chunk.prompt}
+                      style={{
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '999px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        padding: '6px 10px',
+                        fontSize: '12px',
+                        cursor: streaming ? 'not-allowed' : 'pointer',
+                        opacity: streaming ? 0.55 : 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {chunk.label}
+                    </button>
+                  ))}
                 </div>
               )}
 
