@@ -26,7 +26,7 @@ interface Message {
 }
 
 const API_KEY_STORAGE = 'nccu_hub_gemini_key';
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-1.5-flash';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
