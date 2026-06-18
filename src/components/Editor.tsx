@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Bold, 
   Italic, 
@@ -839,6 +839,16 @@ export const Editor: React.FC<EditorProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useLayoutEffect(() => {
+    if (viewMode !== 'wysiwyg') return;
+
+    blockRefs.current.forEach((textarea) => {
+      if (!textarea) return;
+      textarea.style.height = '0px';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    });
+  }, [blocks, viewMode]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}>
       {/* Editor Toolbar */}
@@ -921,6 +931,7 @@ export const Editor: React.FC<EditorProps> = ({
                     >
                       {focusedBlockIndex === index ? (
                         <textarea
+                          className="block-textarea"
                           ref={(el) => { blockRefs.current[index] = el; }}
                           value={getBlockDisplayValue(block)}
                           onChange={(e) => handleBlockInputChange(index, e.target.value)}
@@ -944,6 +955,7 @@ export const Editor: React.FC<EditorProps> = ({
                             padding: '0',
                             margin: 0,
                             lineHeight: '1.4',
+                            overflow: 'hidden',
                           }}
                         />
                       ) : (
@@ -959,6 +971,7 @@ export const Editor: React.FC<EditorProps> = ({
                         style={{ marginTop: '5px', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
                       />
                       <textarea
+                        className="block-textarea"
                         ref={(el) => { blockRefs.current[index] = el; }}
                         value={block.raw.replace(/^-\s*\[[ x]\]\s*/i, '')}
                         onChange={(e) => {
@@ -983,11 +996,13 @@ export const Editor: React.FC<EditorProps> = ({
                           textDecoration: block.raw.includes('- [x]') ? 'line-through' : 'none',
                           padding: '2px 0',
                           lineHeight: '1.6',
+                          overflow: 'hidden',
                         }}
                       />
                     </div>
                   ) : (
                     <textarea
+                      className="block-textarea"
                       ref={(el) => { blockRefs.current[index] = el; }}
                       value={getBlockDisplayValue(block)}
                       onChange={(e) => handleBlockInputChange(index, e.target.value)}
@@ -1010,6 +1025,7 @@ export const Editor: React.FC<EditorProps> = ({
                         margin: 0,
                         lineHeight: '1.7',
                         letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
+                        overflow: 'hidden',
                       }}
                     />
                   )}

@@ -106,20 +106,31 @@ body {
   overflow: hidden;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Scrollbars
+   Hide native scrollbars everywhere while preserving wheel/touch scrolling.
+   The app has many nested editable panes; visible native gutters show up as
+   short stray bars inside text blocks, so the product UI owns scroll affordance. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+
+.block-textarea {
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+
+.block-textarea::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* App Layout Grid */
