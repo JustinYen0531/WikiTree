@@ -138,7 +138,7 @@ function App() {
       if (!savedHandle) return;
 
       try {
-        const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+        const perm = await (savedHandle as any).queryPermission({ mode: 'readwrite' });
         if (perm === 'granted') {
           // Permission already cached — restore silently
           setIsRestoringWorkspace(true);
