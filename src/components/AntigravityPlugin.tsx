@@ -240,7 +240,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           stream: true,
           max_tokens: 2048,
           messages: [
-            { role: 'system', content: buildSystemPrompt() },
+            {
+              role: 'system',
+              content: `${buildSystemPrompt()}\n\n回覆請盡量分成三段：開場、正文、結尾。可複製/可直接貼進筆記的內容只放在「正文」段落；不要把「以下是我的整理」這類客套話放進正文。`,
+            },
             ...historyForApi.map((m) => ({ role: m.role, content: m.content })),
           ],
         }),
