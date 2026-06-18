@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { marked } from 'marked';
 import {
   ChevronDown,
   ChevronRight,
@@ -11,12 +12,15 @@ import {
   Send,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 
 interface AntigravityPluginProps {
   currentNotePath: string;
   currentNoteContent: string;
   onApplyContent?: (content: string) => void;
+  editRequest?: { text: string; apply: (s: string) => void } | null;
+  onClearEditRequest?: () => void;
 }
 
 interface Message {
@@ -25,6 +29,67 @@ interface Message {
 }
 
 const API_KEY_STORAGE = 'nccu_hub_groq_key';
+
+interface ParsedAssistantReply {
+  opening: string;
+  body: string;
+  closing: string;
+}
+
+const SECTION_RE = /(?:^|\n)\s*(?:<{0,1}(opening|intro|body|main|answer|content|closing|outro|end|開場|正文|結尾)>{0,1}|(?:#{1,4}\s*)?(開場|正文|結尾|Opening|Body|Closing|Main answer|Answer)\s*[:：]?)\s*\n/gi;
+
+const stripSectionMarkers = (text: string) =>
+  text
+    .replace(/^\s*(?:<{0,1}(?:opening|intro|body|main|answer|content|closing|outro|end)>{0,1}|(?:#{1,4}\s*)?(?:開場|正文|結尾|Opening|Body|Closing|Main answer|Answer)\s*[:：]?)\s*$/gim, '')
+    .trim();
+
+const looksLikeOpening = (paragraph: string) =>
+  /^(好的|可以|當然|沒問題|了解|以下|下面|這裡|我幫你|我會|根據|針對|這是|以下是|下面是|Here|Sure|Of course)\b/i.test(paragraph.trim());
+
+const looksLikeClosing = (paragraph: string) =>
+  /(如果你|若你|需要我|你也可以|希望|以上|完成|可以再|告訴我|Let me know|Hope this helps)[。.!！?？\s]*$/i.test(paragraph.trim());
+
+const splitParagraphs = (text: string) =>
+  text
+    .trim()
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+const parseAssistantReply = (content: string): ParsedAssistantReply => {
+  const source = content.trim();
+  if (!source) return { opening: '', body: '', closing: '' };
+
+  const matches = [...source.matchAll(SECTION_RE)];
+  if (matches.length > 0) {
+    const sections: Record<string, string> = {};
+    matches.forEach((match, index) => {
+      const label = (match[1] || match[2] || '').toLowerCase();
+      const start = (match.index || 0) + match[0].length;
+      const end = index + 1 < matches.length ? matches[index + 1].index || source.length : source.length;
+      const value = stripSectionMarkers(source.slice(start, end));
+      if (/opening|intro|開場/.test(label)) sections.opening = value;
+      else if (/closing|outro|end|結尾/.test(label)) sections.closing = value;
+      else sections.body = value;
+    });
+
+    return {
+      opening: sections.opening || '',
+      body: sections.body || stripSectionMarkers(source),
+      closing: sections.closing || '',
+    };
+  }
+
+  const paragraphs = splitParagraphs(source);
+  if (paragraphs.length < 2) return { opening: '', body: source, closing: '' };
+
+  const opening = looksLikeOpening(paragraphs[0]) ? paragraphs.shift() || '' : '';
+  const closing = paragraphs.length > 1 && looksLikeClosing(paragraphs[paragraphs.length - 1])
+    ? paragraphs.pop() || ''
+    : '';
+  const body = paragraphs.join('\n\n').trim() || source;
+  return { opening, body, closing };
+};
 
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   const [copied, setCopied] = useState(false);
@@ -47,10 +112,66 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 const MODEL = 'llama-3.1-8b-instant';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+const MarkdownSegment: React.FC<{ text: string; muted?: boolean; main?: boolean }> = ({ text, muted, main }) => (
+  <div
+    style={{
+      color: muted ? 'var(--text-secondary)' : 'inherit',
+      borderLeft: main ? '3px solid var(--accent)' : 'none',
+      paddingLeft: main ? '10px' : 0,
+    }}
+    dangerouslySetInnerHTML={{ __html: marked.parse(text) as string }}
+  />
+);
+
+const BodyCopyButton: React.FC<{ content: string }> = ({ content }) => {
+  const [copied, setCopied] = useState(false);
+  const body = parseAssistantReply(content).body;
+  const text = body || content;
+
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '5px',
+        background: 'none', border: '1px solid var(--border-color)',
+        borderRadius: '6px', padding: '3px 8px', fontSize: '11px',
+        color: copied ? 'var(--success)' : 'var(--text-secondary)',
+        cursor: 'pointer', alignSelf: 'flex-start',
+      }}
+    >
+      <Copy size={11} />
+      {copied ? '已複製' : '複製正文'}
+    </button>
+  );
+};
+
+const AssistantMessage: React.FC<{ content: string; loading?: boolean }> = ({ content, loading }) => {
+  if (!content) {
+    return loading ? <Loader2 size={14} className="spin" /> : null;
+  }
+
+  const parsed = parseAssistantReply(content);
+  const hasSegments = Boolean(parsed.opening || parsed.closing);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {parsed.opening && <MarkdownSegment text={parsed.opening} muted />}
+      <MarkdownSegment text={parsed.body} main={hasSegments} />
+      {parsed.closing && <MarkdownSegment text={parsed.closing} muted />}
+    </div>
+  );
+};
+
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNotePath,
   currentNoteContent,
   onApplyContent,
+  editRequest,
+  onClearEditRequest,
 }) => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
   const [showGuide, setShowGuide] = useState(false);
@@ -83,21 +204,25 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   };
 
   const buildSystemPrompt = () => {
+    if (editRequest) {
+      return '你是文字編輯助理。只輸出修改後的文字，不要任何解釋、前言、後記、標籤。直接輸出純文字結果。';
+    }
     const base =
-      '你是 NCCU Hub 的 AI 學習助理，幫助政大學生整理筆記、解釋概念、翻譯內容。請用繁體中文回答，回答要簡潔清楚。';
+      '你是 NCCU Hub 的 AI 學習助理，幫助政大學生整理筆記、解釋概念、翻譯內容。請用繁體中文回答，回答要簡潔清楚。使用 Markdown 格式讓回答更易讀。';
     if (!currentNotePath || !currentNoteContent) return base;
     return `${base}\n\n使用者目前開啟的筆記是「${currentNotePath}」，內容如下：\n\n---\n${currentNoteContent.slice(0, 8000)}\n---`;
   };
 
-  const sendMessage = async (userText: string, freshStart = false) => {
+  const sendMessage = async (userText: string, freshStart = false, displayText?: string) => {
     if (!hasKey || streaming || !userText.trim()) return;
     setError(null);
 
+    const shownText = displayText ?? userText;
     const baseHistory: Message[] = freshStart ? [] : messages;
-    const userMsg: Message = { role: 'user', content: userText };
-    const historyForApi = [...baseHistory, userMsg];
+    const userMsgDisplay: Message = { role: 'user', content: shownText };
+    const historyForApi = [...baseHistory, { role: 'user' as const, content: userText }];
 
-    setMessages([...historyForApi, { role: 'assistant', content: '' }]);
+    setMessages([...baseHistory, userMsgDisplay, { role: 'assistant', content: '' }]);
     setStreaming(true);
 
     abortRef.current = new AbortController();
@@ -171,7 +296,12 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     const text = input.trim();
     if (!text) return;
     setInput('');
-    sendMessage(text);
+    if (editRequest) {
+      const apiText = `要修改的文字：\n\n${editRequest.text}\n\n指令：${text}`;
+      sendMessage(apiText, true, `✏️ ${text}`);
+    } else {
+      sendMessage(text);
+    }
   };
 
   const notePresets = [
@@ -237,6 +367,35 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           </div>
         ) : (
           <>
+            {/* Edit request banner */}
+            {editRequest && (
+              <div style={{
+                margin: '8px 12px 0',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--accent)',
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'flex-start',
+                flexShrink: 0,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', marginBottom: '4px' }}>✏️ 正在編輯選取文字</div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    「{editRequest.text.slice(0, 80)}{editRequest.text.length > 80 ? '…' : ''}」
+                  </div>
+                </div>
+                <button
+                  onClick={onClearEditRequest}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0', flexShrink: 0 }}
+                  title="取消編輯"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Messages */}
             <div style={{
               flex: 1,
@@ -248,7 +407,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               flexDirection: 'column',
               gap: '10px',
             }}>
-              {messages.length === 0 && (
+              {messages.length === 0 && !editRequest && (
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '8px', lineHeight: 1.7 }}>
                   <Sparkles size={18} style={{ color: 'var(--accent)', display: 'block', margin: '0 auto 8px' }} />
                   {currentNotePath
@@ -258,8 +417,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 </div>
               )}
 
+              {messages.length === 0 && editRequest && (
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '8px', lineHeight: 1.7 }}>
+                  在下方輸入你的修改指令，例如：「改成更簡潔」、「翻成英文」
+                </div>
+              )}
+
               {/* Quick presets */}
-              {messages.length === 0 && currentNotePath && currentNoteContent && (
+              {messages.length === 0 && !editRequest && currentNotePath && currentNoteContent && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
                   {notePresets.map((preset) => {
                     const Icon = preset.icon;
@@ -292,44 +457,85 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               )}
 
               {/* Conversation */}
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    gap: '4px',
-                    width: '100%',
-                    minWidth: 0,
-                  }}
-                >
-                  <div style={{
-                    maxWidth: '88%',
-                    minWidth: 0,
-                    padding: '8px 12px',
-                    borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-secondary)',
-                    color: msg.role === 'user' ? 'white' : 'var(--text-primary)',
-                    fontSize: '12.5px',
-                    lineHeight: 1.65,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    overflowWrap: 'anywhere',
-                    border: msg.role === 'assistant' ? '1px solid var(--border-color)' : 'none',
-                  }}>
-                    {msg.content
-                      ? msg.content
-                      : (streaming && i === messages.length - 1
-                          ? <Loader2 size={14} className="spin" />
-                          : null)
-                    }
+              {messages.map((msg, i) => {
+                const isLastAssistant = msg.role === 'assistant' && i === messages.length - 1;
+                const canApply = editRequest && isLastAssistant && msg.content && !streaming;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                      gap: '4px',
+                      width: '100%',
+                      minWidth: 0,
+                    }}
+                  >
+                    {msg.role === 'user' ? (
+                      <div style={{
+                        maxWidth: '88%', minWidth: 0,
+                        padding: '8px 12px',
+                        borderRadius: '12px 12px 2px 12px',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                        fontSize: '12.5px', lineHeight: 1.65,
+                        wordBreak: 'break-word', overflowWrap: 'anywhere',
+                      }}>
+                        {msg.content}
+                      </div>
+                    ) : msg.content ? (
+                      <div
+                        className="rendered-markdown"
+                        style={{
+                          maxWidth: '96%', minWidth: 0,
+                          padding: '8px 12px',
+                          borderRadius: '12px 12px 12px 2px',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '12.5px', lineHeight: 1.65,
+                          border: '1px solid var(--border-color)',
+                          wordBreak: 'break-word', overflowWrap: 'anywhere',
+                        }}
+                      >
+                        <AssistantMessage content={msg.content} />
+                      </div>
+                    ) : (
+                      <div style={{
+                        maxWidth: '96%', minWidth: 0,
+                        padding: '8px 12px',
+                        borderRadius: '12px 12px 12px 2px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                      }}>
+                        {streaming && i === messages.length - 1 && <Loader2 size={14} className="spin" />}
+                      </div>
+                    )}
+
+                    {msg.role === 'assistant' && msg.content && (
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <BodyCopyButton content={msg.content} />
+                        {canApply && (
+                          <button
+                            onClick={() => {
+                              editRequest.apply(parseAssistantReply(msg.content).body || msg.content);
+                              onClearEditRequest?.();
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '4px',
+                              background: 'none', border: '1px solid var(--accent)',
+                              borderRadius: '6px', padding: '3px 8px', fontSize: '11px',
+                              color: 'var(--accent)', cursor: 'pointer', fontWeight: 700,
+                            }}
+                          >
+                            ✓ 套用到選取範圍
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {msg.role === 'assistant' && msg.content && (
-                    <CopyButton text={msg.content} />
-                  )}
-                </div>
-              ))}
+                );
+              })}
 
               {error && (
                 <div style={{
@@ -362,7 +568,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             >
               <textarea
                 className="form-input"
-                placeholder="輸入問題，Enter 送出，Shift+Enter 換行…"
+                placeholder={editRequest ? '告訴我怎麼修改這段文字…' : '輸入問題，Enter 送出，Shift+Enter 換行…'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {

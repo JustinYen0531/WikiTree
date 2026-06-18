@@ -253,6 +253,9 @@ function App() {
   };
 
   // Check CLI status on load and periodically
+  // Groq inline edit request bridge (Editor → AI panel)
+  const [groqEditRequest, setGroqEditRequest] = useState<{ text: string; apply: (s: string) => void } | null>(null);
+
   // App views and panels
   const [sidebarTab, setSidebarTab] = useState<'courses' | 'files' | 'history' | 'publish' | 'antigravity'>('courses');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
@@ -801,6 +804,10 @@ function App() {
                 isSaved={isSaved}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
+                onEditSelection={(text, applyFn) => {
+                  setGroqEditRequest({ text, apply: applyFn });
+                  setSidebarTab('antigravity');
+                }}
               />
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
@@ -858,6 +865,8 @@ function App() {
                 console.error('AI apply write failed', e);
               }
             }}
+            editRequest={groqEditRequest}
+            onClearEditRequest={() => setGroqEditRequest(null)}
           />
         </aside>
       )}
