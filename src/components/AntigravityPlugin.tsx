@@ -21,12 +21,13 @@ interface AntigravityPluginProps {
 }
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'model';
   content: string;
 }
 
-const API_KEY_STORAGE = 'nccu_hub_anthropic_key';
-const MODEL = 'claude-haiku-4-5-20251001';
+const API_KEY_STORAGE = 'nccu_hub_gemini_key';
+const MODEL = 'gemini-2.0-flash';
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNotePath,
@@ -88,28 +89,32 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     const userMsg: Message = { role: 'user', content: userText };
     const historyForApi = [...baseHistory, userMsg];
 
-    setMessages([...historyForApi, { role: 'assistant', content: '' }]);
+    setMessages([...historyForApi, { role: 'model', content: '' }]);
     setStreaming(true);
 
     abortRef.current = new AbortController();
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true',
+      const url = `${GEMINI_BASE}/${MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+      const body = {
+        system_instruction: {
+          parts: [{ text: buildSystemPrompt() }],
         },
+        contents: historyForApi.map((m) => ({
+          role: m.role,
+          parts: [{ text: m.content }],
+        })),
+        generationConfig: {
+          maxOutputTokens: 2048,
+        },
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
         signal: abortRef.current.signal,
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 2048,
-          system: buildSystemPrompt(),
-          stream: true,
-          messages: historyForApi.map((m) => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -119,7 +124,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
       const reader = response.body!.getReader();
       const decoder = new TextDecoder();
-      let assistantText = '';
+      let modelText = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -128,14 +133,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         for (const line of chunk.split('\n')) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
+          if (!data) continue;
           try {
             const parsed = JSON.parse(data);
-            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-              assistantText += parsed.delta.text;
+            const part = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (part) {
+              modelText += part;
               setMessages((prev) => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: 'assistant', content: assistantText };
+                updated[updated.length - 1] = { role: 'model', content: modelText };
                 return updated;
               });
             }
@@ -147,7 +153,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       setError(e.message || '發生未知錯誤');
       setMessages((prev) => {
         const last = prev[prev.length - 1];
-        if (last?.role === 'assistant' && !last.content) return prev.slice(0, -1);
+        if (last?.role === 'model' && !last.content) return prev.slice(0, -1);
         return prev;
       });
     } finally {
@@ -171,7 +177,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     { id: 'quiz', icon: Lightbulb, label: '出練習題', prompt: '請根據這份筆記內容出三題練習題並附上參考答案。' },
   ];
 
-  const maskedKey = apiKey ? `sk-ant-...${apiKey.slice(-6)}` : '';
+  const maskedKey = apiKey ? `AIza...${apiKey.slice(-6)}` : '';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '13px', minHeight: 0 }}>
@@ -191,7 +197,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             backgroundColor: hasKey ? 'var(--success)' : 'var(--danger)',
           }} />
           <div>
-            <div style={{ fontWeight: 700 }}>{hasKey ? 'AI 已就緒' : '請設定 API Key'}</div>
+            <div style={{ fontWeight: 700 }}>{hasKey ? 'Gemini 已就緒' : '請設定 API Key'}</div>
             {hasKey && (
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{maskedKey}</div>
             )}
@@ -221,7 +227,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           flexShrink: 0,
         }}>
           <div className="form-group">
-            <label className="form-label">Anthropic API Key</label>
+            <label className="form-label">Google Gemini API Key</label>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input
                 type={showKey ? 'text' : 'password'}
@@ -229,7 +235,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveKey()}
-                placeholder="sk-ant-api03-..."
+                placeholder="AIzaSy..."
                 style={{ flex: 1, fontSize: '12px', padding: '6px' }}
                 autoFocus
               />
@@ -243,7 +249,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
             </div>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Key 只存在你的瀏覽器 localStorage，不會上傳到任何伺服器。
+              Key 只存在你的瀏覽器，不會上傳到任何伺服器。
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -288,15 +294,25 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             <Sparkles size={32} style={{ color: 'var(--accent)', opacity: 0.75 }} />
             <div>
               <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '14px' }}>
-                設定 Anthropic API Key
+                設定 Gemini API Key
               </div>
-              <div style={{ fontSize: '12px', lineHeight: 1.7 }}>
-                前往 <strong>console.anthropic.com</strong><br />
-                建立帳號並產生一組 API Key，<br />
-                貼到上方設定即可開始使用。<br />
+              <div style={{ fontSize: '12px', lineHeight: 1.8 }}>
+                前往 <strong>aistudio.google.com</strong><br />
+                用 Google 帳號登入 → 點右上角<br />
+                <strong>「Get API key」</strong> → 建立新 Key<br />
                 <br />
-                費用由你的帳號承擔，<br />
-                用多少付多少，無月費。
+                <span style={{
+                  display: 'inline-block',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '11.5px',
+                  color: 'var(--success)',
+                  fontWeight: 700,
+                }}>
+                  免費額度：每天 1500 次 ✓
+                </span>
               </div>
             </div>
             <button
@@ -329,7 +345,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 </div>
               )}
 
-              {/* Quick presets - show when no messages and note is open */}
+              {/* Quick presets */}
               {messages.length === 0 && currentNotePath && currentNoteContent && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
                   {notePresets.map((preset) => {
@@ -382,7 +398,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     lineHeight: 1.65,
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
-                    border: msg.role === 'assistant' ? '1px solid var(--border-color)' : 'none',
+                    border: msg.role === 'model' ? '1px solid var(--border-color)' : 'none',
                   }}>
                     {msg.content
                       ? msg.content
@@ -480,7 +496,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 npm install -g @anthropic-ai/claude-code
               </code>
             </li>
-            <li>取得 API Key（console.anthropic.com）</li>
+            <li>取得 Anthropic API Key（console.anthropic.com）</li>
             <li>
               <code style={{ backgroundColor: 'var(--bg-secondary)', padding: '1px 5px', borderRadius: '3px', fontSize: '11px', color: 'var(--accent)' }}>
                 cd 筆記資料夾 && claude
