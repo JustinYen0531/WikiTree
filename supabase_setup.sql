@@ -5,9 +5,9 @@
 -- 貼上以下所有 SQL 指令並執行，即可完成資料庫表格與安全性設定！
 
 -- ---------------------------------------------------------------------
--- 1. 建立公開個人資料表格 (profiles)
+-- 1. 建立公開個人資料表格 (users)
 -- ---------------------------------------------------------------------
-create table if not exists public.profiles (
+create table if not exists public.users (
   id uuid references auth.users on delete cascade primary key,
   username text unique not null,
   nickname text not null,
@@ -18,20 +18,20 @@ create table if not exists public.profiles (
 );
 
 -- 啟用 RLS 行級安全性政策
-alter table public.profiles enable row level security;
+alter table public.users enable row level security;
 
 -- 允許任何人讀取公開個人資料 (例如：顯示筆記的作者)
 create policy "任何人皆可讀取個人檔案"
-  on public.profiles for select
+  on public.users for select
   using (true);
 
 -- 允許已登入的使用者新增/修改自己的個人檔案
 create policy "使用者可新增自己的個人檔案"
-  on public.profiles for insert
+  on public.users for insert
   with check (auth.uid() = id);
 
 create policy "使用者可更新自己的個人檔案"
-  on public.profiles for update
+  on public.users for update
   using (auth.uid() = id);
 
 -- ---------------------------------------------------------------------
@@ -120,7 +120,68 @@ create policy "使用者可發布筆記"
   on public.published_notes for insert
   with check (auth.uid() = user_id);
 
--- 使用者可刪除自己發布的筆記
+-- 已登入使用者可刪除自己發布的筆記
 create policy "使用者可刪除自己的發布筆記"
   on public.published_notes for delete
   using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- 5. 建立筆記澆水/點讚功能表格 (note_waterings)
+-- ---------------------------------------------------------------------
+create table if not exists public.note_waterings (
+  id uuid primary key default gen_random_uuid(),
+  note_id uuid references public.published_notes(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (note_id, user_id)
+);
+
+-- 啟用 RLS
+alter table public.note_waterings enable row level security;
+
+-- 任何人可讀取澆水紀錄
+create policy "任何人皆可讀取澆水紀錄"
+  on public.note_waterings for select
+  using (true);
+
+-- 已登入使用者可以澆水
+create policy "使用者可以進行澆水"
+  on public.note_waterings for insert
+  with check (auth.uid() = user_id);
+
+-- 使用者可以取消自己的澆水
+create policy "使用者可以取消自己的澆水"
+  on public.note_waterings for delete
+  using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- 6. 建立筆記留言/足跡功能表格 (note_messages)
+-- ---------------------------------------------------------------------
+create table if not exists public.note_messages (
+  id uuid primary key default gen_random_uuid(),
+  note_id uuid references public.published_notes(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  sender_username text not null,
+  sender_nickname text not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 啟用 RLS
+alter table public.note_messages enable row level security;
+
+-- 任何人可讀取留言
+create policy "任何人皆可讀取留言"
+  on public.note_messages for select
+  using (true);
+
+-- 已登入使用者可以留言
+create policy "使用者可以留下訊息"
+  on public.note_messages for insert
+  with check (auth.uid() = user_id);
+
+-- 使用者可以刪除自己的留言
+create policy "使用者可以刪除自己的留言"
+  on public.note_messages for delete
+  using (auth.uid() = user_id);
+

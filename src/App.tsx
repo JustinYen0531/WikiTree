@@ -93,6 +93,17 @@ function App() {
             grade: metadata.grade || '',
             isSupabaseUser: true,
           };
+          void supabase!.from('users').upsert(
+            {
+              id: session.user.id,
+              username: loggedUser.username,
+              nickname: loggedUser.nickname,
+              college: loggedUser.college,
+              department: loggedUser.department,
+              grade: loggedUser.grade,
+            },
+            { onConflict: 'id' }
+          );
           setUser(loggedUser);
           localStorage.setItem('antigravity_user', JSON.stringify(loggedUser));
         } else if (event === 'SIGNED_OUT') {

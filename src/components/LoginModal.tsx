@@ -139,6 +139,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   }, [activeTab]);
 
+  const savePublicUser = async (
+    authUserId: string,
+    profile: { username: string; nickname: string; college: string; department: string; grade: string }
+  ) => {
+    if (!supabase) return null;
+
+    const { error } = await supabase
+      .from('users')
+      .upsert(
+        {
+          id: authUserId,
+          username: profile.username,
+          nickname: profile.nickname,
+          college: profile.college,
+          department: profile.department,
+          grade: profile.grade,
+        },
+        { onConflict: 'id' }
+      );
+
+    return error;
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = username.trim();
@@ -163,14 +186,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         if (data.user) {
           const metadata = data.user.user_metadata || {};
-          onLoginSuccess({
+          const loggedUser = {
             username: metadata.username || cleanUser,
             nickname: metadata.nickname || cleanUser,
             college: metadata.college || '',
             department: metadata.department || '',
             grade: metadata.grade || '',
             isSupabaseUser: true,
-          } as any);
+          };
+
+          const userTableError = await savePublicUser(data.user.id, loggedUser);
+          if (userTableError) {
+            console.warn('users upsert error:', userTableError.message);
+          }
+
+          onLoginSuccess(loggedUser as any);
           onClose();
         }
       } catch (err: any) {
@@ -261,7 +291,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         if (signUpData.user) {
           // 2. Save profile to public tables
           const { error: profileError } = await supabase
-            .from('profiles')
+            .from('users')
             .insert({
               id: signUpData.user.id,
               username: cleanUser,
@@ -272,7 +302,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             });
 
           if (profileError) {
-            alert(`⚠️ 帳戶已建立，但資料存入 profiles 失敗：${profileError.message}\n\n請截圖此訊息回報。`);
+            alert(`帳戶已建立，但資料存入 public.users 失敗：${profileError.message}\n\n請確認 users 表的 RLS policy 允許登入使用者新增自己的 id。`);
           }
 
           const { error: securityError } = await supabase
