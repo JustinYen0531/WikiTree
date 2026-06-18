@@ -3,15 +3,12 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
-  Eye,
-  EyeOff,
   FileText,
   Languages,
   Lightbulb,
   ListChecks,
   Loader2,
   Send,
-  Settings,
   Sparkles,
   Trash2,
 } from 'lucide-react';
@@ -37,10 +34,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   onApplyContent,
 }) => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
-  const [keyInput, setKeyInput] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [showSettings, setShowSettings] = useState(!localStorage.getItem(API_KEY_STORAGE));
   const [showGuide, setShowGuide] = useState(false);
+
+  // Sync key if user saves it in profile popover while AI panel is open
+  useEffect(() => {
+    const onStorage = () => setApiKey(localStorage.getItem(API_KEY_STORAGE) || '');
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -54,21 +55,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const saveKey = () => {
-    const trimmed = keyInput.trim();
-    if (!trimmed) return;
-    localStorage.setItem(API_KEY_STORAGE, trimmed);
-    setApiKey(trimmed);
-    setKeyInput('');
-    setShowSettings(false);
-  };
-
-  const removeKey = () => {
-    localStorage.removeItem(API_KEY_STORAGE);
-    setApiKey('');
-    setShowSettings(false);
-  };
 
   const clearConversation = () => {
     abortRef.current?.abort();
@@ -176,8 +162,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     { id: 'quiz', icon: Lightbulb, label: '出練習題', prompt: '請根據這份筆記內容出三題練習題並附上參考答案。' },
   ];
 
-  const maskedKey = apiKey ? `gsk_...${apiKey.slice(-6)}` : '';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '13px', minHeight: 0 }}>
       {/* Header */}
@@ -195,86 +179,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
             backgroundColor: hasKey ? 'var(--success)' : 'var(--danger)',
           }} />
-          <div>
-            <div style={{ fontWeight: 700 }}>{hasKey ? 'Groq 已就緒' : '請設定 API Key'}</div>
-            {hasKey && (
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{maskedKey}</div>
-            )}
-          </div>
+          <div style={{ fontWeight: 700 }}>{hasKey ? 'Groq 已就緒' : '尚未設定 API Key'}</div>
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {messages.length > 0 && (
-            <button className="theme-toggle-btn" title="清除對話" onClick={clearConversation} style={{ padding: '3px' }}>
-              <Trash2 size={14} />
-            </button>
-          )}
-          <button className="theme-toggle-btn" title="API Key 設定" onClick={() => setShowSettings((v) => !v)} style={{ padding: '3px' }}>
-            <Settings size={14} />
+        {messages.length > 0 && (
+          <button className="theme-toggle-btn" title="清除對話" onClick={clearConversation} style={{ padding: '3px' }}>
+            <Trash2 size={14} />
           </button>
-        </div>
+        )}
       </div>
-
-      {/* Settings panel */}
-      {showSettings && (
-        <div style={{
-          padding: '12px',
-          borderBottom: '1px solid var(--border-color)',
-          backgroundColor: 'var(--bg-sidebar)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          flexShrink: 0,
-        }}>
-          <div className="form-group">
-            <label className="form-label">Groq API Key</label>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <input
-                type={showKey ? 'text' : 'password'}
-                className="form-input"
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveKey()}
-                placeholder="gsk_..."
-                style={{ flex: 1, fontSize: '12px', padding: '6px' }}
-                autoFocus
-              />
-              <button
-                className="theme-toggle-btn"
-                onClick={() => setShowKey((v) => !v)}
-                title={showKey ? '隱藏' : '顯示'}
-                style={{ padding: '4px', flexShrink: 0 }}
-              >
-                {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Key 只存在你的瀏覽器，不會上傳到任何伺服器。
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              className="btn btn-primary"
-              onClick={saveKey}
-              disabled={!keyInput.trim()}
-              style={{ flex: 1, padding: '4px' }}
-            >
-              儲存
-            </button>
-            {hasKey && (
-              <button
-                className="btn"
-                onClick={removeKey}
-                style={{ padding: '4px', color: 'var(--danger)' }}
-              >
-                移除
-              </button>
-            )}
-            <button className="btn" onClick={() => setShowSettings(false)} style={{ padding: '4px' }}>
-              關閉
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -296,31 +208,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 設定 Groq API Key
               </div>
               <div style={{ fontSize: '12px', lineHeight: 1.8 }}>
-                前往 <strong>console.groq.com</strong><br />
-                註冊登入 → 左側 <strong>「API Keys」</strong><br />
-                → <strong>「Create API Key」</strong><br />
+                點左側頭像 → 個人檔案<br />
+                找到 <strong>「Groq API Key」</strong> 欄位填入<br />
                 <br />
-                <span style={{
-                  display: 'inline-block',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  padding: '4px 10px',
-                  fontSize: '11.5px',
-                  color: 'var(--success)',
-                  fontWeight: 700,
-                }}>
-                  免費額度：每天 14,400 次 · 超快速 ✓
-                </span>
+                還沒有 Key？前往 <strong>console.groq.com</strong><br />
+                免費申請，每天 14,400 次
               </div>
             </div>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowSettings(true)}
-              style={{ padding: '8px 20px' }}
-            >
-              設定 API Key
-            </button>
           </div>
         ) : (
           <>

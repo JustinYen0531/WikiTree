@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Folder, 
-  FolderOpen, 
-  FileText, 
-  Plus, 
-  Trash, 
-  Edit, 
-  Search, 
-  History, 
-  Globe, 
-  ChevronRight, 
+import {
+  Folder,
+  FolderOpen,
+  FileText,
+  Plus,
+  Trash,
+  Edit,
+  Search,
+  History,
+  Globe,
+  ChevronRight,
   FolderPlus,
   BookOpen,
   LogIn,
@@ -18,6 +18,9 @@ import {
   LogOut,
   ShieldCheck,
   TreePine,
+  Eye,
+  EyeOff,
+  Key,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import { isSupabaseConfigured } from '../utils/supabase';
@@ -63,6 +66,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState(() => localStorage.getItem('nccu_hub_groq_key') || '');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState(false);
   const isWorkshopTab = activeTab === 'files' || activeTab === 'history' || activeTab === 'publish' || activeTab === 'antigravity';
 
   const handleCopyToken = (token: string, e: React.MouseEvent) => {
@@ -532,6 +538,69 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>年級學制：</span>
                 <strong style={{ color: 'var(--text-primary)' }}>{user.grade}</strong>
+              </div>
+            </div>
+
+            {/* AI API Key Setting */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>
+                <Key size={11} />
+                Groq API Key（AI 功能）
+              </div>
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={apiKeyInput}
+                  onChange={(e) => { setApiKeyInput(e.target.value); setApiKeySaved(false); }}
+                  placeholder="gsk_..."
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    flex: 1,
+                    fontSize: '11.5px',
+                    padding: '5px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowApiKey(v => !v); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', flexShrink: 0 }}
+                  title={showApiKey ? '隱藏' : '顯示'}
+                >
+                  {showApiKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const val = apiKeyInput.trim();
+                    if (val) {
+                      localStorage.setItem('nccu_hub_groq_key', val);
+                    } else {
+                      localStorage.removeItem('nccu_hub_groq_key');
+                    }
+                    setApiKeySaved(true);
+                    setTimeout(() => setApiKeySaved(false), 2000);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    color: apiKeySaved ? 'var(--success)' : 'var(--text-secondary)',
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    flexShrink: 0,
+                  }}
+                >
+                  {apiKeySaved ? '已儲存' : '儲存'}
+                </button>
+              </div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                前往 console.groq.com 免費申請 · 只存在瀏覽器
               </div>
             </div>
 
