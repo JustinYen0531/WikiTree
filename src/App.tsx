@@ -131,11 +131,56 @@ function App() {
     }
   }, []);
 
-  // On mount: peek at IndexedDB to get saved workspace name (no permission needed)
+  // On mount: try silent restore if permission already granted, else show button
   useEffect(() => {
-    loadWorkspaceHandle().then((handle) => {
-      if (handle) setSavedWorkspaceName(handle.name);
-    });
+    const tryRestore = async () => {
+      const savedHandle = await loadWorkspaceHandle();
+      if (!savedHandle) return;
+
+      try {
+        const perm = await savedHandle.queryPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+          // Permission already cached — restore silently
+          setIsRestoringWorkspace(true);
+          const fileList = await getFilesRecursively(savedHandle);
+          const snapList = await loadSnapshots(savedHandle);
+          setRootHandle(savedHandle);
+          setWorkspaceName(savedHandle.name);
+          setFiles(fileList);
+          setSnapshots(snapList);
+          setSidebarTab('files');
+
+          const lastPath = loadLastFilePath();
+          if (lastPath) {
+            const findNode = (nodes: FileNode[], p: string): FileNode | null => {
+              for (const n of nodes) {
+                if (n.kind === 'file' && n.path === p) return n;
+                if (n.kind === 'directory' && n.children) {
+                  const f = findNode(n.children, p);
+                  if (f) return f;
+                }
+              }
+              return null;
+            };
+            const lastFile = findNode(fileList, lastPath);
+            if (lastFile) {
+              const text = await readFileContent(lastFile.handle as FileSystemFileHandle);
+              setActiveFile(lastFile);
+              setContent(text);
+              setOriginalContent(text);
+            }
+          }
+          setIsRestoringWorkspace(false);
+        } else {
+          // Permission needs user gesture — show the one-click button
+          setSavedWorkspaceName(savedHandle.name);
+        }
+      } catch {
+        await clearWorkspaceHandle();
+        clearLastFilePath();
+      }
+    };
+    tryRestore();
   }, []);
 
   // Called when user clicks "繼續上次工作區" — has user gesture so requestPermission works
