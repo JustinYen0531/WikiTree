@@ -66,10 +66,6 @@ function App() {
   const [isRestoringWorkspace, setIsRestoringWorkspace] = useState(false);
   const [savedWorkspaceName, setSavedWorkspaceName] = useState<string | null>(null);
 
-  // CLI States
-  const [cliConnected, setCliConnected] = useState(false);
-  const [cliPathInput, setCliPathInput] = useState('');
-
   // Local Sign-In States
   const [user, setUser] = useState<any>(() => {
     const saved = localStorage.getItem('antigravity_user');
@@ -256,126 +252,6 @@ function App() {
   };
 
   // Check CLI status on load and periodically
-  const checkCliStatus = async () => {
-    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-    try {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), 1000);
-      const response = await fetch(`${cliUrl}/api/status`, { signal: controller.signal });
-      clearTimeout(id);
-      if (response.ok) {
-        setCliConnected(true);
-        return;
-      }
-    } catch (e) {
-      // Offline
-    }
-    setCliConnected(false);
-  };
-
-  useEffect(() => {
-    checkCliStatus();
-    const interval = setInterval(checkCliStatus, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleOpenOrCreateCliWorkspace = async () => {
-    if (!cliPathInput.trim()) {
-      alert('請輸入有效的路徑！');
-      return;
-    }
-
-    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-    try {
-      const response = await fetch(`${cliUrl}/api/workspace/open`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: cliPathInput.trim() })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const absolutePath = data.workspace;
-        
-        setRootHandle(absolutePath);
-        setWorkspaceName(data.name || absolutePath);
-        
-        const filesListResponse = await fetch(`${cliUrl}/api/workspace/files`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        });
-        
-        if (filesListResponse.ok) {
-          const filesData = await filesListResponse.json();
-          const enrichFiles = (nodes: any[]): FileNode[] => {
-            return nodes.map(node => ({
-              ...node,
-              handle: { path: node.path, isCli: true, name: node.name, kind: node.kind },
-              children: node.children ? enrichFiles(node.children) : undefined
-            }));
-          };
-          const enriched = enrichFiles(filesData.files || []);
-          setFiles(enriched);
-          
-          const snapListResponse = await fetch(`${cliUrl}/api/workspace/snapshots/load`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          if (snapListResponse.ok) {
-            const snapList = await snapListResponse.json();
-            setSnapshots(snapList);
-          }
-          
-          if (enriched.length > 0) {
-            const firstFile = findFirstFile(enriched);
-            if (firstFile) {
-              await openFile(firstFile);
-            }
-          } else {
-            setActiveFile(null);
-            setContent('');
-            setOriginalContent('');
-          }
-        }
-      } else {
-        const err = await response.json();
-        alert(`開啟工作區失敗: ${err.error || '未知錯誤'}`);
-      }
-    } catch (e: any) {
-      console.error('Failed to connect to CLI to open workspace', e);
-      alert(`連線本機 CLI 伺服器失敗，請確認伺服器運作中。 (${e.message})`);
-    }
-  };
-
-  const [isBrowsing, setIsBrowsing] = useState(false);
-
-  const handleBrowseCliWorkspace = async () => {
-    if (isBrowsing) return;
-    setIsBrowsing(true);
-    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-    try {
-      const response = await fetch(`${cliUrl}/api/workspace/browse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.path) {
-          setCliPathInput(data.path);
-        }
-      } else {
-        const err = await response.json();
-        alert(err.error || '瀏覽資料夾失敗');
-      }
-    } catch (e: any) {
-      console.error('Failed to browse workspace via CLI', e);
-      alert(`無法開啟本機瀏覽視窗：${e.message}`);
-    } finally {
-      setIsBrowsing(false);
-    }
-  };
-
   // App views and panels
   const [sidebarTab, setSidebarTab] = useState<'courses' | 'files' | 'history' | 'publish' | 'antigravity'>('courses');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
@@ -794,83 +670,6 @@ function App() {
                   創意工房會使用你的本機資料夾來撰寫、整理、版本管理與發布 Markdown 筆記。線上探索不會碰到本機檔案。
                 </p>
               </div>
-              <h2 style={{ display: 'none', fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                開啟或新建筆記工作區
-              </h2>
-              <p style={{ display: 'none', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
-                您可以透過本機 CLI 伺服器直接輸入路徑「建立全新的資料夾」作為工作區，或是使用瀏覽器原生檔案選擇器開啟現有的資料夾。
-              </p>
-
-              {cliConnected ? (
-                <div style={{ 
-                  width: '100%', 
-                  padding: '18px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px solid var(--border-color)',
-                  marginBottom: '24px',
-                  textAlign: 'left',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--success)' }}>創意工房 CLI 已連線</span>
-                  </div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    輸入要開啟或新建的創意工房路徑：
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="例如：C:\Users\user\Desktop\我的創意工房"
-                      value={cliPathInput}
-                      onChange={(e) => setCliPathInput(e.target.value)}
-                      style={{ 
-                        flex: 1, 
-                        padding: '8px 12px', 
-                        borderRadius: '6px', 
-                        border: '1px solid var(--border-color)', 
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px' 
-                      }}
-                    />
-                    <button 
-                      className="btn" 
-                      onClick={handleBrowseCliWorkspace} 
-                      disabled={isBrowsing}
-                      style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      {isBrowsing ? '瀏覽中...' : '瀏覽...'}
-                    </button>
-                    <button className="btn btn-primary" onClick={handleOpenOrCreateCliWorkspace}>
-                      開啟 / 新建
-                    </button>
-                  </div>
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>
-                    若路徑不存在，創意工房會為你建立資料夾。這只影響本機工作區，不會修改線上探索資料。
-                  </span>
-                </div>
-              ) : (
-                <div style={{ 
-                  width: '100%', 
-                  padding: '16px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px dashed var(--border-color)',
-                  marginBottom: '24px',
-                  textAlign: 'center',
-                  fontSize: '13px',
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.5'
-                }}>
-                  未偵測到創意工房 CLI。你仍可用瀏覽器 Picker 選擇既有資料夾；若要直接輸入路徑新建資料夾，請先啟動 CLI：<br/>
-                  <code style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', marginTop: '8px', fontFamily: 'monospace', fontSize: '12px' }}>
-                    node cli-server.cjs
-                  </code>
-                </div>
-              )}
-
               {savedWorkspaceName && (
                 <button
                   className="btn btn-primary"
@@ -885,7 +684,7 @@ function App() {
 
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                  {savedWorkspaceName ? '或選擇其他資料夾：' : cliConnected ? '也可以直接用下方 Picker 選擇既有資料夾。' : ''}
+                  {savedWorkspaceName ? '或選擇其他資料夾：' : ''}
                 </span>
                 <button className="btn" onClick={handleSelectDirectory} style={{ padding: '10px 20px', fontSize: '14px' }}>
                   選擇創意工房資料夾
