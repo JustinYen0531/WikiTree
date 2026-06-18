@@ -61,18 +61,34 @@ export const Editor: React.FC<EditorProps> = ({
   const [groqInstruction, setGroqInstruction] = useState('');
   const [groqResponse, setGroqResponse] = useState<string | null>(null);
   const [groqLoading, setGroqLoading] = useState(false);
+  const [groqBlockIdx, setGroqBlockIdx] = useState<number | null>(null);
   const groqInputRef = useRef<HTMLInputElement>(null);
+
+  const openGroqSelection = (s: number, en: number, text: string, blockIdx: number | null, x: number, y: number) => {
+    setGroqSel({ start: s, end: en, text });
+    setGroqBlockIdx(blockIdx);
+    setGroqPos({ x, y });
+    setGroqOpen(false);
+    setGroqResponse(null);
+    setGroqInstruction('');
+  };
 
   const handleTextareaMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>) => {
     const ta = textareaRef.current;
     if (!ta) return;
     const { selectionStart: s, selectionEnd: en } = ta;
     if (s === en) { setGroqSel(null); setGroqOpen(false); return; }
-    setGroqSel({ start: s, end: en, text: ta.value.slice(s, en) });
-    setGroqPos({ x: e.clientX, y: e.clientY });
-    setGroqOpen(false);
-    setGroqResponse(null);
-    setGroqInstruction('');
+    openGroqSelection(s, en, ta.value.slice(s, en), null, e.clientX, e.clientY);
+  };
+
+  const handleWysiwygMouseUp = (e: React.MouseEvent) => {
+    const el = document.activeElement as HTMLTextAreaElement;
+    if (!el || el.tagName !== 'TEXTAREA') { setGroqSel(null); setGroqOpen(false); return; }
+    const { selectionStart: s, selectionEnd: en } = el;
+    if (s === en) { setGroqSel(null); setGroqOpen(false); return; }
+    const blockIdx = blockRefs.current.findIndex(ref => ref === el);
+    if (blockIdx === -1) return;
+    openGroqSelection(s, en, el.value.slice(s, en), blockIdx, e.clientX, e.clientY);
   };
 
   const handleGroqEdit = async () => {
@@ -105,8 +121,16 @@ export const Editor: React.FC<EditorProps> = ({
 
   const applyGroqResponse = () => {
     if (!groqSel || !groqResponse) return;
-    const newContent = content.slice(0, groqSel.start) + groqResponse + content.slice(groqSel.end);
-    onChange(newContent);
+    if (groqBlockIdx !== null) {
+      const ta = blockRefs.current[groqBlockIdx];
+      if (ta) {
+        const newVal = ta.value.slice(0, groqSel.start) + groqResponse + ta.value.slice(groqSel.end);
+        handleBlockInputChange(groqBlockIdx, newVal);
+      }
+    } else {
+      const newContent = content.slice(0, groqSel.start) + groqResponse + content.slice(groqSel.end);
+      onChange(newContent);
+    }
     setGroqSel(null);
     setGroqOpen(false);
     setGroqResponse(null);
@@ -871,10 +895,12 @@ export const Editor: React.FC<EditorProps> = ({
           /* NOTION-STYLE INLINE WYSIWYG EDITOR */
           <div
             className="wysiwyg-editor-canvas"
+            onMouseUp={handleWysiwygMouseUp}
             style={{
-              flex: 1, 
-              padding: '40px 60px', 
-              overflowY: 'auto', 
+              flex: 1,
+              padding: '40px 60px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
               backgroundColor: 'var(--bg-primary)',
               cursor: 'text'
             }}
