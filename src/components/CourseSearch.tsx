@@ -1046,6 +1046,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                     <button
                                       type="submit"
                                       disabled={isSendingComment || !commentInput.trim()}
+                                      className="btn-outline-content"
                                       style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -1056,7 +1057,6 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                         backgroundColor: 'var(--accent)',
                                         border: 'none',
                                         color: '#ffffff',
-                                        textShadow: '-0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000',
                                         cursor: 'pointer',
                                         opacity: (!commentInput.trim() || isSendingComment) ? 0.6 : 1,
                                       }}

@@ -541,6 +541,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setShowProfilePopover(false);
                 if (onOpenForest) onOpenForest();
               }}
+              className="btn-outline-content"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -551,7 +552,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 fontSize: '13px',
                 fontWeight: '700',
                 color: '#ffffff',
-                textShadow: '-0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000',
                 backgroundColor: '#2e7d32',
                 background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
                 border: 'none',
@@ -580,6 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 setShowProfilePopover(false);
                 if (onLogout) onLogout();
               }}
+              className="btn-outline-content"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -590,7 +591,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 fontSize: '13px',
                 fontWeight: '600',
                 color: '#ffffff',
-                textShadow: '-0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000',
                 backgroundColor: 'var(--danger)',
                 border: 'none',
                 borderRadius: '6px',

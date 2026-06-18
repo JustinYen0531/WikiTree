@@ -421,7 +421,22 @@ body {
   background-color: var(--accent);
   border-color: var(--accent);
   color: white;
+}
+
+/* Unified text shadow outline for readability of white text on light backgrounds */
+.btn-primary,
+.btn-outline-content,
+.ai-dock-button,
+.course-note-count:hover {
   text-shadow: -0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000;
+}
+
+/* Thin black shadow outline for icons (SVGs) inside white-text buttons */
+.btn-primary svg,
+.btn-outline-content svg,
+.ai-dock-button svg,
+.course-note-count:hover svg {
+  filter: drop-shadow(-0.8px -0.8px 0px #000) drop-shadow(0.8px -0.8px 0px #000) drop-shadow(-0.8px 0.8px 0px #000) drop-shadow(0.8px 0.8px 0px #000);
 }
 
 .btn-primary:hover {
