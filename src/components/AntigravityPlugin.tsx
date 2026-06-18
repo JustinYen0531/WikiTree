@@ -222,6 +222,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             <div style={{
               flex: 1,
               overflowY: 'auto',
+              overflowX: 'hidden',
               minHeight: 0,
               padding: '12px',
               display: 'flex',
@@ -280,10 +281,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     flexDirection: 'column',
                     alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
                     gap: '4px',
+                    width: '100%',
+                    minWidth: 0,
                   }}
                 >
                   <div style={{
                     maxWidth: '88%',
+                    minWidth: 0,
                     padding: '8px 12px',
                     borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
                     backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-secondary)',
@@ -292,6 +296,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     lineHeight: 1.65,
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
+                    overflowWrap: 'anywhere',
                     border: msg.role === 'assistant' ? '1px solid var(--border-color)' : 'none',
                   }}>
                     {msg.content
