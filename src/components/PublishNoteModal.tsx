@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '../utils/supabase';
+import { supabase, isSupabaseConfigured, getLocalPublishedNotes, saveLocalPublishedNotes } from '../utils/supabase';
 import { FileNode } from '../utils/fileSystem';
 
 interface PublishNoteModalProps {
@@ -31,52 +31,91 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const canPublish = isSupabaseConfigured() && user?.isSupabaseUser;
+  // Anyone logged in can publish (either to cloud or locally)
+  const canPublish = !!user; 
+  const isLocalMode = !isSupabaseConfigured() || !user?.isSupabaseUser;
 
   const handlePublish = async () => {
     if (!title.trim()) {
       setError('請輸入筆記標題');
       return;
     }
-    if (!isSupabaseConfigured() || !supabase) {
-      setError('Supabase 未設定，無法發布。');
-      return;
-    }
-    if (!user?.isSupabaseUser) {
-      setError('請使用政大雲端帳戶登入後才能發布筆記。');
+    if (!user) {
+      setError('請先登入帳戶後再進行發布。');
       return;
     }
 
     setIsPublishing(true);
     setError('');
 
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) {
-      setError('無法取得登入資訊，請重新登入。');
+    // Local Storage publish fallback
+    if (isLocalMode) {
+      try {
+        const localNotes = getLocalPublishedNotes();
+        const newNote = {
+          id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+          user_id: `local_${user.username}`,
+          author_username: user.username,
+          author_nickname: user.nickname,
+          title: title.trim(),
+          content: content,
+          note_path: activeFile?.path || '',
+          created_at: new Date().toISOString(),
+          is_public: true,
+        };
+        localNotes.push(newNote);
+        saveLocalPublishedNotes(localNotes);
+
+        setSuccess(true);
+        setIsPublishing(false);
+        if (onSuccess) onSuccess(title.trim());
+        setTimeout(() => onClose(), 2000);
+      } catch (err: any) {
+        setError(`本地發布失敗：${err.message || err}`);
+        setIsPublishing(false);
+      }
+      return;
+    }
+
+    // Supabase cloud publish flow
+    if (!supabase) {
+      setError('Supabase 未設定，無法發布。');
       setIsPublishing(false);
       return;
     }
 
-    const { error: insertError } = await supabase.from('published_notes').insert({
-      user_id: authUser.id,
-      author_username: user.username,
-      author_nickname: user.nickname,
-      title: title.trim(),
-      content: content,
-      note_path: activeFile?.path || '',
-      is_public: true,
-    });
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setError('無法取得登入資訊，請重新登入。');
+        setIsPublishing(false);
+        return;
+      }
 
-    if (insertError) {
-      setError(`發布失敗：${insertError.message}`);
+      const { error: insertError } = await supabase.from('published_notes').insert({
+        user_id: authUser.id,
+        author_username: user.username,
+        author_nickname: user.nickname,
+        title: title.trim(),
+        content: content,
+        note_path: activeFile?.path || '',
+        is_public: true,
+      });
+
+      if (insertError) {
+        setError(`發布失敗：${insertError.message}`);
+        setIsPublishing(false);
+        return;
+      }
+
+      setSuccess(true);
       setIsPublishing(false);
-      return;
+      if (onSuccess) onSuccess(title.trim());
+      setTimeout(() => onClose(), 2000);
+    } catch (err: any) {
+      setError(`發布時發生錯誤：${err.message || err}`);
+      setIsPublishing(false);
     }
-
-    setSuccess(true);
-    setIsPublishing(false);
-    if (onSuccess) onSuccess(title.trim());
-    setTimeout(() => onClose(), 2000);
   };
 
   return (
@@ -147,7 +186,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
             </div>
           ) : (
             <>
-              {!canPublish && (
+              {!canPublish ? (
                 <div
                   style={{
                     display: 'flex',
@@ -155,19 +194,35 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     gap: '8px',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    backgroundColor: 'var(--danger-bg)',
-                    border: '1px solid var(--success-border)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
                     marginBottom: '16px',
                   }}
                 >
                   <AlertCircle size={15} style={{ color: 'var(--danger)', flexShrink: 0, marginTop: '1px' }} />
                   <span style={{ fontSize: '13px', color: 'var(--danger)', lineHeight: '1.5' }}>
-                    {!isSupabaseConfigured()
-                      ? '此環境未連線至 Supabase，無法發布。'
-                      : '請使用政大雲端帳戶（@g.nccu.edu.tw）登入後才能發布筆記。'}
+                    請先註冊並登入政大 Hub 帳戶才能發布筆記。
                   </span>
                 </div>
-              )}
+              ) : isLocalMode ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <Globe size={15} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '1px' }} />
+                  <span style={{ fontSize: '13px', color: 'var(--accent)', lineHeight: '1.5' }}>
+                    本地測試模式：發布的筆記將儲存於瀏覽器本地快取，僅能於本機檢視與測試「進入森林」相關功能。
+                  </span>
+                </div>
+              ) : null}
 
               <div style={{ marginBottom: '16px' }}>
                 <label

@@ -21,9 +21,22 @@ import {
   Tag,
   UserRound,
   X,
+  Droplets,
+  MessageSquare,
+  Send,
+  Lock,
+  TreePine,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
-import { supabase, isSupabaseConfigured } from '../utils/supabase';
+import { 
+  supabase, 
+  isSupabaseConfigured,
+  fetchAllPublishedNotes,
+  fetchWaterings,
+  toggleWatering,
+  fetchMessages,
+  addMessage
+} from '../utils/supabase';
 import {
   NoteCategoryType,
   NoteTarget,
@@ -72,6 +85,15 @@ interface CourseSearchProps {
   files: FileNode[];
   activeFile: FileNode | null;
   onOpenNote: (file: FileNode) => void;
+  user?: {
+    id?: string;
+    username: string;
+    nickname: string;
+    college: string;
+    department: string;
+    grade: string;
+    isSupabaseUser?: boolean;
+  } | null;
 }
 
 const COURSE_DATA_URL = '/data/nccu_courses_1132.json';
@@ -260,7 +282,7 @@ const flattenMarkdownFiles = (nodes: FileNode[]) => {
   return result;
 };
 
-export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, onOpenNote }) => {
+export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, onOpenNote, user }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -283,6 +305,13 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   const [exploreError, setExploreError] = useState('');
   const [exploreQuery, setExploreQuery] = useState('');
   const [exploreExpanded, setExploreExpanded] = useState<string | null>(null);
+
+  // Community interaction states (watering/comments)
+  const [noteWaterings, setNoteWaterings] = useState<any[]>([]);
+  const [noteMessages, setNoteMessages] = useState<any[]>([]);
+  const [userWatered, setUserWatered] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [isSendingComment, setIsSendingComment] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -318,26 +347,84 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
 
   useEffect(() => {
     if (!exploreMode) return;
-    if (!isSupabaseConfigured() || !supabase) {
-      setExploreError('Supabase 未設定，無法載入社群筆記。');
-      return;
-    }
     setExploreLoading(true);
     setExploreError('');
-    supabase
-      .from('published_notes')
-      .select('id, title, author_nickname, author_username, created_at, content, note_path')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          setExploreError(`載入失敗：${error.message}`);
-        } else {
-          setPublishedNotes(data || []);
-        }
+    fetchAllPublishedNotes()
+      .then((data) => {
+        setPublishedNotes(data || []);
+        setExploreLoading(false);
+      })
+      .catch((err) => {
+        setExploreError(`載入失敗：${err.message || err}`);
         setExploreLoading(false);
       });
   }, [exploreMode]);
+
+  // Load waterings and comments for the expanded note
+  useEffect(() => {
+    if (!exploreExpanded) {
+      setNoteWaterings([]);
+      setNoteMessages([]);
+      setUserWatered(false);
+      return;
+    }
+
+    // 1. Fetch waterings
+    fetchWaterings(exploreExpanded).then((data) => {
+      setNoteWaterings(data || []);
+      if (user) {
+        const currentUserId = user.id || `local_${user.username}`;
+        setUserWatered((data || []).some((w) => w.user_id === currentUserId));
+      } else {
+        setUserWatered(false);
+      }
+    });
+
+    // 2. Fetch comments
+    fetchMessages(exploreExpanded).then((data) => {
+      setNoteMessages(data || []);
+    });
+  }, [exploreExpanded, user]);
+
+  const handleWaterClick = async (noteId: string) => {
+    if (!user) {
+      alert('請先登入政大 Hub 帳戶才能為筆記澆水！');
+      return;
+    }
+    const currentUserId = user.id || `local_${user.username}`;
+    try {
+      const { watered } = await toggleWatering(noteId, currentUserId);
+      setUserWatered(watered);
+      // Reload waterings
+      const updated = await fetchWaterings(noteId);
+      setNoteWaterings(updated || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCommentSubmit = async (e: React.FormEvent, noteId: string) => {
+    e.preventDefault();
+    if (!user) {
+      alert('請先登入政大 Hub 帳戶才能留下足跡！');
+      return;
+    }
+    if (!commentInput.trim()) return;
+
+    setIsSendingComment(true);
+    const currentUserId = user.id || `local_${user.username}`;
+    try {
+      await addMessage(noteId, currentUserId, user.username, user.nickname, commentInput);
+      setCommentInput('');
+      // Reload comments
+      const updated = await fetchMessages(noteId);
+      setNoteMessages(updated || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSendingComment(false);
+    }
+  };
 
   const markdownFiles = useMemo(() => flattenMarkdownFiles(files), [files]);
 
@@ -815,24 +902,156 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                               </span>
                             </button>
 
-                            {isExpanded && (
+                             {isExpanded && (
                               <div
                                 style={{
-                                  padding: '0 16px 14px 44px',
+                                  padding: '0 16px 20px 44px',
                                   fontSize: '13px',
                                   color: 'var(--text-secondary)',
                                   lineHeight: '1.7',
-                                  whiteSpace: 'pre-wrap',
-                                  wordBreak: 'break-word',
                                   borderTop: '1px solid var(--border-color)',
                                   paddingTop: '12px',
                                 }}
                               >
-                                {preview}
-                                {(note.content || '').length > 300 && (
-                                  <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
-                                    {' '}…（僅顯示前 300 字）
-                                  </span>
+                                {/* Note Text Preview */}
+                                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: '16px' }}>
+                                  {preview}
+                                  {(note.content || '').length > 300 && (
+                                    <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
+                                      {' '}…（僅顯示前 300 字）
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Community Interaction Bar */}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '16px',
+                                    borderTop: '1px solid var(--border-color)',
+                                    borderBottom: '1px solid var(--border-color)',
+                                    padding: '8px 0',
+                                    marginBottom: '16px',
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => handleWaterClick(note.id)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      fontSize: '12.5px',
+                                      color: userWatered ? 'var(--accent)' : 'var(--text-secondary)',
+                                      fontWeight: userWatered ? '700' : '400',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      transition: 'background-color 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                  >
+                                    <Droplets size={14} fill={userWatered ? 'var(--accent)' : 'none'} style={{ color: userWatered ? 'var(--accent)' : 'var(--text-secondary)' }} />
+                                    <span>{userWatered ? '已澆水' : '幫忙澆水'} ({noteWaterings.length})</span>
+                                  </button>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                                    <MessageSquare size={14} />
+                                    <span>留言足跡 ({noteMessages.length})</span>
+                                  </div>
+                                </div>
+
+                                {/* Guest Message Board / Footprints List */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                                  {noteMessages.length === 0 ? (
+                                    <div style={{ padding: '8px 0', fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                                      🐾 尚無足跡，留下一句話給作者吧！
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                                      {noteMessages.map((msg: any) => {
+                                        const initial = (msg.sender_nickname || '訪').charAt(0).toUpperCase();
+                                        return (
+                                          <div key={msg.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '12.5px' }}>
+                                            <div style={{
+                                              width: '24px',
+                                              height: '24px',
+                                              borderRadius: '50%',
+                                              backgroundColor: 'var(--bg-secondary)',
+                                              border: '1px solid var(--border-color)',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              fontSize: '11px',
+                                              fontWeight: 'bold',
+                                              color: 'var(--text-primary)',
+                                              flexShrink: 0
+                                            }}>
+                                              {initial}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                                                <strong style={{ color: 'var(--text-primary)' }}>{msg.sender_nickname}</strong>
+                                                <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+                                                  {new Date(msg.created_at).toLocaleDateString('zh-TW')} {new Date(msg.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                              </div>
+                                              <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{msg.content}</div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Message Input Area */}
+                                {user ? (
+                                  <form onSubmit={(e) => handleCommentSubmit(e, note.id)} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      value={commentInput}
+                                      onChange={(e) => setCommentInput(e.target.value)}
+                                      placeholder="留下你的足跡（留言）..."
+                                      style={{
+                                        flex: 1,
+                                        padding: '8px 12px',
+                                        borderRadius: '6px',
+                                        border: '1px solid var(--border-color)',
+                                        backgroundColor: 'var(--bg-primary)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: '12.5px',
+                                        outline: 'none',
+                                      }}
+                                    />
+                                    <button
+                                      type="submit"
+                                      disabled={isSendingComment || !commentInput.trim()}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '6px',
+                                        backgroundColor: 'var(--accent)',
+                                        border: 'none',
+                                        color: '#ffffff',
+                                        cursor: 'pointer',
+                                        opacity: (!commentInput.trim() || isSendingComment) ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Send size={13} />
+                                    </button>
+                                  </form>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', padding: '8px 12px', borderRadius: '6px' }}>
+                                    <Lock size={12} />
+                                    <span>請登入政大 Hub 帳戶以留下留言足跡。</span>
+                                  </div>
                                 )}
                               </div>
                             )}

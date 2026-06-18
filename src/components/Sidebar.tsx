@@ -16,7 +16,8 @@ import {
   Copy,
   Check,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  TreePine,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import { isSupabaseConfigured } from '../utils/supabase';
@@ -36,6 +37,7 @@ interface SidebarProps {
   user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
   onTriggerLogin?: () => void;
+  onOpenForest?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -53,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onLogout,
   onTriggerLogin,
+  onOpenForest,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -521,6 +524,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <strong style={{ color: 'var(--text-primary)' }}>{user.grade}</strong>
               </div>
             </div>
+
+            {/* Enter Forest Button */}
+            <button
+              onClick={() => {
+                setShowProfilePopover(false);
+                if (onOpenForest) onOpenForest();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: '13px',
+                fontWeight: '700',
+                color: '#ffffff',
+                backgroundColor: '#2e7d32',
+                background: 'linear-gradient(135deg, #2e7d32, #1b5e20)',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'transform 0.15s, opacity 0.2s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                marginBottom: '4px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'scale(1.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <TreePine size={14} />
+              進入我的森林
+            </button>
 
             {/* Logout Trigger */}
             <button

@@ -44,6 +44,7 @@ import { LoginModal } from './components/LoginModal';
 import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
+import { ForestDashboard } from './components/ForestDashboard';
 
 function App() {
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -63,6 +64,7 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showForestDashboard, setShowForestDashboard] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
 
   // Toast Notification State
@@ -654,12 +656,13 @@ function App() {
         user={user}
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
+        onOpenForest={() => setShowForestDashboard(true)}
       />
 
       {/* Main Panel View */}
       <div className="main-view-container">
         {sidebarTab === 'courses' ? (
-          <CourseSearch files={files} activeFile={activeFile} onOpenNote={openFile} />
+          <CourseSearch files={files} activeFile={activeFile} onOpenNote={openFile} user={user} />
         ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
@@ -895,6 +898,14 @@ function App() {
             setShowPublishModal(false);
             showToast(`✅ 「${title}」已發布到社群！`, 'success');
           }}
+        />
+      )}
+
+      {/* My Forest Dashboard Modal */}
+      {showForestDashboard && (
+        <ForestDashboard
+          user={user}
+          onClose={() => setShowForestDashboard(false)}
         />
       )}
 
