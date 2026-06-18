@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ChevronDown,
+  ChevronRight,
   FileText,
   Languages,
   Lightbulb,
@@ -34,6 +36,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [status, setStatus] = useState<CliStatus>('disconnected');
   const [workspace, setWorkspace] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [launching, setLaunching] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -313,8 +316,80 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           </div>
         )}
 
+        {/* CLI Agent Setup Guide */}
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+          <button
+            onClick={() => setShowGuide(v => !v)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '0',
+              color: 'var(--text-primary)',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}
+          >
+            <span>如何自己裝一個 CLI Agent？</span>
+            {showGuide ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          </button>
+          {showGuide && (
+            <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.75 }}>
+              <p style={{ margin: '0 0 6px 0', color: 'var(--text-primary)', fontWeight: 600 }}>
+                用 Claude Code CLI 在終端機直接編輯筆記
+              </p>
+              <ol style={{ margin: '0', paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li>
+                  <strong>安裝 Node.js</strong>（如果還沒裝）<br />
+                  前往 <span style={{ fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)', padding: '1px 4px', borderRadius: '3px' }}>nodejs.org</span> 下載安裝
+                </li>
+                <li>
+                  <strong>安裝 Claude Code CLI</strong><br />
+                  打開終端機（cmd / PowerShell），輸入：<br />
+                  <code style={{ display: 'block', marginTop: '4px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--accent)' }}>
+                    npm install -g @anthropic-ai/claude-code
+                  </code>
+                </li>
+                <li>
+                  <strong>取得 Claude API Key</strong><br />
+                  前往 <span style={{ fontFamily: 'monospace', backgroundColor: 'var(--bg-secondary)', padding: '1px 4px', borderRadius: '3px' }}>console.anthropic.com</span> 建立帳號，在 API Keys 頁面產生一組 Key
+                </li>
+                <li>
+                  <strong>設定 API Key</strong><br />
+                  在終端機輸入：<br />
+                  <code style={{ display: 'block', marginTop: '4px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--accent)' }}>
+                    export ANTHROPIC_API_KEY=sk-ant-你的key
+                  </code>
+                  （Windows PowerShell 用 <span style={{ fontFamily: 'monospace' }}>$env:ANTHROPIC_API_KEY="sk-ant-你的key"</span>）
+                </li>
+                <li>
+                  <strong>進入你的筆記資料夾</strong><br />
+                  <code style={{ display: 'block', marginTop: '4px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--accent)' }}>
+                    cd 你的筆記資料夾路徑
+                  </code>
+                </li>
+                <li>
+                  <strong>啟動 Claude，開始用中文下指令</strong><br />
+                  <code style={{ display: 'block', marginTop: '4px', backgroundColor: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--accent)' }}>
+                    claude
+                  </code>
+                  例如輸入：<em>「幫我修改 筆記.md 的第二段，讓它更簡短」</em><br />
+                  NCCU Hub 會在 3 秒內自動同步顯示修改後的內容。
+                </li>
+              </ol>
+              <p style={{ margin: '10px 0 0 0', padding: '6px 8px', borderRadius: '6px', backgroundColor: 'var(--bg-secondary)', fontSize: '11px' }}>
+                💡 Claude Code 是 Anthropic 官方出品的 CLI，比 agy 更強大，支援多檔案編輯、讀取整個專案結構。
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* How-to */}
-        <div style={{ marginTop: 'auto', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+        <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.6, borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
           <div style={{ fontWeight: 700, marginBottom: '4px' }}>小提醒</div>
           • 第一次用 agy 會請你用 Google 帳號登入一次。<br />
           • 在對話視窗裡直接打中文問問題，按 Enter 送出。<br />
