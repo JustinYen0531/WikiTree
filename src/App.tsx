@@ -13,6 +13,14 @@ import {
 } from 'lucide-react';
 
 import { supabase, isSupabaseConfigured } from './utils/supabase';
+import {
+  saveWorkspaceHandle,
+  loadWorkspaceHandle,
+  clearWorkspaceHandle,
+  saveLastFilePath,
+  loadLastFilePath,
+  clearLastFilePath,
+} from './utils/workspacePersist';
 
 // Import local utilities
 import { 
@@ -54,6 +62,10 @@ function App() {
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   
+  // Workspace restore state
+  const [isRestoringWorkspace, setIsRestoringWorkspace] = useState(false);
+  const [savedWorkspaceName, setSavedWorkspaceName] = useState<string | null>(null);
+
   // CLI States
   const [cliConnected, setCliConnected] = useState(false);
   const [cliPathInput, setCliPathInput] = useState('');
@@ -118,6 +130,65 @@ function App() {
       };
     }
   }, []);
+
+  // On mount: peek at IndexedDB to get saved workspace name (no permission needed)
+  useEffect(() => {
+    loadWorkspaceHandle().then((handle) => {
+      if (handle) setSavedWorkspaceName(handle.name);
+    });
+  }, []);
+
+  // Called when user clicks "繼續上次工作區" — has user gesture so requestPermission works
+  const handleRestoreWorkspace = async () => {
+    const savedHandle = await loadWorkspaceHandle();
+    if (!savedHandle) return;
+    setIsRestoringWorkspace(true);
+    try {
+      const hasPermission = await verifyPermission(savedHandle, true);
+      if (!hasPermission) {
+        await clearWorkspaceHandle();
+        clearLastFilePath();
+        setSavedWorkspaceName(null);
+        setIsRestoringWorkspace(false);
+        return;
+      }
+      const fileList = await getFilesRecursively(savedHandle);
+      const snapList = await loadSnapshots(savedHandle);
+      setRootHandle(savedHandle);
+      setWorkspaceName(savedHandle.name);
+      setFiles(fileList);
+      setSnapshots(snapList);
+      setSidebarTab('files');
+      setSavedWorkspaceName(null);
+
+      const lastPath = loadLastFilePath();
+      if (lastPath) {
+        const findNode = (nodes: FileNode[], path: string): FileNode | null => {
+          for (const n of nodes) {
+            if (n.kind === 'file' && n.path === path) return n;
+            if (n.kind === 'directory' && n.children) {
+              const found = findNode(n.children, path);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const lastFile = findNode(fileList, lastPath);
+        if (lastFile) {
+          const text = await readFileContent(lastFile.handle as FileSystemFileHandle);
+          setActiveFile(lastFile);
+          setContent(text);
+          setOriginalContent(text);
+        }
+      }
+    } catch {
+      await clearWorkspaceHandle();
+      clearLastFilePath();
+      setSavedWorkspaceName(null);
+    } finally {
+      setIsRestoringWorkspace(false);
+    }
+  };
 
   const handleLoginSuccess = (loggedUser: any) => {
     setUser(loggedUser);
@@ -292,7 +363,8 @@ function App() {
     setWorkspaceName(handle.name);
     setFiles(fileList);
     setSnapshots(snapList);
-    
+    saveWorkspaceHandle(handle);
+
     return handle;
   };
 
@@ -343,6 +415,7 @@ function App() {
       setActiveFile(file);
       setContent(text);
       setOriginalContent(text);
+      saveLastFilePath(file.path);
     } catch (e) {
       console.error('Failed to read file', e);
       alert(`無法開啟檔案: ${file.name}`);
@@ -753,9 +826,21 @@ function App() {
                 </div>
               )}
 
+              {savedWorkspaceName && (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleRestoreWorkspace}
+                  disabled={isRestoringWorkspace}
+                  style={{ width: '100%', padding: '12px 20px', fontSize: '14px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <FolderOpen size={16} />
+                  {isRestoringWorkspace ? '還原中...' : `繼續上次工作區：${savedWorkspaceName}`}
+                </button>
+              )}
+
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                  {cliConnected ? '也可以直接用下方 Picker 選擇既有資料夾。' : ''}
+                  {savedWorkspaceName ? '或選擇其他資料夾：' : cliConnected ? '也可以直接用下方 Picker 選擇既有資料夾。' : ''}
                 </span>
                 <button className="btn" onClick={handleSelectDirectory} style={{ padding: '10px 20px', fontSize: '14px' }}>
                   選擇創意工房資料夾

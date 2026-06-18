@@ -840,10 +840,26 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                               }}
                               onClick={() => setExploreExpanded(isExpanded ? null : note.id)}
                             >
-                              <Globe
-                                size={16}
-                                style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }}
-                              />
+                              {note.note_number != null ? (
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    color: 'var(--accent)',
+                                    backgroundColor: 'var(--accent-bg)',
+                                    borderRadius: '4px',
+                                    padding: '2px 6px',
+                                    flexShrink: 0,
+                                    marginTop: '2px',
+                                    letterSpacing: '0.01em',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  #{note.note_number}
+                                </span>
+                              ) : (
+                                <Globe size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }} />
+                              )}
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div
                                   style={{

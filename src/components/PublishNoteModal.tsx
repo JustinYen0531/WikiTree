@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, Check, Clipboard, FileText, Globe, Hash, Loader2, Tag, X } from 'lucide-react';
+import { AlertCircle, Check, FileText, Globe, Hash, Loader2, Tag, X } from 'lucide-react';
 import { supabase, isSupabaseConfigured, getLocalPublishedNotes, saveLocalPublishedNotes } from '../utils/supabase';
 import { FileNode } from '../utils/fileSystem';
 
@@ -64,12 +64,6 @@ const categoryOptions: Array<{
   },
 ];
 
-const createNoteId = () => {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-};
 
 export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   activeFile,
@@ -79,7 +73,6 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   onSuccess,
 }) => {
   const defaultTitle = activeFile ? activeFile.name.replace(/\.md$/i, '') : '未命名筆記';
-  const [noteId] = useState(createNoteId);
   const [title, setTitle] = useState(defaultTitle);
   const [category, setCategory] = useState<PublishCategory>('course');
   const [categoryCode, setCategoryCode] = useState('');
@@ -89,6 +82,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [publishedNumber, setPublishedNumber] = useState<number | null>(null);
 
   const canPublish = !!user;
   const isLocalMode = !isSupabaseConfigured() || !user?.isSupabaseUser;
@@ -103,7 +97,6 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   );
 
   const publishPayload = {
-    id: noteId,
     author_username: user?.username || '',
     author_nickname: user?.nickname || '',
     title: title.trim(),
@@ -123,14 +116,6 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
     if (!categoryCode.trim()) return `請填寫${selectedCategory.codeLabel}，之後大家才能用 ID 或分類找到這篇筆記。`;
     if (!user) return '請先登入 NCCU Hub 帳號再發布筆記。';
     return '';
-  };
-
-  const handleCopyId = async () => {
-    try {
-      await navigator.clipboard.writeText(noteId);
-    } catch {
-      setError('目前無法複製 ID，但你仍可以手動選取。');
-    }
   };
 
   const handlePublish = async () => {
@@ -181,10 +166,11 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
         return;
       }
 
-      const { error: insertError } = await supabase.from('published_notes').insert({
-        ...publishPayload,
-        user_id: authUser.id,
-      });
+      const { data: insertedNote, error: insertError } = await supabase
+        .from('published_notes')
+        .insert({ ...publishPayload, user_id: authUser.id })
+        .select('note_number')
+        .single();
 
       if (insertError) {
         setError(`發布失敗：${insertError.message}`);
@@ -192,10 +178,11 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
         return;
       }
 
+      setPublishedNumber(insertedNote?.note_number ?? null);
       setSuccess(true);
       setIsPublishing(false);
       onSuccess?.(title.trim());
-      setTimeout(() => onClose(), 1600);
+      setTimeout(() => onClose(), 2400);
     } catch (err: any) {
       setError(`發布時發生錯誤：${err.message || err}`);
       setIsPublishing(false);
@@ -266,9 +253,29 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
               }}
             >
               <Check size={42} />
-              <span style={{ fontSize: '15px', fontWeight: '700' }}>發布成功</span>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                你的筆記已經帶著分類資訊發布到社群。
+              <span style={{ fontSize: '15px', fontWeight: '700' }}>發布成功！</span>
+              {publishedNumber !== null && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                  }}
+                >
+                  <Hash size={16} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                    {publishedNumber}
+                  </span>
+                </div>
+              )}
+              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                {publishedNumber !== null
+                  ? `這是你的筆記編號，其他人可以用 #${publishedNumber} 找到它。`
+                  : '你的筆記已發布到社群。'}
               </span>
             </div>
           ) : (
@@ -286,35 +293,22 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
               )}
 
               <div style={{ display: 'grid', gap: '14px' }}>
-                <Field label="筆記 ID 預覽">
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                    }}
-                  >
-                    <Hash size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    <code
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        fontSize: '12px',
-                        color: 'var(--text-primary)',
-                        overflowWrap: 'anywhere',
-                      }}
-                    >
-                      {noteId}
-                    </code>
-                    <button className="theme-toggle-btn" onClick={handleCopyId} title="複製筆記 ID">
-                      <Clipboard size={14} />
-                    </button>
-                  </div>
-                </Field>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '13px',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  <Hash size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                  發布後系統自動分配 <strong style={{ color: 'var(--text-primary)' }}>#1 ~ #99999</strong> 編號，其他人可以用這個號碼找到你的筆記。
+                </div>
 
                 <Field label="筆記標題">
                   <input
