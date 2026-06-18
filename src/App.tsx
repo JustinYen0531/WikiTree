@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   FolderOpen, 
   Save, 
@@ -263,6 +263,40 @@ function App() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   const isSaved = content === originalContent;
+
+  // Keep a ref so the file-watcher closure always sees the latest isSaved value
+  const isSavedRef = useRef(isSaved);
+  useEffect(() => { isSavedRef.current = isSaved; }, [isSaved]);
+
+  // File watcher: poll every 3 s for external changes (e.g. agy/CLI edits on disk)
+  useEffect(() => {
+    if (!activeFile || !activeFile.handle || typeof activeFile.handle === 'string' || activeFile.handle?.isCli) return;
+
+    let lastModified: number | null = null;
+
+    const poll = async () => {
+      try {
+        const file = await (activeFile.handle as FileSystemFileHandle).getFile();
+        if (lastModified === null) {
+          lastModified = file.lastModified;
+          return;
+        }
+        if (file.lastModified !== lastModified) {
+          lastModified = file.lastModified;
+          if (isSavedRef.current) {
+            const text = await file.text();
+            setContent(text);
+            setOriginalContent(text);
+          }
+        }
+      } catch {
+        // File temporarily locked or moved — skip this tick
+      }
+    };
+
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [activeFile]);
 
   // Initialize theme
   useEffect(() => {
