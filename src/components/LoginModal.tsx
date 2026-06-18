@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '../utils/supabase';
 
 interface LoginModalProps {
   onClose: () => void;
-  onLoginSuccess: (user: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean }) => void;
+  onLoginSuccess: (user: { id?: string; username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean }) => void;
 }
 
 const NCCU_ACADEMIC_UNITS: Record<string, string[]> = {
@@ -187,6 +187,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         if (data.user) {
           const metadata = data.user.user_metadata || {};
           const loggedUser = {
+            id: data.user.id,
             username: metadata.username || cleanUser,
             nickname: metadata.nickname || cleanUser,
             college: metadata.college || '',

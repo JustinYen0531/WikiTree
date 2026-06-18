@@ -10,7 +10,7 @@ import {
   Sparkles,
   Award,
 } from 'lucide-react';
-import { fetchUserForestData } from '../utils/supabase';
+import { fetchUserForestData, isSupabaseConfigured, supabase } from '../utils/supabase';
 
 interface ForestDashboardProps {
   user: {
@@ -34,19 +34,40 @@ export const ForestDashboard: React.FC<ForestDashboardProps> = ({ user, onClose 
 
   useEffect(() => {
     if (!user) return;
+    let isMounted = true;
+
     setLoading(true);
-    const userId = user.id || `local_${user.username}`;
-    fetchUserForestData(userId, user.username)
+
+    const loadForestData = async () => {
+      let userId = user.id;
+
+      if (!userId && user.isSupabaseUser && isSupabaseConfigured() && supabase) {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        userId = authUser?.id;
+      }
+
+      return fetchUserForestData(userId || `local_${user.username}`, user.username);
+    };
+
+    loadForestData()
       .then((data) => {
+        if (!isMounted) return;
         setNotes(data.notes || []);
         setWaterings(data.waterings || []);
         setMessages(data.messages || []);
         setLoading(false);
       })
       .catch((err) => {
+        if (!isMounted) return;
         console.error('Failed to load forest data:', err);
         setLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   if (!user) return null;

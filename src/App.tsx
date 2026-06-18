@@ -96,6 +96,7 @@ function App() {
         if (session?.user) {
           const metadata = session.user.user_metadata || {};
           const loggedUser = {
+            id: session.user.id,
             username: metadata.username || session.user.email?.split('@')[0] || '',
             nickname: metadata.nickname || session.user.email?.split('@')[0] || '',
             college: metadata.college || '',
