@@ -189,6 +189,17 @@ export const Editor: React.FC<EditorProps> = ({
         continue;
       }
 
+      // Bulleted lists
+      if (/^\s*[-*+]\s+/.test(line)) {
+        parsedBlocks.push({
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'list',
+          raw: line.replace(/^\s*[-*+]\s+/, '- '),
+        });
+        i++;
+        continue;
+      }
+
       // Default: Paragraph
       parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'paragraph', raw: line });
       i++;
@@ -212,6 +223,7 @@ export const Editor: React.FC<EditorProps> = ({
       header1: '# ',
       header2: '## ',
       header3: '### ',
+      list: '- ',
     };
     const prefix = prefixMap[block.type];
     if (prefix) return prefix + displayVal;
@@ -497,7 +509,7 @@ export const Editor: React.FC<EditorProps> = ({
       const textAfter = value.substring(selectionStart);
       
       const newBlocks = [...blocks];
-      newBlocks[index].raw = textBefore;
+      newBlocks[index].raw = displayValueToRaw(blocks[index], textBefore);
       
       // Inherit prefixes
       let newRaw = textAfter;
@@ -506,8 +518,9 @@ export const Editor: React.FC<EditorProps> = ({
       if (blocks[index].type === 'todo') {
         newRaw = '- [ ] ' + textAfter;
         newType = 'todo';
-      } else if (blocks[index].raw.startsWith('- ')) {
+      } else if (blocks[index].type === 'list' || /^[-*+]\s+/.test(blocks[index].raw)) {
         newRaw = '- ' + textAfter;
+        newType = 'list';
       } else if (blocks[index].raw.startsWith('> ')) {
         newRaw = '> ' + textAfter;
         newType = 'callout';
@@ -623,6 +636,7 @@ export const Editor: React.FC<EditorProps> = ({
     else if (val.startsWith('## ')) newBlocks[index].type = 'header2';
     else if (val.startsWith('### ')) newBlocks[index].type = 'header3';
     else if (val.trim().startsWith('- [ ]') || val.trim().startsWith('- [x]')) newBlocks[index].type = 'todo';
+    else if (/^\s*[-*+]\s+/.test(val)) newBlocks[index].type = 'list';
     else if (val.trim().startsWith('```')) newBlocks[index].type = 'code';
     else if (val.trim().startsWith('>')) newBlocks[index].type = 'callout';
     else if (val.trim().startsWith('|')) newBlocks[index].type = 'table';
@@ -713,13 +727,21 @@ export const Editor: React.FC<EditorProps> = ({
     }, 0);
   };
 
-  // Return the text shown in the textarea (strips markdown prefix for header blocks)
+  const stripInlineMarkdownForDisplay = (value: string) =>
+    value
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
+      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
+      .replace(/(?<!_)_([^_\n]+)_(?!_)/g, '$1');
+
+  // Return the text shown in the textarea (strips structural markdown prefixes)
   const getBlockDisplayValue = (block: Block): string => {
     switch (block.type) {
-      case 'header1': return block.raw.replace(/^#\s*/, '');
-      case 'header2': return block.raw.replace(/^##\s*/, '');
-      case 'header3': return block.raw.replace(/^###\s*/, '');
-      default: return block.raw;
+      case 'header1': return stripInlineMarkdownForDisplay(block.raw.replace(/^#\s*/, ''));
+      case 'header2': return stripInlineMarkdownForDisplay(block.raw.replace(/^##\s*/, ''));
+      case 'header3': return stripInlineMarkdownForDisplay(block.raw.replace(/^###\s*/, ''));
+      case 'list': return stripInlineMarkdownForDisplay(block.raw.replace(/^\s*[-*+]\s+/, ''));
+      default: return stripInlineMarkdownForDisplay(block.raw);
     }
   };
 
@@ -747,6 +769,8 @@ export const Editor: React.FC<EditorProps> = ({
       if (displayVal === '## ') { handleBlockChange(index, '## '); return; }
       if (displayVal === '### ') { handleBlockChange(index, '### '); return; }
       if (displayVal === '- ') { handleBlockChange(index, '- '); return; }
+      if (displayVal === '* ') { handleBlockChange(index, '- '); return; }
+      if (displayVal === '+ ') { handleBlockChange(index, '- '); return; }
       if (displayVal === '- [ ] ') { handleBlockChange(index, '- [ ] '); return; }
       handleBlockChange(index, displayVal);
       return;
@@ -980,6 +1004,44 @@ export const Editor: React.FC<EditorProps> = ({
                       ) : (
                         <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
                       )}
+                    </div>
+                  ) : block.type === 'list' ? (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
+                      <span style={{
+                        width: '16px',
+                        marginTop: '6px',
+                        color: 'var(--text-primary)',
+                        textAlign: 'center',
+                        flexShrink: 0,
+                        lineHeight: 1,
+                      }}>
+                        •
+                      </span>
+                      <textarea
+                        className="block-textarea"
+                        ref={(el) => { blockRefs.current[index] = el; }}
+                        value={getBlockDisplayValue(block)}
+                        onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                        onPaste={(e) => handleBlockPaste(index, e)}
+                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                        onFocus={() => setFocusedBlockIndex(index)}
+                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                        rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
+                        placeholder="清單項目..."
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          outline: 'none',
+                          resize: 'none',
+                          background: 'transparent',
+                          fontSize: '15px',
+                          fontFamily: 'inherit',
+                          color: 'var(--text-primary)',
+                          padding: '2px 0',
+                          lineHeight: '1.6',
+                          overflow: 'hidden',
+                        }}
+                      />
                     </div>
                   ) : block.type === 'todo' ? (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
