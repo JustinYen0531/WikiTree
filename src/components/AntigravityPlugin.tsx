@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
+  ClipboardCheck,
   Eye,
   EyeOff,
   FileText,
@@ -18,6 +19,7 @@ import {
 interface AntigravityPluginProps {
   currentNotePath: string;
   currentNoteContent: string;
+  onApplyContent?: (content: string) => void;
 }
 
 interface Message {
@@ -32,6 +34,7 @@ const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNotePath,
   currentNoteContent,
+  onApplyContent,
 }) => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '');
   const [keyInput, setKeyInput] = useState('');
@@ -382,6 +385,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    gap: '4px',
                   }}
                 >
                   <div style={{
@@ -403,6 +407,28 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           : null)
                     }
                   </div>
+                  {msg.role === 'assistant' && msg.content && onApplyContent && currentNotePath && (
+                    <button
+                      onClick={() => onApplyContent(msg.content)}
+                      title="將此內容覆蓋寫入目前筆記"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'none',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        padding: '3px 8px',
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        alignSelf: 'flex-start',
+                      }}
+                    >
+                      <ClipboardCheck size={11} />
+                      套用到筆記
+                    </button>
+                  )}
                 </div>
               ))}
 

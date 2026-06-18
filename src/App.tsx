@@ -848,6 +848,16 @@ function App() {
           <AntigravityPlugin
             currentNotePath={activeFile ? activeFile.path : ''}
             currentNoteContent={content}
+            onApplyContent={async (newContent) => {
+              if (!activeFile?.handle || typeof activeFile.handle === 'string') return;
+              setContent(newContent);
+              setOriginalContent(newContent);
+              try {
+                await writeFileContent(activeFile.handle as FileSystemFileHandle, newContent);
+              } catch (e) {
+                console.error('AI apply write failed', e);
+              }
+            }}
           />
         </aside>
       )}
