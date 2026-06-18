@@ -38,6 +38,7 @@ interface SidebarProps {
   onLogout?: () => void;
   onTriggerLogin?: () => void;
   onOpenForest?: () => void;
+  onOpenFolder?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   onTriggerLogin,
   onOpenForest,
+  onOpenFolder,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,21 +330,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <>
           {/* Prominent Quick Actions - Always rendered so they can click immediately */}
           <div style={{ display: 'flex', gap: '6px', padding: '10px 8px 4px 8px', flexShrink: 0 }}>
-            <button 
-              className="btn btn-primary" 
+            <button
+              className="btn btn-primary"
               onClick={(e) => handleCreateFileClick('', e)}
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
               <Plus size={13} />
               新增筆記
             </button>
-            <button 
-              className="btn" 
+            <button
+              className="btn"
               onClick={(e) => handleCreateFolderClick('', e)}
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
               <FolderPlus size={13} />
               新增資料夾
+            </button>
+            <button
+              className="btn"
+              onClick={onOpenFolder}
+              title="開啟其他資料夾"
+              style={{ flexShrink: 0, padding: '6px 8px', fontSize: '12px', gap: '4px' }}
+            >
+              <FolderOpen size={13} />
             </button>
           </div>
 

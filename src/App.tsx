@@ -650,6 +650,7 @@ function App() {
         user={user}
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
+        onOpenFolder={handleSelectDirectory}
         onOpenForest={() => setShowForestDashboard(true)}
       />
 
