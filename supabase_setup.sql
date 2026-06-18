@@ -103,9 +103,23 @@ create table if not exists public.published_notes (
   title text not null,
   content text not null default '',
   note_path text not null default '',
+  category text not null default 'general',
+  category_label text not null default '通用學習',
+  category_code text not null default '',
+  category_title text not null default '',
+  description text not null default '',
+  tags text[] not null default '{}',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   is_public boolean not null default true
 );
+
+alter table public.published_notes
+  add column if not exists category text not null default 'general',
+  add column if not exists category_label text not null default '通用學習',
+  add column if not exists category_code text not null default '',
+  add column if not exists category_title text not null default '',
+  add column if not exists description text not null default '',
+  add column if not exists tags text[] not null default '{}';
 
 -- 啟用 RLS
 alter table public.published_notes enable row level security;
@@ -184,4 +198,3 @@ create policy "使用者可以留下訊息"
 create policy "使用者可以刪除自己的留言"
   on public.note_messages for delete
   using (auth.uid() = user_id);
-
