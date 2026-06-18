@@ -623,14 +623,17 @@ export const Editor: React.FC<EditorProps> = ({
     }
   };
 
-  const getBlockPlaceholder = (block: Block): string => {
+  const getBlockPlaceholder = (block: Block, index: number, totalBlocks: number): string => {
     switch (block.type) {
       case 'header1': return '大標題...';
       case 'header2': return '中標題...';
       case 'header3': return '小標題...';
       case 'todo': return '待辦事項...';
       case 'code': return '```language\ncode...\n```';
-      default: return '輸入文字，或輸入「/」插入區塊...';
+      default: 
+        return index === totalBlocks - 1 
+          ? '輸入文字，或輸入「/」插入區塊...' 
+          : '';
     }
   };
 
@@ -844,7 +847,7 @@ export const Editor: React.FC<EditorProps> = ({
                             setTimeout(() => setShowSlashMenu(false), 180);
                           }}
                           rows={1}
-                          placeholder={getBlockPlaceholder(block)}
+                          placeholder={getBlockPlaceholder(block, index, blocks.length)}
                           style={{
                             width: '100%',
                             border: 'none',
@@ -908,7 +911,7 @@ export const Editor: React.FC<EditorProps> = ({
                       onFocus={() => setFocusedBlockIndex(index)}
                       onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
                       rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
-                      placeholder={getBlockPlaceholder(block)}
+                      placeholder={getBlockPlaceholder(block, index, blocks.length)}
                       style={{
                         width: '100%',
                         border: 'none',
