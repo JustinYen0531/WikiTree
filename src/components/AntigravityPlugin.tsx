@@ -179,9 +179,9 @@ const MarkdownSegment: React.FC<{ text: string; muted?: boolean; main?: boolean 
   />
 );
 
-const BodyCopyButton: React.FC<{ content: string }> = ({ content }) => {
+const BodyCopyButton: React.FC<{ content: string; extractBody: boolean }> = ({ content, extractBody }) => {
   const [copied, setCopied] = useState(false);
-  const body = parseAssistantReply(content).body;
+  const body = extractBody ? parseAssistantReply(content).body : content;
   const text = body || content;
 
   return (
@@ -205,9 +205,13 @@ const BodyCopyButton: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
-const AssistantMessage: React.FC<{ content: string; loading?: boolean }> = ({ content, loading }) => {
+const AssistantMessage: React.FC<{ content: string; extractBody: boolean; loading?: boolean }> = ({ content, extractBody, loading }) => {
   if (!content) {
     return loading ? <Loader2 size={14} className="spin" /> : null;
+  }
+
+  if (!extractBody) {
+    return <MarkdownSegment text={content} />;
   }
 
   const parsed = parseAssistantReply(content);
@@ -284,6 +288,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     abortRef.current = new AbortController();
 
     try {
+      const systemPrompt = editRequest
+        ? buildSystemPrompt()
+        : `${buildSystemPrompt()}\n\n回覆請盡量分成三段：開場、正文、結尾。可複製/可直接貼進筆記的內容只放在「正文」段落；不要把「以下是我的整理」這類客套話放進正文。`;
+
       const response = await fetch(GROQ_URL, {
         method: 'POST',
         headers: {
@@ -296,10 +304,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           stream: true,
           max_tokens: 2048,
           messages: [
-            {
-              role: 'system',
-              content: `${buildSystemPrompt()}\n\n回覆請盡量分成三段：開場、正文、結尾。可複製/可直接貼進筆記的內容只放在「正文」段落；不要把「以下是我的整理」這類客套話放進正文。`,
-            },
+            { role: 'system', content: systemPrompt },
             ...historyForApi.map((m) => ({ role: m.role, content: m.content })),
           ],
         }),
@@ -557,7 +562,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           wordBreak: 'break-word', overflowWrap: 'anywhere',
                         }}
                       >
-                        <AssistantMessage content={msg.content} />
+                        <AssistantMessage content={msg.content} extractBody={!editRequest} />
                       </div>
                     ) : (
                       <div style={{
@@ -573,11 +578,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
                     {msg.role === 'assistant' && msg.content && (
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <BodyCopyButton content={msg.content} />
+                        <BodyCopyButton content={msg.content} extractBody={!editRequest} />
                         {canApply && (
                           <button
                             onClick={() => {
-                              editRequest.apply(parseAssistantReply(msg.content).body || msg.content);
+                              editRequest.apply(msg.content);
                               onClearEditRequest?.();
                             }}
                             style={{
