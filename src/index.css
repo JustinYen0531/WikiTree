@@ -353,6 +353,7 @@ body {
   border-radius: var(--border-radius-md) 0 0 var(--border-radius-md);
   background-color: var(--accent);
   color: #ffffff;
+  text-shadow: -0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000;
   box-shadow: var(--shadow-md);
   cursor: pointer;
   font-family: inherit;
@@ -420,6 +421,7 @@ body {
   background-color: var(--accent);
   border-color: var(--accent);
   color: white;
+  text-shadow: -0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000;
 }
 
 .btn-primary:hover {
@@ -1117,6 +1119,7 @@ body {
 .course-note-count:hover {
   background-color: var(--accent);
   color: #ffffff;
+  text-shadow: -0.8px -0.8px 0 #000, 0.8px -0.8px 0 #000, -0.8px 0.8px 0 #000, 0.8px 0.8px 0 #000;
 }
 
 .course-detail {
