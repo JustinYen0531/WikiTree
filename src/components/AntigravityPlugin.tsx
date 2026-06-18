@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
-  ClipboardCheck,
+  Copy,
   FileText,
   Languages,
   Lightbulb,
@@ -25,6 +25,25 @@ interface Message {
 }
 
 const API_KEY_STORAGE = 'nccu_hub_groq_key';
+
+const CopyButton: React.FC<{ text: string }> = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '5px',
+        background: 'none', border: '1px solid var(--border-color)',
+        borderRadius: '6px', padding: '3px 8px', fontSize: '11px',
+        color: copied ? 'var(--success)' : 'var(--text-secondary)',
+        cursor: 'pointer', alignSelf: 'flex-start',
+      }}
+    >
+      <Copy size={11} />
+      {copied ? '已複製' : '複製'}
+    </button>
+  );
+};
 const MODEL = 'llama-3.1-8b-instant';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -306,27 +325,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           : null)
                     }
                   </div>
-                  {msg.role === 'assistant' && msg.content && onApplyContent && currentNotePath && (
-                    <button
-                      onClick={() => onApplyContent(msg.content)}
-                      title="將此內容覆蓋寫入目前筆記"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        background: 'none',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '6px',
-                        padding: '3px 8px',
-                        fontSize: '11px',
-                        color: 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      <ClipboardCheck size={11} />
-                      套用到筆記
-                    </button>
+                  {msg.role === 'assistant' && msg.content && (
+                    <CopyButton text={msg.content} />
                   )}
                 </div>
               ))}

@@ -53,6 +53,64 @@ export const Editor: React.FC<EditorProps> = ({
   const slashMenuRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const hasAutoFocused = useRef(false);
+
+  // Groq inline edit
+  const [groqSel, setGroqSel] = useState<{ start: number; end: number; text: string } | null>(null);
+  const [groqPos, setGroqPos] = useState({ x: 0, y: 0 });
+  const [groqOpen, setGroqOpen] = useState(false);
+  const [groqInstruction, setGroqInstruction] = useState('');
+  const [groqResponse, setGroqResponse] = useState<string | null>(null);
+  const [groqLoading, setGroqLoading] = useState(false);
+  const groqInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTextareaMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const { selectionStart: s, selectionEnd: en } = ta;
+    if (s === en) { setGroqSel(null); setGroqOpen(false); return; }
+    setGroqSel({ start: s, end: en, text: ta.value.slice(s, en) });
+    setGroqPos({ x: e.clientX, y: e.clientY });
+    setGroqOpen(false);
+    setGroqResponse(null);
+    setGroqInstruction('');
+  };
+
+  const handleGroqEdit = async () => {
+    if (!groqSel || !groqInstruction.trim()) return;
+    const apiKey = localStorage.getItem('nccu_hub_groq_key');
+    if (!apiKey) { setGroqResponse('請先在個人檔案設定 Groq API Key'); return; }
+    setGroqLoading(true);
+    setGroqResponse(null);
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          max_tokens: 1024,
+          messages: [
+            { role: 'system', content: '你是文字編輯助理。只輸出修改後的文字，不要任何解釋、前言、後記、說明。直接輸出結果文字。' },
+            { role: 'user', content: `要修改的文字：\n\n${groqSel.text}\n\n指令：${groqInstruction}` },
+          ],
+        }),
+      });
+      const data = await res.json();
+      setGroqResponse(data.choices?.[0]?.message?.content?.trim() || '（無回應）');
+    } catch {
+      setGroqResponse('連線失敗，請稍後再試');
+    } finally {
+      setGroqLoading(false);
+    }
+  };
+
+  const applyGroqResponse = () => {
+    if (!groqSel || !groqResponse) return;
+    const newContent = content.slice(0, groqSel.start) + groqResponse + content.slice(groqSel.end);
+    onChange(newContent);
+    setGroqSel(null);
+    setGroqOpen(false);
+    setGroqResponse(null);
+  };
   const isHorizontalRule = (value: string) => /^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(value);
 
   // Parse raw markdown string into blocks
@@ -979,6 +1037,7 @@ export const Editor: React.FC<EditorProps> = ({
                   value={content}
                   onChange={handleTextareaChange}
                   onKeyDown={handleKeyDown}
+                  onMouseUp={handleTextareaMouseUp}
                   placeholder="開始撰寫筆記... (輸入 '/' 喚出 Notion 快選指令)"
                 />
 
@@ -1021,6 +1080,139 @@ export const Editor: React.FC<EditorProps> = ({
           </div>
         )}
       </div>
+
+      {/* Groq inline edit floating UI */}
+      {groqSel && (
+        <div
+          style={{
+            position: 'fixed',
+            left: Math.min(groqPos.x, window.innerWidth - 340),
+            top: Math.max(groqPos.y - 48, 8),
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0',
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {!groqOpen ? (
+            <button
+              onClick={() => { setGroqOpen(true); setTimeout(() => groqInputRef.current?.focus(), 50); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '5px 12px', borderRadius: '20px',
+                backgroundColor: 'var(--accent)', color: 'white',
+                border: 'none', cursor: 'pointer', fontSize: '12.5px', fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Sparkles size={13} />
+              Edit with Groq
+            </button>
+          ) : (
+            <div style={{
+              width: '320px',
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+              overflow: 'hidden',
+            }}>
+              {/* selected text preview */}
+              <div style={{
+                padding: '8px 12px',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--bg-secondary)',
+                borderBottom: '1px solid var(--border-color)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                「{groqSel.text.slice(0, 60)}{groqSel.text.length > 60 ? '…' : ''}」
+              </div>
+
+              {/* instruction input */}
+              {!groqResponse && (
+                <div style={{ padding: '10px 12px', display: 'flex', gap: '6px' }}>
+                  <input
+                    ref={groqInputRef}
+                    type="text"
+                    value={groqInstruction}
+                    onChange={(e) => setGroqInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleGroqEdit(); if (e.key === 'Escape') { setGroqSel(null); setGroqOpen(false); } }}
+                    placeholder="要做什麼？例如：改成更簡潔"
+                    style={{
+                      flex: 1, fontSize: '12.5px', padding: '6px 10px',
+                      borderRadius: '8px', border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleGroqEdit}
+                    disabled={!groqInstruction.trim() || groqLoading}
+                    style={{
+                      padding: '6px 12px', borderRadius: '8px',
+                      backgroundColor: 'var(--accent)', color: 'white',
+                      border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700,
+                      opacity: (!groqInstruction.trim() || groqLoading) ? 0.5 : 1,
+                    }}
+                  >
+                    {groqLoading ? '…' : '送出'}
+                  </button>
+                </div>
+              )}
+
+              {/* response */}
+              {groqResponse && (
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{
+                    fontSize: '12.5px', lineHeight: 1.6, color: 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                    maxHeight: '160px', overflowY: 'auto',
+                    backgroundColor: 'var(--bg-secondary)',
+                    padding: '8px 10px', borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                  }}>
+                    {groqResponse}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={applyGroqResponse}
+                      style={{
+                        flex: 1, padding: '6px', borderRadius: '8px',
+                        backgroundColor: 'var(--accent)', color: 'white',
+                        border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 700,
+                      }}
+                    >
+                      套用（替換選取）
+                    </button>
+                    <button
+                      onClick={() => { setGroqResponse(null); setGroqInstruction(''); setTimeout(() => groqInputRef.current?.focus(), 50); }}
+                      style={{
+                        padding: '6px 10px', borderRadius: '8px',
+                        backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)', cursor: 'pointer', fontSize: '12px',
+                      }}
+                    >
+                      重試
+                    </button>
+                    <button
+                      onClick={() => { setGroqSel(null); setGroqOpen(false); setGroqResponse(null); }}
+                      style={{
+                        padding: '6px 10px', borderRadius: '8px',
+                        backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)', cursor: 'pointer', fontSize: '12px',
+                      }}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
