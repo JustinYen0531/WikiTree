@@ -155,8 +155,8 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     gap: '8px',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    backgroundColor: 'var(--danger-bg)',
+                    border: '1px solid var(--success-border)',
                     marginBottom: '16px',
                   }}
                 >
@@ -226,8 +226,8 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     gap: '8px',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    backgroundColor: 'var(--danger-bg)',
+                    border: '1px solid var(--success-border)',
                     marginBottom: '16px',
                   }}
                 >

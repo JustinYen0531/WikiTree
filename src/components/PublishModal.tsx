@@ -115,7 +115,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 color: 'var(--danger)', 
                 fontSize: '13px', 
                 borderRadius: 'var(--border-radius-sm)', 
-                border: '1px solid rgba(226,92,92,0.2)' 
+                border: '1px solid var(--success-border)' 
               }}>
                 <AlertCircle size={16} />
                 <span>{errorMsg}</span>

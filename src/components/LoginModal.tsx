@@ -500,7 +500,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         {/* NCCU Theme Colored Header Bar */}
         <div style={{
           height: '4px',
-          background: 'linear-gradient(90deg, #b31b1b 0%, #1c3b57 50%, #b31b1b 100%)',
+          background: 'linear-gradient(90deg, var(--text-primary) 0%, var(--text-muted) 50%, var(--text-primary) 100%)',
           width: '100%'
         }} />
 
@@ -1084,7 +1084,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {forgotStep === 2 && (
                 <form onSubmit={handleForgotStep2} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{ 
-                    backgroundColor: 'rgba(35, 131, 226, 0.04)', 
+                    backgroundColor: 'var(--accent-bg)', 
                     border: '1px solid var(--border-color)', 
                     borderRadius: '8px', 
                     padding: '12px 16px' 
@@ -1153,7 +1153,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {forgotStep === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center', padding: '10px 0' }}>
                   <div style={{
-                    backgroundColor: 'rgba(46, 168, 101, 0.05)',
+                    backgroundColor: 'var(--success-bg)',
                     border: '1px solid var(--success-border)',
                     borderRadius: '10px',
                     padding: '20px 16px',

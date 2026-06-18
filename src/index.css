@@ -17,24 +17,24 @@
   --text-secondary: #7c7b77;
   --text-muted: #a4a3a0;
   
-  --accent: #2383e2;
-  --accent-hover: #1a62ab;
-  --accent-bg: rgba(35, 131, 226, 0.08);
+  --accent: #111111;
+  --accent-hover: #000000;
+  --accent-bg: rgba(15, 15, 15, 0.08);
   
-  --success: #0f7b46;
-  --success-bg: rgba(15, 123, 70, 0.1);
-  --success-border: rgba(15, 123, 70, 0.2);
+  --success: #2f2f2f;
+  --success-bg: rgba(15, 15, 15, 0.08);
+  --success-border: rgba(15, 15, 15, 0.18);
   
-  --warning: #df5b24;
-  --warning-bg: rgba(223, 91, 36, 0.08);
+  --warning: #555555;
+  --warning-bg: rgba(15, 15, 15, 0.06);
   
-  --danger: #d44040;
-  --danger-bg: rgba(212, 64, 64, 0.08);
+  --danger: #111111;
+  --danger-bg: rgba(15, 15, 15, 0.08);
   
-  --diff-added: #e6f6ec;
-  --diff-added-text: #117a3a;
-  --diff-removed: #ffebe9;
-  --diff-removed-text: #d1242f;
+  --diff-added: #f1f1f1;
+  --diff-added-text: #262626;
+  --diff-removed: #e8e8e8;
+  --diff-removed-text: #111111;
 
   /* Layout and UI */
   --sidebar-width: 250px;
@@ -57,24 +57,24 @@
   --text-secondary: #8c8c8c;
   --text-muted: #5a5a5a;
   
-  --accent: #2eaadc;
-  --accent-hover: #1c7ba1;
-  --accent-bg: rgba(46, 170, 220, 0.15);
+  --accent: #f1f1f1;
+  --accent-hover: #ffffff;
+  --accent-bg: rgba(255, 255, 255, 0.1);
   
-  --success: #2ea865;
-  --success-bg: rgba(46, 168, 101, 0.12);
-  --success-border: rgba(46, 168, 101, 0.25);
+  --success: #d7d7d7;
+  --success-bg: rgba(255, 255, 255, 0.08);
+  --success-border: rgba(255, 255, 255, 0.18);
   
-  --warning: #e07440;
-  --warning-bg: rgba(224, 116, 64, 0.15);
+  --warning: #b8b8b8;
+  --warning-bg: rgba(255, 255, 255, 0.07);
   
-  --danger: #e25c5c;
-  --danger-bg: rgba(226, 92, 92, 0.15);
+  --danger: #f1f1f1;
+  --danger-bg: rgba(255, 255, 255, 0.09);
   
-  --diff-added: #132d1f;
-  --diff-added-text: #45b372;
-  --diff-removed: #3c1619;
-  --diff-removed-text: #ec5d66;
+  --diff-added: #2a2a2a;
+  --diff-added-text: #eeeeee;
+  --diff-removed: #111111;
+  --diff-removed-text: #d7d7d7;
   
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -1110,7 +1110,7 @@ body {
   padding: 4px 7px;
   font-size: 11.5px;
   font-weight: 700;
-  border: 1px solid rgba(35, 131, 226, 0.2);
+  border: 1px solid rgba(15, 15, 15, 0.18);
   cursor: pointer;
 }
 
@@ -1524,25 +1524,25 @@ body {
 
 @keyframes pulseGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(35, 131, 226, 0.4);
+    box-shadow: 0 0 0 0 rgba(15, 15, 15, 0.28);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(35, 131, 226, 0);
+    box-shadow: 0 0 0 6px rgba(15, 15, 15, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(35, 131, 226, 0);
+    box-shadow: 0 0 0 0 rgba(15, 15, 15, 0);
   }
 }
 
 @keyframes pulseGlowMock {
   0% {
-    box-shadow: 0 0 0 0 rgba(15, 123, 70, 0.4);
+    box-shadow: 0 0 0 0 rgba(15, 15, 15, 0.24);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(15, 123, 70, 0);
+    box-shadow: 0 0 0 6px rgba(15, 15, 15, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(15, 123, 70, 0);
+    box-shadow: 0 0 0 0 rgba(15, 15, 15, 0);
   }
 }
 

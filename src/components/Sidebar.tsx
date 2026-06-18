@@ -73,12 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const getAvatarGradient = (name: string) => {
     const colors = [
-      'linear-gradient(135deg, #FF5722 0%, #FF9800 100%)',
-      'linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%)',
-      'linear-gradient(135deg, #00BCD4 0%, #009688 100%)',
-      'linear-gradient(135deg, #3F51B5 0%, #2196F3 100%)',
-      'linear-gradient(135deg, #E91E63 0%, #9C27B0 100%)',
-      'linear-gradient(135deg, #b31b1b 0%, #1c3b57 100%)'
+      'linear-gradient(135deg, #111111 0%, #3a3a3a 100%)',
+      'linear-gradient(135deg, #2a2a2a 0%, #5a5a5a 100%)',
+      'linear-gradient(135deg, #000000 0%, #444444 100%)',
+      'linear-gradient(135deg, #333333 0%, #777777 100%)',
+      'linear-gradient(135deg, #1f1f1f 0%, #666666 100%)',
+      'linear-gradient(135deg, #0f0f0f 0%, #4f4f4f 100%)'
     ];
     const index = Math.abs((name || 'A').charCodeAt(0) % colors.length);
     return colors[index];

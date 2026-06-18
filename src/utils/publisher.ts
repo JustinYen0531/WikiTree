@@ -170,8 +170,8 @@ function getIndexHtmlTemplate(): string {
       --border-color: #edece9;
       --text-primary: #37352f;
       --text-secondary: #7c7b77;
-      --accent-color: #2383e2;
-      --accent-hover: #1a62ab;
+      --accent-color: #111111;
+      --accent-hover: #000000;
       --bg-hover: #efeee8;
       --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
       --line-height: 1.65;
@@ -183,8 +183,8 @@ function getIndexHtmlTemplate(): string {
       --border-color: #2a2a2a;
       --text-primary: #e3e3e3;
       --text-secondary: #8a8a8a;
-      --accent-color: #2eaadc;
-      --accent-hover: #1c7ba1;
+      --accent-color: #f1f1f1;
+      --accent-hover: #ffffff;
       --bg-hover: #2d2d2d;
     }
 

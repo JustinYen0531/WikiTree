@@ -35,7 +35,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           width: '96px',
           height: '96px',
           borderRadius: '24px',
-          background: 'linear-gradient(135deg, rgba(35, 131, 226, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
+          background: 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--border-color) 100%)',
           border: '1px solid var(--border-color)',
           marginBottom: '32px',
           boxShadow: 'var(--shadow-sm)'
@@ -51,7 +51,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           fontWeight: '800',
           letterSpacing: '-0.03em',
           margin: '0 0 12px 0',
-          background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%)',
+          background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--text-muted) 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           textTransform: 'lowercase'

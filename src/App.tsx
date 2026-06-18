@@ -681,8 +681,8 @@ function App() {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#10b981' }}>創意工房 CLI 已連線</span>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)' }}></div>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--success)' }}>創意工房 CLI 已連線</span>
                   </div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     輸入要開啟或新建的創意工房路徑：
