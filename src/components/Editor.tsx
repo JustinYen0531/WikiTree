@@ -91,7 +91,10 @@ export const Editor: React.FC<EditorProps> = ({
     const applyFn = (replacement: string) => {
       if (blockIdx !== null) {
         const ta = blockRefs.current[blockIdx];
-        if (ta) handleBlockInputChange(blockIdx, ta.value.slice(0, s) + replacement + ta.value.slice(en));
+        if (!ta) return;
+
+        const mergedDisplay = ta.value.slice(0, s) + replacement + ta.value.slice(en);
+        applyMarkdownToBlock(blockIdx, mergedDisplay);
       } else {
         const current = textareaRef.current?.value ?? content;
         onChange(current.slice(0, s) + replacement + current.slice(en));
@@ -219,6 +222,22 @@ export const Editor: React.FC<EditorProps> = ({
     return displayVal;
   };
 
+  const applyMarkdownToBlock = (index: number, displayVal: string) => {
+    if (!looksLikeMarkdownPaste(displayVal)) {
+      handleBlockInputChange(index, displayVal);
+      return;
+    }
+
+    const mergedRaw = displayValueToRaw(blocks[index], displayVal);
+    const parsedBlocks = parseMarkdownToBlocks(mergedRaw);
+    const nextBlocks = [...blocks];
+
+    nextBlocks.splice(index, 1, ...parsedBlocks);
+    updateContentFromBlocks(nextBlocks);
+    setFocusedBlockIndex(index);
+    setTimeout(() => blockRefs.current[index]?.focus(), 0);
+  };
+
   const handleBlockPaste = (index: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = e.clipboardData.getData('text/plain');
     if (!looksLikeMarkdownPaste(pasted)) return;
@@ -228,15 +247,7 @@ export const Editor: React.FC<EditorProps> = ({
     const textarea = e.currentTarget;
     const before = textarea.value.slice(0, textarea.selectionStart);
     const after = textarea.value.slice(textarea.selectionEnd);
-    const mergedDisplay = before + pasted + after;
-    const mergedRaw = displayValueToRaw(blocks[index], mergedDisplay);
-    const pastedBlocks = parseMarkdownToBlocks(mergedRaw);
-    const nextBlocks = [...blocks];
-
-    nextBlocks.splice(index, 1, ...pastedBlocks);
-    updateContentFromBlocks(nextBlocks);
-    setFocusedBlockIndex(index);
-    setTimeout(() => blockRefs.current[index]?.focus(), 0);
+    applyMarkdownToBlock(index, before + pasted + after);
   };
 
   // Sync prop changes to local blocks, but ONLY when not editing or if external change occurs
