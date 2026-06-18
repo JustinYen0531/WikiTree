@@ -6,6 +6,7 @@ import {
   Link as LinkIcon, 
   List, 
   ListOrdered, 
+  Minus,
   CheckSquare, 
   Columns, 
   Eye, 
@@ -26,7 +27,7 @@ interface EditorProps {
 
 interface Block {
   id: string;
-  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'paragraph';
+  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'paragraph';
   raw: string;
 }
 
@@ -52,6 +53,7 @@ export const Editor: React.FC<EditorProps> = ({
   const slashMenuRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
   const hasAutoFocused = useRef(false);
+  const isHorizontalRule = (value: string) => /^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(value);
 
   // Parse raw markdown string into blocks
   const parseMarkdownToBlocks = (markdown: string): Block[] => {
@@ -118,6 +120,13 @@ export const Editor: React.FC<EditorProps> = ({
       }
       if (line.startsWith('### ')) {
         parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header3', raw: line });
+        i++;
+        continue;
+      }
+
+      // Horizontal rules
+      if (isHorizontalRule(line)) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'hr', raw: line });
         i++;
         continue;
       }
@@ -311,6 +320,7 @@ export const Editor: React.FC<EditorProps> = ({
     { label: '提醒框', desc: 'Notion 風格的高亮提醒框', before: '> [!NOTE]\n> 請輸入提示文字...', after: '', icon: '提醒' },
     { label: '程式碼區塊', desc: '支援程式碼高亮的區塊', before: '```javascript\n', after: '\n```', icon: '代碼' },
     { label: '表格', desc: '網格式表格格式排版', before: '| 欄位 1 | 欄位 2 |\n| -------- | -------- |\n| 資料 1   | 資料 2   |', after: '', icon: '表格' },
+    { label: '分隔線', desc: '插入水平分隔線', before: '---', after: '', icon: '---' },
   ];
 
   const filteredCommands = slashCommands.filter(c => 
@@ -516,6 +526,7 @@ export const Editor: React.FC<EditorProps> = ({
     else if (val.trim().startsWith('```')) newBlocks[index].type = 'code';
     else if (val.trim().startsWith('>')) newBlocks[index].type = 'callout';
     else if (val.trim().startsWith('|')) newBlocks[index].type = 'table';
+    else if (isHorizontalRule(val)) newBlocks[index].type = 'hr';
     else newBlocks[index].type = 'paragraph';
 
     updateContentFromBlocks(newBlocks);
@@ -590,6 +601,7 @@ export const Editor: React.FC<EditorProps> = ({
     else if (cmd.before.startsWith('```')) newBlocks[index].type = 'code';
     else if (cmd.before.startsWith('>')) newBlocks[index].type = 'callout';
     else if (cmd.before.startsWith('|')) newBlocks[index].type = 'table';
+    else if (isHorizontalRule(cmd.before)) newBlocks[index].type = 'hr';
     
     updateContentFromBlocks(newBlocks);
     setShowSlashMenu(false);
@@ -666,6 +678,10 @@ export const Editor: React.FC<EditorProps> = ({
   const renderBlockToHtml = (block: Block): string => {
     if (!block.raw.trim()) {
       return `<p class="wysiwyg-placeholder" style="color: var(--text-secondary); opacity: 0.5; font-style: italic;">點擊此處輸入文字...</p>`;
+    }
+
+    if (block.type === 'hr') {
+      return '<hr />';
     }
 
     let processed = block.raw;
@@ -753,6 +769,7 @@ export const Editor: React.FC<EditorProps> = ({
           <button className="theme-toggle-btn" onClick={() => insertMarkdown('- [ ] ')} title="待辦清單"><CheckSquare size={15} /></button>
           <button className="theme-toggle-btn" onClick={() => insertMarkdown('| 欄位 | 欄位 |\n| --- | --- |\n| 資料 | 資料 |')} title="表格"><Grid size={15} /></button>
           <button className="theme-toggle-btn" onClick={() => insertMarkdown('> [!NOTE]\n> ')} title="提醒框"><Sparkles size={15} /></button>
+          <button className="theme-toggle-btn" onClick={() => insertMarkdown('\n---\n')} title="分隔線"><Minus size={15} /></button>
         </div>
 
         {/* View mode toggle */}
@@ -807,7 +824,46 @@ export const Editor: React.FC<EditorProps> = ({
                   key={block.id}
                   style={{ position: 'relative', minHeight: '26px' }}
                 >
-                  {block.type === 'todo' ? (
+                  {block.type === 'hr' ? (
+                    <div
+                      onClick={() => {
+                        setFocusedBlockIndex(index);
+                        setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                      }}
+                      style={{ position: 'relative', minHeight: '34px', padding: '8px 0', cursor: 'text' }}
+                    >
+                      {focusedBlockIndex === index ? (
+                        <textarea
+                          ref={(el) => { blockRefs.current[index] = el; }}
+                          value={getBlockDisplayValue(block)}
+                          onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                          onFocus={() => setFocusedBlockIndex(index)}
+                          onBlur={() => {
+                            setFocusedBlockIndex(null);
+                            setTimeout(() => setShowSlashMenu(false), 180);
+                          }}
+                          rows={1}
+                          placeholder={getBlockPlaceholder(block)}
+                          style={{
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            resize: 'none',
+                            background: 'transparent',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '15px',
+                            color: 'var(--text-secondary)',
+                            padding: '0',
+                            margin: 0,
+                            lineHeight: '1.4',
+                          }}
+                        />
+                      ) : (
+                        <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
+                      )}
+                    </div>
+                  ) : block.type === 'todo' ? (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
                       <input
                         type="checkbox"
