@@ -21,13 +21,13 @@ interface AntigravityPluginProps {
 }
 
 interface Message {
-  role: 'user' | 'model';
+  role: 'user' | 'assistant';
   content: string;
 }
 
-const API_KEY_STORAGE = 'nccu_hub_gemini_key';
-const MODEL = 'gemini-1.5-flash';
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const API_KEY_STORAGE = 'nccu_hub_groq_key';
+const MODEL = 'llama-3.1-8b-instant';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNotePath,
@@ -89,32 +89,28 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     const userMsg: Message = { role: 'user', content: userText };
     const historyForApi = [...baseHistory, userMsg];
 
-    setMessages([...historyForApi, { role: 'model', content: '' }]);
+    setMessages([...historyForApi, { role: 'assistant', content: '' }]);
     setStreaming(true);
 
     abortRef.current = new AbortController();
 
     try {
-      const url = `${GEMINI_BASE}/${MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-      const body = {
-        system_instruction: {
-          parts: [{ text: buildSystemPrompt() }],
-        },
-        contents: historyForApi.map((m) => ({
-          role: m.role,
-          parts: [{ text: m.content }],
-        })),
-        generationConfig: {
-          maxOutputTokens: 2048,
-        },
-      };
-
-      const response = await fetch(url, {
+      const response = await fetch(GROQ_URL, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
         signal: abortRef.current.signal,
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          model: MODEL,
+          stream: true,
+          max_tokens: 2048,
+          messages: [
+            { role: 'system', content: buildSystemPrompt() },
+            ...historyForApi.map((m) => ({ role: m.role, content: m.content })),
+          ],
+        }),
       });
 
       if (!response.ok) {
@@ -133,15 +129,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         for (const line of chunk.split('\n')) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
-          if (!data) continue;
+          if (!data || data === '[DONE]') continue;
           try {
             const parsed = JSON.parse(data);
-            const part = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const part = parsed?.choices?.[0]?.delta?.content;
             if (part) {
               modelText += part;
               setMessages((prev) => {
                 const updated = [...prev];
-                updated[updated.length - 1] = { role: 'model', content: modelText };
+                updated[updated.length - 1] = { role: 'assistant', content: modelText };
                 return updated;
               });
             }
@@ -153,7 +149,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       setError(e.message || '發生未知錯誤');
       setMessages((prev) => {
         const last = prev[prev.length - 1];
-        if (last?.role === 'model' && !last.content) return prev.slice(0, -1);
+        if (last?.role === 'assistant' && !last.content) return prev.slice(0, -1);
         return prev;
       });
     } finally {
@@ -177,7 +173,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     { id: 'quiz', icon: Lightbulb, label: '出練習題', prompt: '請根據這份筆記內容出三題練習題並附上參考答案。' },
   ];
 
-  const maskedKey = apiKey ? `AIza...${apiKey.slice(-6)}` : '';
+  const maskedKey = apiKey ? `gsk_...${apiKey.slice(-6)}` : '';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '13px', minHeight: 0 }}>
@@ -197,7 +193,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             backgroundColor: hasKey ? 'var(--success)' : 'var(--danger)',
           }} />
           <div>
-            <div style={{ fontWeight: 700 }}>{hasKey ? 'Gemini 已就緒' : '請設定 API Key'}</div>
+            <div style={{ fontWeight: 700 }}>{hasKey ? 'Groq 已就緒' : '請設定 API Key'}</div>
             {hasKey && (
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{maskedKey}</div>
             )}
@@ -227,7 +223,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           flexShrink: 0,
         }}>
           <div className="form-group">
-            <label className="form-label">Google Gemini API Key</label>
+            <label className="form-label">Groq API Key</label>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input
                 type={showKey ? 'text' : 'password'}
@@ -235,7 +231,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveKey()}
-                placeholder="AIzaSy..."
+                placeholder="gsk_..."
                 style={{ flex: 1, fontSize: '12px', padding: '6px' }}
                 autoFocus
               />
@@ -294,12 +290,12 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             <Sparkles size={32} style={{ color: 'var(--accent)', opacity: 0.75 }} />
             <div>
               <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px', fontSize: '14px' }}>
-                設定 Gemini API Key
+                設定 Groq API Key
               </div>
               <div style={{ fontSize: '12px', lineHeight: 1.8 }}>
-                前往 <strong>aistudio.google.com</strong><br />
-                用 Google 帳號登入 → 點右上角<br />
-                <strong>「Get API key」</strong> → 建立新 Key<br />
+                前往 <strong>console.groq.com</strong><br />
+                註冊登入 → 左側 <strong>「API Keys」</strong><br />
+                → <strong>「Create API Key」</strong><br />
                 <br />
                 <span style={{
                   display: 'inline-block',
@@ -311,7 +307,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   color: 'var(--success)',
                   fontWeight: 700,
                 }}>
-                  免費額度：每天 1500 次 ✓
+                  免費額度：每天 14,400 次 · 超快速 ✓
                 </span>
               </div>
             </div>
@@ -398,7 +394,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     lineHeight: 1.65,
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
-                    border: msg.role === 'model' ? '1px solid var(--border-color)' : 'none',
+                    border: msg.role === 'assistant' ? '1px solid var(--border-color)' : 'none',
                   }}>
                     {msg.content
                       ? msg.content
