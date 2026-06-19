@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { renderInlineMarkdown } from './markdownRenderer';
 
 export const CALLOUT_PATTERN =
   /^>\s*\[!(NOTE|INFO|TIP|SUCCESS|IMPORTANT|WARNING|CAUTION|DANGER|ALERT)\](.*)/i;
@@ -35,10 +35,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function renderInlineMarkdown(value: string): string {
-  return marked.parseInline(value) as string;
 }
 
 function stripBlockquoteMarker(line: string): string {

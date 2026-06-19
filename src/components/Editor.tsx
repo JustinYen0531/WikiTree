@@ -15,7 +15,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import { marked } from 'marked';
+import mermaid from 'mermaid';
 import { preprocessCallouts, renderCalloutBlock } from '../utils/callouts';
+import { renderMarkdown } from '../utils/markdownRenderer';
 
 interface EditorProps {
   content: string;
@@ -364,7 +366,7 @@ export const Editor: React.FC<EditorProps> = ({
     processed = preprocessCallouts(mdText);
 
     try {
-      const html = await marked.parse(processed);
+      const html = await renderMarkdown(processed);
       setHtmlContent(html);
     } catch (e) {
       console.error('Markdown rendering error', e);
@@ -375,6 +377,19 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     parseMarkdown(content);
   }, [content]);
+
+  useEffect(() => {
+    if (!htmlContent.includes('class="mermaid"')) return;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+    });
+    mermaid.run({ querySelector: '.rendered-markdown .mermaid' }).catch((error) => {
+      console.error('Mermaid rendering error', error);
+    });
+  }, [htmlContent]);
 
   // Insert markdown tag at cursor (for Source / Split mode)
   const insertMarkdown = (before: string, after: string = '') => {

@@ -9,6 +9,7 @@ import { getFlatFileState } from './versionControl';
 
 import { marked } from 'marked';
 import { preprocessCallouts as preprocessSharedCallouts } from './callouts';
+import { renderMarkdown } from './markdownRenderer';
 
 function getCalloutEmoji(type: string): string {
   if (['TIP', 'SUCCESS'].includes(type)) return '✨';
@@ -126,7 +127,7 @@ export async function publishSite(
     const markdown = flatState.get(path);
     if (markdown !== undefined) {
       const title = path.split('/').pop()?.replace(/\.md$/i, '') || path;
-      const htmlContent = await marked.parse(preprocessSharedCallouts(markdown));
+      const htmlContent = await renderMarkdown(preprocessSharedCallouts(markdown));
       publishedNotes[path] = {
         title,
         html: htmlContent
@@ -238,6 +239,7 @@ function getIndexHtmlTemplate(): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Published Notes</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.css">
   <style>
     :root {
       --bg-primary: #ffffff;
@@ -547,6 +549,28 @@ function getIndexHtmlTemplate(): string {
       font-weight: 600;
     }
 
+    .note-content .math-block {
+      margin: 18px 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      text-align: center;
+    }
+
+    .note-content .math-inline {
+      white-space: nowrap;
+    }
+
+    .note-content .mermaid {
+      margin: 18px 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    .note-content .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
     /* Callouts styling (Notion / Obsidian like) */
     .callout-block {
       display: flex;
@@ -772,6 +796,7 @@ function getIndexHtmlTemplate(): string {
             homeView.style.display = 'none';
             document.getElementById('note-title-header').textContent = note.title;
             document.getElementById('note-body-content').innerHTML = note.html;
+            renderMermaidDiagrams();
             breadcrumbs.textContent = path.split('/').join(' / ');
 
             // Highlight in sidebar
@@ -785,6 +810,23 @@ function getIndexHtmlTemplate(): string {
         noteView.style.display = 'none';
         homeView.style.display = 'flex';
         breadcrumbs.textContent = 'Home';
+      }
+
+      const mermaidReady = import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')
+        .then((module) => {
+          module.default.initialize({
+            startOnLoad: false,
+            securityLevel: 'strict',
+            theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+          });
+          return module.default;
+        });
+
+      function renderMermaidDiagrams() {
+        if (!document.querySelector('.note-content .mermaid')) return;
+        mermaidReady
+          .then((mermaid) => mermaid.run({ querySelector: '.note-content .mermaid' }))
+          .catch((error) => console.error('Mermaid rendering error', error));
       }
 
       window.addEventListener('hashchange', handleRoute);

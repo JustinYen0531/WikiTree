@@ -658,6 +658,28 @@ body {
   margin: 16px 0;
 }
 
+.rendered-markdown .math-block {
+  margin: 18px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+
+.rendered-markdown .math-inline {
+  white-space: nowrap;
+}
+
+.rendered-markdown .mermaid {
+  margin: 18px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.rendered-markdown .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Task checklist rendering */
 .task-list-item {
   list-style-type: none;
