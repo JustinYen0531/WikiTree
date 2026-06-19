@@ -26,7 +26,10 @@ import {
   Send,
   Lock,
   TreePine,
+  Eye,
+  Download,
 } from 'lucide-react';
+import { marked } from 'marked';
 import { FileNode } from '../utils/fileSystem';
 import { 
   supabase, 
@@ -332,6 +335,52 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   const [noteMessages, setNoteMessages] = useState<any[]>([]);
   const [userWatered, setUserWatered] = useState(false);
   const [commentInput, setCommentInput] = useState('');
+  const [previewNote, setPreviewNote] = useState<{ title: string; content: string } | null>(null);
+
+  // ─── Markdown rendering helpers ───────────────────────────────────────────
+  const _preprocessCallouts = (md: string): string => {
+    const lines = md.split('\n');
+    const out: string[] = [];
+    let inCallout = false, calloutType = '', calloutContent: string[] = [];
+    const flush = () => {
+      const emoji = ['TIP','SUCCESS'].includes(calloutType) ? '✨' : ['IMPORTANT','WARNING','CAUTION'].includes(calloutType) ? '⚠️' : ['DANGER','ALERT'].includes(calloutType) ? '🛑' : '💡';
+      const cls  = ['TIP','SUCCESS'].includes(calloutType) ? 'success' : ['IMPORTANT','WARNING','CAUTION'].includes(calloutType) ? 'warning' : ['DANGER','ALERT'].includes(calloutType) ? 'danger' : 'note';
+      out.push(`<div class="callout-block ${cls}"><span class="callout-icon">${emoji}</span><div class="callout-content"><strong>${calloutType}</strong><br/>${calloutContent.join('<br/>')}</div></div>`);
+      inCallout = false; calloutType = ''; calloutContent = [];
+    };
+    for (const line of lines) {
+      const m = line.match(/^>\s*\[!(NOTE|INFO|TIP|SUCCESS|IMPORTANT|WARNING|CAUTION|DANGER|ALERT)\](.*)/i);
+      if (m) { if (inCallout) flush(); inCallout = true; calloutType = m[1].toUpperCase(); const f = m[2].trim(); if (f) calloutContent.push(f); }
+      else if (inCallout && line.startsWith('>')) { calloutContent.push(line.slice(1).trim()); }
+      else { if (inCallout) flush(); out.push(line); }
+    }
+    if (inCallout) flush();
+    return out.join('\n');
+  };
+
+  const renderMd = (md: string): string => marked.parse(_preprocessCallouts(md)) as string;
+
+  const handleDownloadCopy = async (note: any) => {
+    const filename = note.note_path?.split('/').pop() || `${note.title || 'note'}.md`;
+    const mdContent: string = note.content || '';
+    try {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'Markdown 筆記', accept: { 'text/markdown': ['.md'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(mdContent);
+      await writable.close();
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        const blob = new Blob([mdContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
+  };
   const [isSendingComment, setIsSendingComment] = useState(false);
 
   useEffect(() => {
@@ -993,15 +1042,17 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                   paddingTop: '12px',
                                 }}
                               >
-                                {/* Note Text Preview */}
-                                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: '16px' }}>
-                                  {preview}
-                                  {(note.content || '').length > 300 && (
-                                    <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
-                                      {' '}…（僅顯示前 300 字）
-                                    </span>
-                                  )}
-                                </div>
+                                {/* Note Markdown Preview */}
+                                <div
+                                  className="rendered-markdown"
+                                  style={{ marginBottom: '12px', fontSize: '13px' }}
+                                  dangerouslySetInnerHTML={{ __html: renderMd(preview) }}
+                                />
+                                {(note.content || '').length > 300 && (
+                                  <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', opacity: 0.6, marginBottom: '12px' }}>
+                                    …（僅顯示前 300 字，點「預覽」查看完整內容）
+                                  </div>
+                                )}
 
                                 {/* Community Interaction Bar */}
                                 <div
@@ -1041,6 +1092,24 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
                                     <MessageSquare size={14} />
                                     <span>留言足跡 ({noteMessages.length})</span>
+                                  </div>
+
+                                  {/* Preview & Copy buttons */}
+                                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+                                    <button
+                                      onClick={() => setPreviewNote({ title: note.title || note.note_path?.split('/').pop() || '筆記', content: note.content || '' })}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 10px' }}
+                                    >
+                                      <Eye size={13} />
+                                      預覽
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownloadCopy(note)}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)', padding: '4px 10px' }}
+                                    >
+                                      <Download size={13} />
+                                      建立副本
+                                    </button>
                                   </div>
                                 </div>
 
@@ -1419,6 +1488,60 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
         {renderAssignmentPanel()}
       </div>
         </>
+      )}
+
+      {/* Full-screen Note Preview Modal */}
+      {previewNote && (
+        <div
+          onClick={() => setPreviewNote(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              width: '100%', maxWidth: '780px',
+              maxHeight: '85vh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                <Eye size={16} />
+                {previewNote.title}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => handleDownloadCopy({ content: previewNote.content, note_path: previewNote.title + '.md' })}
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '5px 12px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                >
+                  <Download size={13} /> 建立副本
+                </button>
+                <button
+                  onClick={() => setPreviewNote(null)}
+                  style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', background: 'none', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            {/* Modal Body */}
+            <div
+              className="rendered-markdown"
+              style={{ padding: '24px 28px', overflowY: 'auto', flex: 1, fontSize: '15px', lineHeight: '1.8' }}
+              dangerouslySetInnerHTML={{ __html: renderMd(previewNote.content) }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
