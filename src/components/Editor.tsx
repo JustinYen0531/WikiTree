@@ -118,6 +118,13 @@ export const Editor: React.FC<EditorProps> = ({
   const getCodeFenceLanguage = (raw: string) => raw.trim().startsWith('```')
     ? raw.trim().split('\n')[0].replace(/^```/, '').trim().split(/\s+/)[0].toLowerCase()
     : '';
+  const extractCodeFenceBody = (raw: string) => {
+    const lines = raw.split('\n');
+    if (!lines[0]?.trim().startsWith('```')) return raw;
+    const body = lines.slice(1);
+    if (body[body.length - 1]?.trim() === '```') body.pop();
+    return body.join('\n');
+  };
   const shouldRenderBlockPreview = (block: Block) =>
     (block.type === 'code' && getCodeFenceLanguage(block.raw) === 'mermaid') ||
     block.type === 'math';
@@ -421,7 +428,25 @@ export const Editor: React.FC<EditorProps> = ({
       const previewEntries = await Promise.all(
         blocks
           .filter(shouldRenderBlockPreview)
-          .map(async (block) => [block.id, await renderMarkdown(block.raw)] as const)
+          .map(async (block) => {
+            if (block.type === 'code' && getCodeFenceLanguage(block.raw) === 'mermaid') {
+              try {
+                mermaid.initialize({
+                  startOnLoad: false,
+                  securityLevel: 'loose',
+                  theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+                });
+
+                const { svg } = await mermaid.render(`mermaid-preview-${block.id}`, extractCodeFenceBody(block.raw));
+                return [block.id, svg] as const;
+              } catch (error) {
+                console.error('Mermaid block preview error', error);
+                return [block.id, `<pre>${extractCodeFenceBody(block.raw)}</pre>`] as const;
+              }
+            }
+
+            return [block.id, await renderMarkdown(block.raw)] as const;
+          })
       );
 
       if (cancelled) return;
