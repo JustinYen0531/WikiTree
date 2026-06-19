@@ -7,9 +7,83 @@ import {
 } from './fileSystem';
 import { getFlatFileState } from './versionControl';
 
-// We'll import marked. Since typescript might warn about it before install completes,
-// we can use a dynamic import or cast marked. We'll use marked.parse for compilation.
 import { marked } from 'marked';
+
+function getCalloutEmoji(type: string): string {
+  if (['TIP', 'SUCCESS'].includes(type)) return '✨';
+  if (['IMPORTANT', 'WARNING', 'CAUTION'].includes(type)) return '⚠️';
+  if (['DANGER', 'ALERT'].includes(type)) return '🛑';
+  return '💡';
+}
+
+function getCalloutClass(type: string): string {
+  if (['TIP', 'SUCCESS'].includes(type)) return 'success';
+  if (['IMPORTANT', 'WARNING', 'CAUTION'].includes(type)) return 'warning';
+  if (['DANGER', 'ALERT'].includes(type)) return 'danger';
+  return 'note';
+}
+
+function buildCalloutHtml(type: string, contentLines: string[]): string {
+  const emoji = getCalloutEmoji(type);
+  const cls = getCalloutClass(type);
+  return `<div class="callout-block ${cls}"><span class="callout-icon">${emoji}</span><div class="callout-content"><strong>${type}</strong><br/>${contentLines.join('<br/>')}</div></div>`;
+}
+
+function preprocessCallouts(mdText: string): string {
+  const lines = mdText.split('\n');
+  const newLines: string[] = [];
+  let inObsidian = false;
+  let calloutType = '';
+  let calloutContent: string[] = [];
+  let inAside = false;
+  let asideContent: string[] = [];
+
+  const flushObsidian = () => {
+    newLines.push(buildCalloutHtml(calloutType, calloutContent));
+    inObsidian = false;
+    calloutType = '';
+    calloutContent = [];
+  };
+
+  for (const line of lines) {
+    // Handle <aside> blocks (Notion export format)
+    if (!inObsidian && /<aside>/i.test(line)) {
+      inAside = true;
+      asideContent = [];
+      continue;
+    }
+    if (inAside) {
+      if (/<\/aside>/i.test(line)) {
+        const icon = asideContent[0]?.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})/u)?.[0] ?? '💡';
+        const body = asideContent.map(l => l.replace(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*/u, '').trim()).filter(Boolean);
+        newLines.push(`<div class="callout-block note"><span class="callout-icon">${icon}</span><div class="callout-content">${body.join('<br/>')}</div></div>`);
+        inAside = false;
+        asideContent = [];
+      } else {
+        asideContent.push(line);
+      }
+      continue;
+    }
+
+    // Handle Obsidian/GitHub > [!TYPE] callouts
+    const match = line.match(/^>\s*\[!(NOTE|INFO|TIP|SUCCESS|IMPORTANT|WARNING|CAUTION|DANGER|ALERT)\](.*)/i);
+    if (match) {
+      if (inObsidian) flushObsidian();
+      inObsidian = true;
+      calloutType = match[1].toUpperCase();
+      const first = match[2].trim();
+      calloutContent = first ? [first] : [];
+    } else if (inObsidian && line.startsWith('>')) {
+      calloutContent.push(line.substring(1).trim());
+    } else {
+      if (inObsidian) flushObsidian();
+      newLines.push(line);
+    }
+  }
+  if (inObsidian) flushObsidian();
+
+  return newLines.join('\n');
+}
 
 export interface PublishConfig {
   siteTitle: string;
@@ -51,7 +125,7 @@ export async function publishSite(
     const markdown = flatState.get(path);
     if (markdown !== undefined) {
       const title = path.split('/').pop()?.replace(/\.md$/i, '') || path;
-      const htmlContent = await marked.parse(markdown);
+      const htmlContent = await marked.parse(preprocessCallouts(markdown));
       publishedNotes[path] = {
         title,
         html: htmlContent
@@ -472,15 +546,45 @@ function getIndexHtmlTemplate(): string {
       font-weight: 600;
     }
 
-    /* Callouts styling (Notion like) */
-    .note-content div.callout {
-      background-color: var(--bg-sidebar);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 16px;
+    /* Callouts styling (Notion / Obsidian like) */
+    .callout-block {
       display: flex;
+      align-items: flex-start;
       gap: 12px;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      border-left: 4px solid;
+    }
+    .callout-block.note {
+      background-color: rgba(59, 130, 246, 0.08);
+      border-left-color: #3b82f6;
+    }
+    .callout-block.success {
+      background-color: rgba(34, 197, 94, 0.08);
+      border-left-color: #22c55e;
+    }
+    .callout-block.warning {
+      background-color: rgba(234, 179, 8, 0.08);
+      border-left-color: #eab308;
+    }
+    .callout-block.danger {
+      background-color: rgba(239, 68, 68, 0.08);
+      border-left-color: #ef4444;
+    }
+    .callout-icon {
+      font-size: 20px;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+    .callout-content {
+      flex: 1;
+      line-height: 1.6;
+    }
+    .callout-content strong {
+      display: block;
+      margin-bottom: 4px;
+      text-transform: capitalize;
     }
 
     /* Empty state */

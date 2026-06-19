@@ -79,6 +79,7 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   const [categoryTitle, setCategoryTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tagsText, setTagsText] = useState('');
+  const [semesterCode, setSemesterCode] = useState('1142');
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -87,14 +88,11 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
   const canPublish = !!user;
   const isLocalMode = !isSupabaseConfigured() || !user?.isSupabaseUser;
   const selectedCategory = categoryOptions.find((option) => option.value === category) || categoryOptions[0];
-  const tags = useMemo(
-    () =>
-      tagsText
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    [tagsText]
-  );
+  const tags = useMemo(() => {
+    const userTags = tagsText.split(',').map((tag) => tag.trim()).filter(Boolean);
+    if (category === 'course') return [semesterCode, ...userTags];
+    return userTags;
+  }, [tagsText, semesterCode, category]);
 
   const publishPayload = {
     author_username: user?.username || '',
@@ -337,6 +335,28 @@ export const PublishNoteModal: React.FC<PublishNoteModalProps> = ({
                     ))}
                   </div>
                 </Field>
+
+                {category === 'course' && (
+                  <Field label="學期">
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[
+                        { value: '1142', label: '114-2' },
+                        { value: '1141', label: '114-1' },
+                        { value: '1132', label: '113-2' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          className={`btn ${semesterCode === opt.value ? 'btn-primary' : ''}`}
+                          onClick={() => setSemesterCode(opt.value)}
+                          disabled={!canPublish}
+                          style={{ padding: '6px 14px', fontSize: '12px' }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
                   <Field label={selectedCategory.codeLabel}>

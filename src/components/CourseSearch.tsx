@@ -269,6 +269,20 @@ const courseToTarget = (course: Course): NoteTarget => ({
   subtitle: `${getValue(course.subGde)} · ${getValue(course.teaNam)} · ${getValue(course.subNum)}-${getValue(course.subOdr)}`,
 });
 
+const inferSemesterFromDate = (createdAt: string): string => {
+  const d = new Date(createdAt);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const rocYear = year - 1911;
+  return month >= 8 ? `${rocYear}1` : `${rocYear - 1}2`;
+};
+
+const getNoteSemester = (note: any): string => {
+  const semPattern = /^\d{4}$/;
+  const semTag = (note.tags || []).find((t: string) => semPattern.test(t));
+  return semTag || inferSemesterFromDate(note.created_at);
+};
+
 const flattenMarkdownFiles = (nodes: FileNode[]) => {
   const result: FileNode[] = [];
 
@@ -310,6 +324,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   const [exploreError, setExploreError] = useState('');
   const [exploreQuery, setExploreQuery] = useState('');
   const [exploreExpanded, setExploreExpanded] = useState<string | null>(null);
+  const [exploreSemester, setExploreSemester] = useState('1142');
+  const [exploreCourseQuery, setExploreCourseQuery] = useState('');
 
   // Community interaction states (watering/comments)
   const [noteWaterings, setNoteWaterings] = useState<any[]>([]);
@@ -758,13 +774,36 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
       {exploreMode ? (
         /* ── 社群筆記模式 ── */
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <div className="course-search-panel">
+          <div className="course-search-panel" style={{ flexDirection: 'column', gap: '8px' }}>
+            {/* Semester tabs */}
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              {SEMESTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setExploreSemester(opt.value)}
+                  style={{
+                    padding: '5px 14px',
+                    borderRadius: '20px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: exploreSemester === opt.value ? 'var(--accent)' : 'var(--bg-secondary)',
+                    color: exploreSemester === opt.value ? 'white' : 'var(--text-secondary)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {opt.label.replace('學年 ', '').replace(' (', ' (')}
+                </button>
+              ))}
+            </div>
+            {/* Text search */}
             <div className="course-search-input">
               <Search size={17} />
               <input
                 value={exploreQuery}
                 onChange={(e) => setExploreQuery(e.target.value)}
-                placeholder="搜尋標題、作者暱稱..."
+                placeholder="搜尋標題、作者暱稱、課名..."
                 autoFocus
               />
               {exploreQuery && (
@@ -791,34 +830,36 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
               <div className="course-result-summary">
                 {(() => {
                   const q = exploreQuery.trim().toLowerCase();
-                  const filtered = q
-                    ? publishedNotes.filter(
-                        (n) =>
-                          n.title.toLowerCase().includes(q) ||
-                          n.author_nickname.toLowerCase().includes(q) ||
-                          n.author_username.toLowerCase().includes(q)
-                      )
-                    : publishedNotes;
-                  return `共 ${filtered.length} 篇社群筆記，依發布時間由新到舊排列`;
+                  const filtered = publishedNotes.filter((n) => {
+                    const semMatch = getNoteSemester(n) === exploreSemester;
+                    if (!semMatch) return false;
+                    if (!q) return true;
+                    const searchable = [n.title, n.author_nickname, n.author_username, n.category_title, n.category_code]
+                      .filter(Boolean).join(' ').toLowerCase();
+                    return searchable.includes(q);
+                  });
+                  const semLabel = SEMESTER_OPTIONS.find(o => o.value === exploreSemester)?.label || exploreSemester;
+                  return `${semLabel}：共 ${filtered.length} 篇社群筆記`;
                 })()}
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '0 0 24px' }}>
                 {(() => {
                   const q = exploreQuery.trim().toLowerCase();
-                  const filtered = q
-                    ? publishedNotes.filter(
-                        (n) =>
-                          n.title.toLowerCase().includes(q) ||
-                          n.author_nickname.toLowerCase().includes(q) ||
-                          n.author_username.toLowerCase().includes(q)
-                      )
-                    : publishedNotes;
+                  const filtered = publishedNotes.filter((n) => {
+                    const semMatch = getNoteSemester(n) === exploreSemester;
+                    if (!semMatch) return false;
+                    if (!q) return true;
+                    const searchable = [n.title, n.author_nickname, n.author_username, n.category_title, n.category_code]
+                      .filter(Boolean).join(' ').toLowerCase();
+                    return searchable.includes(q);
+                  });
 
                   if (filtered.length === 0) {
+                    const semLabel = SEMESTER_OPTIONS.find(o => o.value === exploreSemester)?.label || exploreSemester;
                     return (
                       <div className="course-empty-state">
                         <Globe size={24} />
-                        <strong>{exploreQuery ? '沒有符合的筆記' : '尚無人發布筆記'}</strong>
+                        <strong>{exploreQuery ? '沒有符合的筆記' : `${semLabel} 還沒有人發布筆記`}</strong>
                         <span>{exploreQuery ? '試著換個關鍵字。' : '成為第一個分享筆記的政大同學吧！'}</span>
                       </div>
                     );
@@ -896,6 +937,17 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                     flexWrap: 'wrap',
                                   }}
                                 >
+                                  {note.category === 'course' && note.category_title && (
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                      backgroundColor: 'var(--accent-bg)', color: 'var(--accent)',
+                                      borderRadius: '4px', padding: '1px 6px', fontSize: '11px', fontWeight: 600,
+                                    }}>
+                                      <BookOpen size={10} />
+                                      {note.category_title}
+                                      {note.category_code ? ` · ${note.category_code}` : ''}
+                                    </span>
+                                  )}
                                   <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                                     <UserRound size={11} />
                                     {note.author_nickname}
