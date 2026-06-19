@@ -31,7 +31,7 @@ interface EditorProps {
 
 interface Block {
   id: string;
-  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'paragraph';
+  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'math' | 'paragraph';
   raw: string;
 }
 
@@ -52,6 +52,7 @@ export const Editor: React.FC<EditorProps> = ({
 
   // WYSIWYG block states
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blockPreviewHtml, setBlockPreviewHtml] = useState<Record<string, string>>({});
   const [focusedBlockIndex, setFocusedBlockIndex] = useState<number | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -108,6 +109,18 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const isHorizontalRule = (value: string) => /^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(value);
+  const isMathFenceStart = (value: string) => value.trim() === '$$' || value.trim() === '\\[';
+  const isMathFenceEnd = (value: string, fence: '$$' | '\\[') => fence === '$$' ? value.trim() === '$$' : value.trim() === '\\]';
+  const isSingleLineMathBlock = (value: string) => {
+    const trimmed = value.trim();
+    return (/^\$\$[\s\S]+\$\$$/.test(trimmed) || /^\\\[[\s\S]+\\\]$/.test(trimmed));
+  };
+  const getCodeFenceLanguage = (raw: string) => raw.trim().startsWith('```')
+    ? raw.trim().split('\n')[0].replace(/^```/, '').trim().split(/\s+/)[0].toLowerCase()
+    : '';
+  const shouldRenderBlockPreview = (block: Block) =>
+    (block.type === 'code' && getCodeFenceLanguage(block.raw) === 'mermaid') ||
+    block.type === 'math';
 
   // Parse raw markdown string into blocks
   const parseMarkdownToBlocks = (markdown: string): Block[] => {
@@ -182,6 +195,29 @@ export const Editor: React.FC<EditorProps> = ({
       if (isHorizontalRule(line)) {
         parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'hr', raw: line });
         i++;
+        continue;
+      }
+
+      // Math blocks
+      if (isSingleLineMathBlock(line)) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'math', raw: line });
+        i++;
+        continue;
+      }
+
+      if (isMathFenceStart(line)) {
+        const openingFence = line.trim() === '$$' ? '$$' : '\\[';
+        let rawMath = line;
+        i++;
+        while (i < lines.length && !isMathFenceEnd(lines[i], openingFence)) {
+          rawMath += '\n' + lines[i];
+          i++;
+        }
+        if (i < lines.length) {
+          rawMath += '\n' + lines[i];
+          i++;
+        }
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'math', raw: rawMath });
         continue;
       }
 
@@ -379,17 +415,39 @@ export const Editor: React.FC<EditorProps> = ({
   }, [content]);
 
   useEffect(() => {
-    if (!htmlContent.includes('class="mermaid"')) return;
+    let cancelled = false;
+
+    const renderPreviews = async () => {
+      const previewEntries = await Promise.all(
+        blocks
+          .filter(shouldRenderBlockPreview)
+          .map(async (block) => [block.id, await renderMarkdown(block.raw)] as const)
+      );
+
+      if (cancelled) return;
+      setBlockPreviewHtml(Object.fromEntries(previewEntries));
+    };
+
+    void renderPreviews();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [blocks]);
+
+  useEffect(() => {
+    const hasMermaidPreview = Object.values(blockPreviewHtml).some((html) => html.includes('class="mermaid"'));
+    if (!htmlContent.includes('class="mermaid"') && !hasMermaidPreview) return;
 
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
       theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
     });
-    mermaid.run({ querySelector: '.rendered-markdown .mermaid' }).catch((error) => {
+    mermaid.run({ querySelector: '.rendered-markdown .mermaid, .block-render-preview .mermaid' }).catch((error) => {
       console.error('Mermaid rendering error', error);
     });
-  }, [htmlContent]);
+  }, [htmlContent, blockPreviewHtml]);
 
   // Insert markdown tag at cursor (for Source / Split mode)
   const insertMarkdown = (before: string, after: string = '') => {
@@ -654,6 +712,7 @@ export const Editor: React.FC<EditorProps> = ({
     else if (val.trim().startsWith('- [ ]') || val.trim().startsWith('- [x]')) newBlocks[index].type = 'todo';
     else if (/^\s*[-*+]\s+/.test(val)) newBlocks[index].type = 'list';
     else if (val.trim().startsWith('```')) newBlocks[index].type = 'code';
+    else if (isSingleLineMathBlock(val) || isMathFenceStart(val)) newBlocks[index].type = 'math';
     else if (val.trim().startsWith('>')) newBlocks[index].type = 'callout';
     else if (val.trim().startsWith('|')) newBlocks[index].type = 'table';
     else if (isHorizontalRule(val)) newBlocks[index].type = 'hr';
@@ -768,6 +827,7 @@ export const Editor: React.FC<EditorProps> = ({
       case 'header3': return '小標題...';
       case 'todo': return '待辦事項...';
       case 'code': return '```language\ncode...\n```';
+      case 'math': return '$$\nlatex...\n$$';
       default: 
         return index === totalBlocks - 1 
           ? '輸入文字，或輸入「/」插入區塊...' 
@@ -788,6 +848,7 @@ export const Editor: React.FC<EditorProps> = ({
       if (displayVal === '* ') { handleBlockChange(index, '- '); return; }
       if (displayVal === '+ ') { handleBlockChange(index, '- '); return; }
       if (displayVal === '- [ ] ') { handleBlockChange(index, '- [ ] '); return; }
+      if (displayVal === '$$') { handleBlockChange(index, '$$'); return; }
       handleBlockChange(index, displayVal);
       return;
     }
@@ -1140,34 +1201,49 @@ export const Editor: React.FC<EditorProps> = ({
                       />
                     </div>
                   ) : (
-                    <textarea
-                      className="block-textarea"
-                      ref={(el) => { blockRefs.current[index] = el; }}
-                      value={getBlockDisplayValue(block)}
-                      onChange={(e) => handleBlockInputChange(index, e.target.value)}
-                      onPaste={(e) => handleBlockPaste(index, e)}
-                      onKeyDown={(e) => handleBlockKeyDown(index, e)}
-                      onFocus={() => setFocusedBlockIndex(index)}
-                      onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
-                      rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
-                      placeholder={getBlockPlaceholder(block, index, blocks.length)}
-                      style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        resize: 'none',
-                        background: 'transparent',
-                        fontFamily: block.type === 'code' ? 'var(--font-mono)' : 'inherit',
-                        fontSize: getBlockFontSize(block.type),
-                        fontWeight: getBlockFontWeight(block.type),
-                        color: 'var(--text-primary)',
-                        padding: '4px 0',
-                        margin: 0,
-                        lineHeight: '1.7',
-                        letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
-                        overflow: 'hidden',
-                      }}
-                    />
+                    <>
+                      <textarea
+                        className="block-textarea"
+                        ref={(el) => { blockRefs.current[index] = el; }}
+                        value={getBlockDisplayValue(block)}
+                        onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                        onPaste={(e) => handleBlockPaste(index, e)}
+                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                        onFocus={() => setFocusedBlockIndex(index)}
+                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                        rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
+                        placeholder={getBlockPlaceholder(block, index, blocks.length)}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          outline: 'none',
+                          resize: 'none',
+                          background: 'transparent',
+                          fontFamily: block.type === 'code' ? 'var(--font-mono)' : 'inherit',
+                          fontSize: getBlockFontSize(block.type),
+                          fontWeight: getBlockFontWeight(block.type),
+                          color: 'var(--text-primary)',
+                          padding: '4px 0',
+                          margin: 0,
+                          lineHeight: '1.7',
+                          letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
+                          overflow: 'hidden',
+                        }}
+                      />
+                      {blockPreviewHtml[block.id] && (
+                        <div
+                          className="rendered-markdown block-render-preview"
+                          style={{
+                            marginTop: '10px',
+                            padding: '10px 12px',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '10px',
+                            backgroundColor: 'var(--bg-secondary)',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: blockPreviewHtml[block.id] }}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               ))}

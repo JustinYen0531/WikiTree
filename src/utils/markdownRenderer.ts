@@ -3,6 +3,8 @@ import katex from 'katex';
 
 const blockMathPattern = /\$\$([\s\S]+?)\$\$/g;
 const inlineMathPattern = /(?<!\\)\$(?!\$)([^\n$]+?)(?<!\\)\$/g;
+const blockBracketMathPattern = /\\\[([\s\S]+?)\\\]/g;
+const inlineParenMathPattern = /\\\((.+?)\\\)/g;
 
 function escapeHtml(value: string): string {
   return value
@@ -32,7 +34,13 @@ function processMathSegment(markdown: string): string {
     .replace(blockMathPattern, (_match, expression) => {
       return `<div class="math-block">${renderMath(expression, true)}</div>`;
     })
+    .replace(blockBracketMathPattern, (_match, expression) => {
+      return `<div class="math-block">${renderMath(expression, true)}</div>`;
+    })
     .replace(inlineMathPattern, (_match, expression) => {
+      return `<span class="math-inline">${renderMath(expression, false)}</span>`;
+    })
+    .replace(inlineParenMathPattern, (_match, expression) => {
       return `<span class="math-inline">${renderMath(expression, false)}</span>`;
     });
 }
@@ -79,7 +87,7 @@ export function preprocessMath(markdown: string): string {
 export function createMarkdownRenderer() {
   const renderer = new marked.Renderer();
 
-  renderer.code = ({ text, lang, escaped }) => {
+  renderer.code = (({ text, lang, escaped }: any) => {
     const language = lang?.trim().split(/\s+/)[0].toLowerCase();
 
     if (language === 'mermaid') {
@@ -89,7 +97,7 @@ export function createMarkdownRenderer() {
     const code = escaped ? text : escapeHtml(text);
     const languageClass = lang ? ` class="language-${escapeHtml(lang)}"` : '';
     return `<pre><code${languageClass}>${code}</code></pre>`;
-  };
+  }) as any;
 
   return renderer;
 }
