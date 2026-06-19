@@ -816,6 +816,9 @@ export const Editor: React.FC<EditorProps> = ({
     
     // Support Notion Callout rendering within blocks
     if (block.type === 'callout') {
+      const calloutHtml = renderCalloutBlock(block.raw);
+      if (calloutHtml) return calloutHtml;
+
       const lines = block.raw.split('\n');
       let emoji = '💡';
       let className = 'note';

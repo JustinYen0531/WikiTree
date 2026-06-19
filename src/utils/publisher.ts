@@ -8,6 +8,7 @@ import {
 import { getFlatFileState } from './versionControl';
 
 import { marked } from 'marked';
+import { preprocessCallouts as preprocessSharedCallouts } from './callouts';
 
 function getCalloutEmoji(type: string): string {
   if (['TIP', 'SUCCESS'].includes(type)) return '✨';
@@ -125,7 +126,7 @@ export async function publishSite(
     const markdown = flatState.get(path);
     if (markdown !== undefined) {
       const title = path.split('/').pop()?.replace(/\.md$/i, '') || path;
-      const htmlContent = await marked.parse(preprocessCallouts(markdown));
+      const htmlContent = await marked.parse(preprocessSharedCallouts(markdown));
       publishedNotes[path] = {
         title,
         html: htmlContent
