@@ -96,7 +96,11 @@ interface CourseSearchProps {
   } | null;
 }
 
-const COURSE_DATA_URL = '/data/nccu_courses_1132.json';
+const SEMESTER_OPTIONS = [
+  { value: '1142', label: '114學年 第2學期 (1142)' },
+  { value: '1141', label: '114學年 第1學期 (1141)' },
+  { value: '1132', label: '113學年 第2學期 (1132)' },
+];
 const RESULT_PAGE_SIZE = 120;
 
 const categoryTypes: Array<{
@@ -284,6 +288,7 @@ const flattenMarkdownFiles = (nodes: FileNode[]) => {
 
 export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, onOpenNote, user }) => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedSemester, setSelectedSemester] = useState('1142');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -315,8 +320,10 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoading(true);
+    setError('');
 
-    fetch(COURSE_DATA_URL)
+    fetch(`/data/nccu_courses_${selectedSemester}.json`)
       .then((response) => {
         if (!response.ok) {
           throw new Error('課程資料讀取失敗');
@@ -339,7 +346,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedSemester]);
 
   useEffect(() => {
     saveNoteAssignments(assignments);
@@ -549,6 +556,11 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
     setSubKind('');
     setLangTpe('');
     setWeekday('');
+  };
+
+  const handleSemesterChange = (semester: string) => {
+    setSelectedSemester(semester);
+    resetFilters();
   };
 
   const handleAssignNote = () => {
@@ -1194,6 +1206,19 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
 
         {categoryType === 'course' && (
           <div className="course-filters">
+            <label className="course-filter">
+              <span>
+                <CalendarDays size={13} />
+                學期
+              </span>
+              <select value={selectedSemester} onChange={(event) => handleSemesterChange(event.target.value)}>
+                {SEMESTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             {renderSelect('學制', gdeType, setGdeType, filterOptions.gdeTypes, <GraduationCap size={13} />)}
             {renderSelect('開課單位', subGde, setSubGde, filterOptions.subGdes, <Building2 size={13} />)}
             {renderSelect('修別', subKind, setSubKind, filterOptions.subKinds, <Filter size={13} />)}
