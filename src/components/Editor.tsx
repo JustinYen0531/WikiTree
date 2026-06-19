@@ -15,10 +15,10 @@ import {
   Sparkles
 } from 'lucide-react';
 import { marked } from 'marked';
+import { preprocessCallouts, renderCalloutBlock } from '../utils/callouts';
 
 interface EditorProps {
   content: string;
-  contentFormat?: 'md' | 'html';
   onChange: (value: string) => void;
   onSave: () => void;
   isSaved: boolean;
@@ -35,7 +35,6 @@ interface Block {
 
 export const Editor: React.FC<EditorProps> = ({
   content,
-  contentFormat = 'md',
   onChange,
   onSave,
   isSaved,
@@ -105,9 +104,6 @@ export const Editor: React.FC<EditorProps> = ({
     onEditSelection(groqSel.text, applyFn);
     setGroqSel(null);
   };
-
-  const contentFormatLabel = contentFormat === 'html' ? 'HTML' : 'MD';
-  const contentFormatDescription = contentFormat === 'html' ? 'HTML 顯示方式' : 'Markdown 顯示方式';
 
   const isHorizontalRule = (value: string) => /^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$/.test(value);
 
@@ -365,7 +361,7 @@ export const Editor: React.FC<EditorProps> = ({
 </div>`);
     }
 
-    processed = newLines.join('\n');
+    processed = preprocessCallouts(mdText);
 
     try {
       const html = await marked.parse(processed);
@@ -916,23 +912,6 @@ export const Editor: React.FC<EditorProps> = ({
 
         {/* View mode toggle */}
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <span
-            title={contentFormatDescription}
-            style={{
-              fontSize: '11px',
-              lineHeight: 1,
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '999px',
-              padding: '4px 8px',
-              marginRight: '4px',
-              backgroundColor: 'var(--bg-secondary)',
-              fontWeight: 700,
-              letterSpacing: '0.02em',
-            }}
-          >
-            {contentFormatLabel}
-          </span>
           <span style={{ fontSize: '11px', color: isSaved ? 'var(--text-secondary)' : 'var(--warning)', marginRight: '8px' }}>
             {isSaved ? '已儲存至本地' : '未儲存變更 (Ctrl+S)'}
           </span>

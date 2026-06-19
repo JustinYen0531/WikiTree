@@ -271,6 +271,8 @@ function App() {
   const activeContentFormat: 'md' | 'html' = activeFile?.name?.toLowerCase().endsWith('.html') || activeFile?.name?.toLowerCase().endsWith('.htm')
     ? 'html'
     : 'md';
+  const activeContentFormatLabel = activeContentFormat === 'html' ? 'HTML' : 'MD';
+  const activeContentFormatDescription = activeContentFormat === 'html' ? '目前以 HTML 形式顯示' : '目前以 Markdown 形式顯示';
 
   // Keep a ref so the file-watcher closure always sees the latest isSaved value
   const isSavedRef = useRef(isSaved);
@@ -798,9 +800,30 @@ function App() {
             {/* Top Navigation Control Bar */}
             <div className="top-navbar">
               <div className="navbar-left">
-                <span style={{ fontWeight: '500' }}>
-                  {activeFile ? activeFile.path.split('/').join(' / ') : '選擇一篇筆記'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                  <span style={{ fontWeight: '500', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {activeFile ? activeFile.path.split('/').join(' / ') : '選擇一篇筆記'}
+                  </span>
+                  {activeFile && (
+                    <span
+                      title={activeContentFormatDescription}
+                      style={{
+                        fontSize: '11px',
+                        lineHeight: 1,
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '999px',
+                        padding: '4px 8px',
+                        backgroundColor: 'var(--bg-secondary)',
+                        fontWeight: 700,
+                        letterSpacing: '0.02em',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {activeContentFormatLabel}
+                    </span>
+                  )}
+                </div>
                 {!isSaved && (
                   <span style={{ 
                     fontSize: '11px', 
@@ -851,7 +874,6 @@ function App() {
               <Editor
                 key={activeFile.path}
                 content={content}
-                contentFormat={activeContentFormat}
                 onChange={setContent}
                 onSave={handleSaveFile}
                 isSaved={isSaved}
