@@ -83,14 +83,9 @@ function convertNode(node: Node, depth: number): string[] {
     return ['```' + lang, code, '```', ''];
   }
 
-  // Callout (Notion aside)
-  if (tag === 'aside') {
-    const iconEl = el.querySelector('span') || el.querySelector('[class*="icon"]');
-    const icon = iconEl?.textContent?.trim() ?? '💡';
-    iconEl?.remove();
-    const content = el.textContent?.trim() ?? '';
-    const calloutContent = content ? `\n> ${content}` : '';
-    return [`> [!NOTE] ${icon}${calloutContent}`, ''];
+  // Callout (Notion <aside> or <figure class="callout">)
+  if (tag === 'aside' || (tag === 'figure' && el.classList.contains('callout'))) {
+    return extractCallout(el, depth);
   }
 
   // Toggle (details/summary)
@@ -164,7 +159,7 @@ function convertNode(node: Node, depth: number): string[] {
     return convertTable(el);
   }
 
-  // Figure / image
+  // Figure / image  (callout <figure> already handled above)
   if (tag === 'figure') {
     const img = el.querySelector('img');
     const caption = el.querySelector('figcaption')?.textContent?.trim() ?? '';
@@ -202,6 +197,34 @@ function convertNode(node: Node, depth: number): string[] {
   // Fallback: treat as inline text inside a paragraph
   const text = inlineText(el);
   return text ? [text, ''] : [];
+}
+
+function extractCallout(el: Element, depth: number): string[] {
+  // Notion callout structure:
+  //   <figure class="callout"> or <aside>
+  //     <div style="font-size:1.5em"><span class="icon">💡</span></div>  ← icon container
+  //     <div style="width:100%">...content children...</div>             ← content container
+  const clone = el.cloneNode(true) as Element;
+
+  // Find and remove icon element, capture its text
+  const iconEl =
+    clone.querySelector('.icon') ||
+    clone.querySelector('[class*="icon"]') ||
+    clone.querySelector('span');
+  const icon = iconEl?.textContent?.trim() ?? '💡';
+  // Remove the whole icon wrapper div (first child div) to avoid duplicating icon text
+  const iconWrapper = iconEl?.closest('div');
+  (iconWrapper ?? iconEl)?.remove();
+
+  // Convert remaining content
+  const contentLines = convertChildren(clone, depth);
+  const body = contentLines.filter(l => l !== ''); // drop blank lines inside
+
+  return [
+    `> [!NOTE] ${icon}`,
+    ...body.map(l => `> ${l}`),
+    '',
+  ];
 }
 
 function convertTable(table: Element): string[] {
