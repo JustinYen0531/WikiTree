@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Folder,
   FolderOpen,
@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   Key,
+  FileUp,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import { isSupabaseConfigured } from '../utils/supabase';
@@ -42,6 +43,7 @@ interface SidebarProps {
   onTriggerLogin?: () => void;
   onOpenForest?: () => void;
   onOpenFolder?: () => void;
+  onImportHtml?: (file: File) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -61,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTriggerLogin,
   onOpenForest,
   onOpenFolder,
+  onImportHtml,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
   const isWorkshopTab = activeTab === 'files' || activeTab === 'history' || activeTab === 'publish' || activeTab === 'antigravity';
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopyToken = (token: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -360,6 +364,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <FolderOpen size={13} />
             </button>
+            <button
+              className="btn"
+              onClick={() => importInputRef.current?.click()}
+              title="匯入 Notion / HTML 筆記"
+              style={{ flexShrink: 0, padding: '6px 8px', fontSize: '12px', gap: '4px' }}
+            >
+              <FileUp size={13} />
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".html,.htm"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && onImportHtml) onImportHtml(file);
+                e.target.value = '';
+              }}
+            />
           </div>
 
           {rootHandle ? (

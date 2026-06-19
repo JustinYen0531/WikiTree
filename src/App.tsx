@@ -23,9 +23,9 @@ import {
 } from './utils/workspacePersist';
 
 // Import local utilities
-import { 
-  FileNode, 
-  getFilesRecursively, 
+import {
+  FileNode,
+  getFilesRecursively,
   verifyPermission,
   readFileContent,
   writeFileContent,
@@ -35,6 +35,7 @@ import {
   deleteEntry,
   getDirectoryHandleByPath
 } from './utils/fileSystem';
+import { notionHtmlToMarkdown } from './utils/notionImporter';
 
 import { 
   Snapshot, 
@@ -482,6 +483,33 @@ function App() {
     }
   };
 
+  // Import Notion HTML export → Markdown note
+  const handleImportHtml = async (file: File) => {
+    const activeRoot = await ensureWorkspace();
+    if (!activeRoot) return;
+
+    try {
+      const html = await file.text();
+      const { title, markdown } = notionHtmlToMarkdown(html);
+
+      const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Untitled';
+      const fileName = `${baseName}.md`;
+
+      const dirHandle = await getDirectoryHandleByPath(activeRoot, '', { create: true });
+      const newFileHandle = await createFile(dirHandle, fileName);
+      await writeFileContent(newFileHandle, markdown);
+
+      const fileList = await getFilesRecursively(activeRoot);
+      setFiles(fileList);
+
+      const newNode: FileNode = { name: fileName, path: fileName, kind: 'file', handle: newFileHandle };
+      await openFile(newNode);
+    } catch (e) {
+      console.error('Import failed', e);
+      alert('匯入失敗，請確認檔案格式是否正確。');
+    }
+  };
+
   // Rename file/folder
   const handleRename = async (node: FileNode, newName: string) => {
     if (!rootHandle) return;
@@ -690,6 +718,7 @@ function App() {
         onTriggerLogin={() => setShowLoginModal(true)}
         onOpenFolder={handleSelectDirectory}
         onOpenForest={() => setShowForestDashboard(true)}
+        onImportHtml={handleImportHtml}
       />
 
       {/* Main Panel View */}
