@@ -743,7 +743,6 @@ function App() {
         onTriggerLogin={() => setShowLoginModal(true)}
         onOpenFolder={handleSelectDirectory}
         onOpenForest={() => setShowForestDashboard(true)}
-        onImportHtml={handleImportHtml}
       />
 
       {/* Main Panel View */}
