@@ -22,6 +22,32 @@ WikiTree 更接近 GitHub for Knowledge。
 - 保留原作者 Credit
 - 讓知識持續分支與演化
 
+## 反定位：WikiTree 不是什麼
+
+WikiTree 容易被第一眼誤認成線上 Markdown 編輯器或 HackMD 類產品，但這不是它的核心。
+
+WikiTree 不是：
+
+- 不是強調多人同時共編同一份文件的工具
+- 不是以即時游標、多人會議筆記、同步打字為核心的協作編輯器
+- 不是 HackMD 替代品
+- 不是 Markdown editor 競賽
+- 不是團隊內部文件 workspace
+- 不是單純的文件發布工具
+- 不是以「完成一篇文件」為終點的產品
+- 不是大型個人知識庫或 Notion 替代品
+- 不是 AI 聊天或 AI 生成筆記產品
+
+HackMD 的核心問題是：
+
+> 我們怎麼一起把這份文件寫好？
+
+WikiTree 的核心問題是：
+
+> 一個知識點如何被社群持續 Fork、Review、修正、署名與傳承？
+
+因此，Markdown 對 WikiTree 來說只是 Enough Editor 的材料，不是產品本體。WikiTree 的主體不是「文件共編」，而是「知識共養」。
+
 ## Enough Editor
 
 Enough Editor 的意思不是功能陽春，而是刻意不做過重。
