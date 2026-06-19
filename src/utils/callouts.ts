@@ -1,3 +1,5 @@
+import { marked } from 'marked';
+
 export const CALLOUT_PATTERN =
   /^>\s*\[!(NOTE|INFO|TIP|SUCCESS|IMPORTANT|WARNING|CAUTION|DANGER|ALERT)\](.*)/i;
 
@@ -33,6 +35,10 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function renderInlineMarkdown(value: string): string {
+  return marked.parseInline(value) as string;
 }
 
 function stripBlockquoteMarker(line: string): string {
@@ -77,9 +83,9 @@ export function parseCalloutBlock(raw: string): ParsedCallout | null {
 
 export function buildCalloutHtml(callout: ParsedCallout): string {
   const titleHtml = callout.title
-    ? `<strong>${escapeHtml(callout.title)}</strong>${callout.contentLines.length ? '<br/>' : ''}`
+    ? `<strong>${renderInlineMarkdown(callout.title)}</strong>${callout.contentLines.length ? '<br/>' : ''}`
     : '';
-  const bodyHtml = callout.contentLines.map(escapeHtml).join('<br/>');
+  const bodyHtml = callout.contentLines.map(renderInlineMarkdown).join('<br/>');
 
   return `<div class="callout-block ${callout.className}"><span class="callout-icon">${escapeHtml(callout.icon)}</span><div class="callout-content">${titleHtml}${bodyHtml}</div></div>`;
 }
