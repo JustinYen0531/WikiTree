@@ -268,6 +268,9 @@ function App() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   const isSaved = content === originalContent;
+  const activeContentFormat: 'md' | 'html' = activeFile?.name?.toLowerCase().endsWith('.html') || activeFile?.name?.toLowerCase().endsWith('.htm')
+    ? 'html'
+    : 'md';
 
   // Keep a ref so the file-watcher closure always sees the latest isSaved value
   const isSavedRef = useRef(isSaved);
@@ -848,6 +851,7 @@ function App() {
               <Editor
                 key={activeFile.path}
                 content={content}
+                contentFormat={activeContentFormat}
                 onChange={setContent}
                 onSave={handleSaveFile}
                 isSaved={isSaved}
