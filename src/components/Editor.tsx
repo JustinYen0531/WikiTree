@@ -1005,6 +1005,44 @@ export const Editor: React.FC<EditorProps> = ({
                         <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: '8px 0' }} />
                       )}
                     </div>
+                  ) : block.type === 'callout' ? (
+                    <div
+                      onClick={() => {
+                        setFocusedBlockIndex(index);
+                        setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                      }}
+                      style={{ cursor: 'text' }}
+                    >
+                      {focusedBlockIndex === index ? (
+                        <textarea
+                          className="block-textarea"
+                          ref={(el) => { blockRefs.current[index] = el; }}
+                          value={block.raw}
+                          onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onPaste={(e) => handleBlockPaste(index, e)}
+                          onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                          onFocus={() => setFocusedBlockIndex(index)}
+                          onBlur={() => { setFocusedBlockIndex(null); setTimeout(() => setShowSlashMenu(false), 180); }}
+                          rows={Math.max(2, block.raw.split('\n').length)}
+                          style={{
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            resize: 'none',
+                            background: 'transparent',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                            padding: '4px 0',
+                            margin: 0,
+                            lineHeight: '1.6',
+                            overflow: 'hidden',
+                          }}
+                        />
+                      ) : (
+                        <div dangerouslySetInnerHTML={{ __html: renderBlockToHtml(block) }} />
+                      )}
+                    </div>
                   ) : block.type === 'list' ? (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
                       <span style={{
