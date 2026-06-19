@@ -372,6 +372,26 @@ function App() {
 
     try {
       const text = await readFileContent(file.handle as FileSystemFileHandle);
+
+      // Auto-convert Notion/HTML exports to Markdown
+      if (/\.html?$/i.test(file.name) && rootHandle) {
+        const { title, markdown } = notionHtmlToMarkdown(text);
+        const mdName = (title.replace(/[<>:"/\\|?*]/g, '_').trim() || file.name.replace(/\.html?$/i, '')) + '.md';
+        const parentPath = file.path.includes('/') ? file.path.split('/').slice(0, -1).join('/') : '';
+        const parentDir = await getDirectoryHandleByPath(rootHandle, parentPath, { create: true });
+        const newHandle = await createFile(parentDir, mdName);
+        await writeFileContent(newHandle, markdown);
+        const fileList = await getFilesRecursively(rootHandle);
+        setFiles(fileList);
+        const mdPath = parentPath ? `${parentPath}/${mdName}` : mdName;
+        const newNode: FileNode = { name: mdName, path: mdPath, kind: 'file', handle: newHandle };
+        setActiveFile(newNode);
+        setContent(markdown);
+        setOriginalContent(markdown);
+        saveLastFilePath(mdPath);
+        return;
+      }
+
       setActiveFile(file);
       setContent(text);
       setOriginalContent(text);
