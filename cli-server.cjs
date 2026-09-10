@@ -37,10 +37,14 @@ const AGY_PATH = resolveAgyPath();
 // Runs a single prompt through `agy --print` and returns the reply text.
 function runAgy(prompt, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
-    const child = spawn(AGY_PATH, ['--print', prompt, '--print-timeout', '110s'], {
-      cwd: currentWorkspace,
-      windowsHide: true,
-    });
+    const child = spawn(
+      AGY_PATH,
+      ['--print', prompt, '--dangerously-skip-permissions', '--print-timeout', '110s'],
+      {
+        cwd: currentWorkspace,
+        windowsHide: true,
+      }
+    );
 
     const outChunks = [];
     const errChunks = [];
@@ -69,8 +73,12 @@ function runAgy(prompt, timeoutMs = 120000) {
       clearTimeout(timer);
       const out = utf8Decoder.decode(Buffer.concat(outChunks)).trim();
       const errText = utf8Decoder.decode(Buffer.concat(errChunks)).trim();
-      if (code === 0 || out) {
-        resolve(out || '（agy 沒有回傳內容）');
+      if (out) {
+        resolve(out);
+      } else if (errText) {
+        resolve(`⚠ AI 執行提示：\n${errText}`);
+      } else if (code === 0) {
+        resolve('（agy 已完成但未產生文字輸出，請嘗試更具體的任務描述）');
       } else {
         reject(new Error(errText || `agy 結束代碼 ${code}`));
       }
