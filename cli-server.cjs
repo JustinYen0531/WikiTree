@@ -177,20 +177,31 @@ const server = http.createServer((req, res) => {
         return;
       }
 
-      // Build the prompt, optionally including the open note's content so the
-      // AI can answer about whatever the user is looking at.
+      // Build the prompt, injecting WikiTree Arborist system context and real-time note content
       let prompt = message;
-      if (context && context.path) {
-        const filePath = path.join(currentWorkspace, context.path);
+      const notePath = context?.path || '';
+      let noteContent = context?.content !== undefined ? context.content : '';
+      if (!noteContent && notePath) {
+        const filePath = path.join(currentWorkspace, notePath);
         try {
-          const noteContent = fs.readFileSync(filePath, 'utf8');
-          prompt =
-            `以下是使用者目前開啟的筆記「${context.path}」內容：\n\n` +
-            `"""\n${noteContent}\n"""\n\n` +
-            `請依據上面的筆記回答以下問題或要求：\n${message}`;
-        } catch (e) {
-          // Note unreadable — fall back to the bare message.
-        }
+          noteContent = fs.readFileSync(filePath, 'utf8');
+        } catch (e) {}
+      }
+
+      if (noteContent || notePath) {
+        prompt =
+          `【WikiTree 知識生態系統指令】\n` +
+          `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。請遵循「Knowledge grows like forests, not folders」原則。\n` +
+          (notePath ? `使用者當前檢視的知識葉片為：「${notePath}」\n` : '') +
+          `葉片內容如下：\n"""\n${noteContent}\n"""\n\n` +
+          `使用者任務：${message}\n\n` +
+          `請以繁體中文、極致精煉、結構清晰的方式提供解答或生成筆記（必要時包含 Frontmatter 元資料與生長分支建議）。`;
+      } else {
+        prompt =
+          `【WikiTree 知識生態系統指令】\n` +
+          `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
+          `使用者任務：${message}\n\n` +
+          `請以繁體中文、極致精煉、結構清晰的方式提供解答或生成筆記。`;
       }
 
       try {

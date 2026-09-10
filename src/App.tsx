@@ -872,6 +872,14 @@ function App() {
           <AntigravityPlugin
             currentNotePath={activeFile ? activeFile.path : ''}
             currentNoteContent={content}
+            onApplyContent={(newContent) => {
+              setContent(newContent);
+              showToast('✨ 已將 AI 生成內容套用至編輯器，請記得儲存！', 'success');
+            }}
+            onAppendContent={(added) => {
+              setContent((prev) => (prev ? `${prev}\n\n${added}` : added));
+              showToast('🌱 已將內容附加至筆記末尾，請記得儲存！', 'success');
+            }}
           />
         </aside>
       )}
