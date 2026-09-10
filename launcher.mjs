@@ -59,7 +59,7 @@ await ensureServerRunning();
 // 第三步：以獨立 App 視窗模式喚起（無瀏覽器網址列、無分頁欄）
 console.log('\x1b[33m[3/3] 正在開啟 WikiTree 獨立視窗...\x1b[0m');
 
-const targetUrl = 'http://localhost:5173';
+const targetUrl = 'http://localhost:5173/?mode=app';
 
 function launchAppWindow() {
   const edgeCmd = 'start msedge --app="' + targetUrl + '"';
