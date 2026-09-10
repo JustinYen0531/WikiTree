@@ -45,6 +45,7 @@ import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
+import { notionHtmlToMarkdown } from './utils/notionImporter';
 
 function App() {
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -328,6 +329,30 @@ function App() {
 
     try {
       const text = await readFileContent(file.handle as FileSystemFileHandle);
+      if (/\.html?$/i.test(file.name) && rootHandle) {
+        const { title, markdown } = notionHtmlToMarkdown(text);
+        const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/[. ]+$/, '') || '匯入筆記';
+        const parentPath = file.path.split('/').slice(0, -1).join('/');
+        const existingFiles = await getFilesRecursively(rootHandle);
+        const paths = new Set<string>();
+        const collect = (nodes: FileNode[]) => nodes.forEach(node => {
+          paths.add(node.path.toLowerCase());
+          if (node.children) collect(node.children);
+        });
+        collect(existingFiles);
+        let mdName = `${baseName}.md`;
+        const fullPath = (name: string) => parentPath ? `${parentPath}/${name}` : name;
+        for (let n = 2; paths.has(fullPath(mdName).toLowerCase()); n++) mdName = `${baseName} (${n}).md`;
+        const parentDir = await getDirectoryHandleByPath(rootHandle, parentPath, { create: true });
+        const newHandle = await createFile(parentDir, mdName);
+        await writeFileContent(newHandle, markdown);
+        setFiles(await getFilesRecursively(rootHandle));
+        setActiveFile({ name: mdName, path: fullPath(mdName), kind: 'file', handle: newHandle });
+        setContent(markdown);
+        setOriginalContent(markdown);
+        showToast(`已轉成 ${mdName}，原始 HTML 已保留`);
+        return;
+      }
       setActiveFile(file);
       setContent(text);
       setOriginalContent(text);

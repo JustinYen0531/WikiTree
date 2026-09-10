@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
+import { MarkdownPreview } from './MarkdownPreview';
 import { supabase, isSupabaseConfigured } from '../utils/supabase';
 import {
   NoteCategoryType,
@@ -340,6 +341,21 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   }, [exploreMode]);
 
   const markdownFiles = useMemo(() => flattenMarkdownFiles(files), [files]);
+  const [previewNote, setPreviewNote] = useState<{ title: string; content: string } | null>(null);
+  const downloadCopy = (note: { title: string; content: string }) => {
+    const url = URL.createObjectURL(new Blob([note.content || ''], { type: 'text/markdown;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(note.title || '筆記').replace(/[<>:"/\\|?*]/g, '_').replace(/\.md$/i, '')}.md`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  useEffect(() => {
+    if (!previewNote) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPreviewNote(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewNote]);
 
   useEffect(() => {
     if (activeFile?.kind === 'file' && activeFile.name.toLowerCase().endsWith('.md')) {
@@ -828,7 +844,11 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
                                   paddingTop: '12px',
                                 }}
                               >
-                                {preview}
+                                  <MarkdownPreview content={preview} />
+                                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <button className="btn" onClick={() => setPreviewNote({ title: note.title || '筆記', content: note.content || '' })}>預覽完整筆記</button>
+                                    <button className="btn" onClick={() => downloadCopy(note)}>建立 Markdown 副本</button>
+                                  </div>
                                 {(note.content || '').length > 300 && (
                                   <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>
                                     {' '}…（僅顯示前 300 字）
@@ -1106,6 +1126,18 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
         {renderAssignmentPanel()}
       </div>
         </>
+      )}
+      {previewNote && (
+        <div onClick={() => setPreviewNote(null)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <section role="dialog" aria-modal="true" aria-label={previewNote.title} onClick={event => event.stopPropagation()} style={{ width: '100%', maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', padding: '24px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px' }}>
+              <strong style={{ flex: 1 }}>{previewNote.title}</strong>
+              <button className="btn" onClick={() => downloadCopy(previewNote)}>建立 Markdown 副本</button>
+              <button autoFocus className="btn" onClick={() => setPreviewNote(null)}>關閉</button>
+            </div>
+            <MarkdownPreview content={previewNote.content} />
+          </section>
+        </div>
       )}
     </div>
   );

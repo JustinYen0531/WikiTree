@@ -1999,3 +1999,11 @@ textarea:focus {
     transform: scaleX(1);
   }
 }
+.rendered-markdown .math-block,
+.rendered-markdown .mermaid {
+  margin: 18px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+.rendered-markdown .math-inline { white-space: nowrap; }
+.rendered-markdown .mermaid svg { max-width: 100%; height: auto; }
