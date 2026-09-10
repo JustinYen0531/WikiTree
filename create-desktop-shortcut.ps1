@@ -4,7 +4,8 @@ $targetDir = $PSScriptRoot
 $shortcutPath = Join-Path $desktop "WikiTree.lnk"
 
 $shortcut = $wsh.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = Join-Path $targetDir "launcher.bat"
+$shortcut.TargetPath = "cmd.exe"
+$shortcut.Arguments = "/c launcher.bat"
 $shortcut.WorkingDirectory = $targetDir
 $iconPath = Join-Path $targetDir "WikiTree.ico"
 if (Test-Path $iconPath) {
@@ -13,4 +14,4 @@ if (Test-Path $iconPath) {
 $shortcut.Description = "WikiTree - 最新版本桌面啟動器"
 $shortcut.Save()
 
-Write-Host "成功在桌面建立捷徑: $shortcutPath" -ForegroundColor Green
+Write-Host "成功更新桌面捷徑: $shortcutPath" -ForegroundColor Green
