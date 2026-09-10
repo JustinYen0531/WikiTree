@@ -1,3 +1,4 @@
+import { cliWorkspaceHeaders } from './cliWorkspace';
 export interface FileNode {
   name: string;
   path: string; // Relative path from root
@@ -47,7 +48,7 @@ export async function getFilesRecursively(
     try {
       const response = await fetch(`${getCliUrl()}/api/workspace/files`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cliWorkspaceHeaders(dirHandle),
         body: JSON.stringify({})
       });
       if (response.ok) {
@@ -57,7 +58,7 @@ export async function getFilesRecursively(
         const enrichFiles = (nodes: any[]): FileNode[] => {
           return nodes.map(node => ({
             ...node,
-            handle: { path: node.path, isCli: true, name: node.name, kind: node.kind },
+            handle: { path: node.path, workspace: dirHandle, isCli: true, name: node.name, kind: node.kind },
             children: node.children ? enrichFiles(node.children) : undefined
           }));
         };
@@ -133,7 +134,7 @@ export async function readFileContent(fileHandle: FileSystemFileHandle | any): P
     const filePath = typeof fileHandle === 'string' ? fileHandle : fileHandle.path;
     const response = await fetch(`${getCliUrl()}/api/workspace/read`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(fileHandle.workspace),
       body: JSON.stringify({ path: filePath })
     });
     if (response.ok) {
@@ -158,7 +159,7 @@ export async function writeFileContent(
     const filePath = typeof fileHandle === 'string' ? fileHandle : fileHandle.path;
     const response = await fetch(`${getCliUrl()}/api/workspace/write`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(fileHandle.workspace),
       body: JSON.stringify({ path: filePath, content })
     });
     if (!response.ok) {
@@ -185,14 +186,14 @@ export async function getDirectoryHandleByPath(
     if (options.create && cleanPath) {
       const response = await fetch(`${getCliUrl()}/api/workspace/create-directory`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cliWorkspaceHeaders(rootHandle),
         body: JSON.stringify({ path: cleanPath })
       });
       if (!response.ok) {
         throw new Error('Failed to create directory on CLI server');
       }
     }
-    return { path: cleanPath, isCli: true, kind: 'directory' };
+    return { path: cleanPath, workspace: rootHandle, isCli: true, kind: 'directory' };
   }
 
   if (!path || path === '/') {
@@ -220,14 +221,14 @@ export async function createFile(
     const parentPath = parentDirHandle.path;
     const response = await fetch(`${getCliUrl()}/api/workspace/create-file`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(parentDirHandle.workspace),
       body: JSON.stringify({ path: parentPath, name })
     });
     if (!response.ok) {
       throw new Error('Failed to create file on CLI server');
     }
     const relativePath = parentPath ? `${parentPath}/${name}` : name;
-    return { path: relativePath, isCli: true, kind: 'file' };
+    return { path: relativePath, workspace: parentDirHandle.workspace, isCli: true, kind: 'file' };
   }
 
   return await parentDirHandle.getFileHandle(name, { create: true });
@@ -245,13 +246,13 @@ export async function createDirectory(
     const relativePath = parentPath ? `${parentPath}/${name}` : name;
     const response = await fetch(`${getCliUrl()}/api/workspace/create-directory`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(parentDirHandle.workspace),
       body: JSON.stringify({ path: relativePath })
     });
     if (!response.ok) {
       throw new Error('Failed to create directory on CLI server');
     }
-    return { path: relativePath, isCli: true, kind: 'directory' };
+    return { path: relativePath, workspace: parentDirHandle.workspace, isCli: true, kind: 'directory' };
   }
 
   return await parentDirHandle.getDirectoryHandle(name, { create: true });
@@ -270,7 +271,7 @@ export async function deleteEntry(
     const relativePath = parentPath ? `${parentPath}/${name}` : name;
     const response = await fetch(`${getCliUrl()}/api/workspace/delete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(parentDirHandle.workspace),
       body: JSON.stringify({ path: relativePath })
     });
     if (!response.ok) {
@@ -296,7 +297,7 @@ export async function renameEntry(
     const relativePath = parentPath ? `${parentPath}/${oldName}` : oldName;
     const response = await fetch(`${getCliUrl()}/api/workspace/rename`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(parentDirHandle.workspace),
       body: JSON.stringify({ path: relativePath, newName })
     });
     if (!response.ok) {

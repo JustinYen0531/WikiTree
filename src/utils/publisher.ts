@@ -1,3 +1,4 @@
+import { cliWorkspaceHeaders } from './cliWorkspace';
 import {
   getDirectoryHandleByPath,
   createFile,
@@ -78,7 +79,7 @@ window.PUBLISHED_DATA = {
     const getCliUrl = () => localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
     const response = await fetch(`${getCliUrl()}/api/workspace/publish`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(rootHandle),
       body: JSON.stringify({
         files: {
           'data.js': dataJsContent,

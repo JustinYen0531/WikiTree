@@ -16,12 +16,22 @@ import {
   Copy,
   Check,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
+import type { WorkspaceFolder } from '../utils/workspaceMemory';
 import { isSupabaseConfigured } from '../utils/supabase';
 
 interface SidebarProps {
+  workspaceFolders: WorkspaceFolder[];
+  activeWorkspaceId: string | null;
+  workspaceBusy: boolean;
+  onAddWorkspace: () => void;
+  onExpandWorkspace: (folder: WorkspaceFolder) => void;
+  onActivateWorkspace: (folder: WorkspaceFolder) => void;
+  onRemoveWorkspace: (id: string) => void;
+  onSelectWorkspaceFile: (folder: WorkspaceFolder, file: FileNode) => void;
   rootHandle: FileSystemDirectoryHandle | string | null;
   workspaceName: string;
   files: FileNode[];
@@ -39,6 +49,14 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  workspaceFolders,
+  activeWorkspaceId,
+  workspaceBusy,
+  onAddWorkspace,
+  onExpandWorkspace,
+  onActivateWorkspace,
+  onRemoveWorkspace,
+  onSelectWorkspaceFile,
   rootHandle,
   workspaceName,
   files,
@@ -55,6 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTriggerLogin,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+  const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
@@ -134,25 +153,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
       .filter((n): n is FileNode => n !== null);
   };
 
-  const filteredFiles = filterNodes(files, searchQuery);
+  const toggleRoot = (folder: WorkspaceFolder) => {
+    const opening = !expandedRoots.has(folder.id);
+    setExpandedRoots(current => {
+      const updated = new Set(current);
+      if (opening) updated.add(folder.id); else updated.delete(folder.id);
+      return updated;
+    });
+    if (opening) onExpandWorkspace(folder);
+  };
 
   // Recursive Tree Node Renderer
-  const renderTreeNode = (node: FileNode, depth: number = 0) => {
+  const renderTreeNode = (node: FileNode, depth: number, folder: WorkspaceFolder) => {
     const isDirectory = node.kind === 'directory';
-    const isExpanded = expandedPaths.has(node.path) || searchQuery !== '';
-    const isActive = activeFile?.path === node.path;
+    const nodeKey = `${folder.id}:${node.path}`;
+    const isExpanded = expandedPaths.has(nodeKey) || searchQuery !== '';
+    const isActive = folder.id === activeWorkspaceId && activeFile?.path === node.path;
 
     return (
       <div key={node.path} className="file-tree-node">
         <div 
           className={`tree-node-item ${isActive ? 'active' : ''}`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
-          onClick={() => !isDirectory && onSelectFile(node)}
+          onClick={() => !isDirectory && !workspaceBusy && onSelectWorkspaceFile(folder, node)}
         >
           {isDirectory ? (
             <button 
               className="theme-toggle-btn node-chevron-btn" 
-              onClick={(e) => toggleExpand(node.path, e)}
+              onClick={(e) => toggleExpand(nodeKey, e)}
               style={{ padding: '2px', marginRight: '2px' }}
             >
               <ChevronRight className={`node-chevron ${isExpanded ? 'expanded' : ''}`} />
@@ -173,7 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <span className="node-label">{node.name.replace(/\.md$/i, '')}</span>
 
-          <div className="node-actions">
+          <div className="node-actions" style={{ display: folder.id === activeWorkspaceId && !workspaceBusy ? undefined : 'none' }}>
             {isDirectory && (
               <>
                 <button 
@@ -211,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {isDirectory && isExpanded && node.children && (
           <div className="tree-node-children">
-            {node.children.map(child => renderTreeNode(child, depth + 1))}
+            {node.children.map(child => renderTreeNode(child, depth + 1, folder))}
           </div>
         )}
       </div>
@@ -313,12 +341,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {activeTab === 'files' && (
+      {(activeTab === 'files' || activeTab === 'antigravity') && (
         <>
+          <button className="btn" disabled={workspaceBusy} onClick={onAddWorkspace} style={{ margin: '10px 8px 0', fontSize: '12px' }}>
+            <FolderPlus size={14} /> 加入資料夾
+          </button>
           {/* Prominent Quick Actions - Always rendered so they can click immediately */}
           <div style={{ display: 'flex', gap: '6px', padding: '10px 8px 4px 8px', flexShrink: 0 }}>
             <button 
               className="btn btn-primary" 
+              disabled={!rootHandle || workspaceBusy}
               onClick={(e) => handleCreateFileClick('', e)}
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
@@ -327,15 +359,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
             <button 
               className="btn" 
+              disabled={!rootHandle || workspaceBusy}
               onClick={(e) => handleCreateFolderClick('', e)}
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
             >
               <FolderPlus size={13} />
-              新增森林
+              新增子資料夾
             </button>
           </div>
 
-          {rootHandle ? (
+          {workspaceFolders.length > 0 ? (
             <>
               {/* Search bar */}
               <div className="search-container" style={{ padding: '8px', flexShrink: 0 }}>
@@ -344,7 +377,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <input 
                     type="text" 
                     className="form-input" 
-                    placeholder="SCAN KNOWLEDGE..."
+                    placeholder="搜尋已載入的筆記…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ width: '100%', paddingLeft: '28px', height: '30px', fontSize: '12px' }}
@@ -354,18 +387,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Root Level Actions Title */}
               <div className="sidebar-section-title" style={{ padding: '4px 12px 2px 12px' }}>
-                <span>FOREST STRUCTURE</span>
+                <span>我的資料夾 · {workspaceFolders.length}</span>
               </div>
 
               {/* File Tree */}
               <div className="tree-container">
-                {filteredFiles.length === 0 ? (
-                  <div style={{ padding: '20px 8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    未找到任何葉片
-                  </div>
-                ) : (
-                  filteredFiles.map(node => renderTreeNode(node, 0))
-                )}
+                {workspaceFolders.map(folder => {
+                  const expanded = expandedRoots.has(folder.id);
+                  const selected = activeWorkspaceId === folder.id && !!rootHandle;
+                  const folderFiles = selected ? files : folder.files;
+                  const filtered = filterNodes(folderFiles || [], searchQuery);
+                  return (
+                    <section key={folder.id} className="workspace-folder">
+                      <div className={`tree-node-item ${selected ? 'active' : ''}`} title={typeof folder.handle === 'string' ? folder.handle : folder.name}>
+                        <button className="theme-toggle-btn node-chevron-btn" aria-label={`${expanded ? '收合' : '展開'} ${folder.name}`} aria-expanded={expanded} disabled={workspaceBusy} onClick={() => toggleRoot(folder)}>
+                          <ChevronRight className={`node-chevron ${expanded ? 'expanded' : ''}`} />
+                        </button>
+                        <button className="workspace-folder-label" disabled={workspaceBusy} onClick={() => {
+                          if (!expanded) toggleRoot(folder);
+                          onActivateWorkspace(folder);
+                        }}>
+                          {expanded ? <FolderOpen size={15} /> : <Folder size={15} />}
+                          <span className="node-label">{folder.name}</span>
+                          {selected && <small>目前</small>}
+                        </button>
+                        <button className="sidebar-action-btn" disabled={workspaceBusy} title="從清單移除（不刪除檔案）" aria-label={`關閉 ${folder.name}，不刪除檔案`} onClick={() => onRemoveWorkspace(folder.id)}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                      {expanded && (
+                        <div style={{ paddingLeft: '8px' }}>
+                          {folder.error ? (
+                            <div className="workspace-folder-message">{folder.error} <button className="btn" onClick={() => onExpandWorkspace(folder)}>重試</button></div>
+                          ) : !folderFiles ? (
+                            <div className="workspace-folder-message">正在讀取…</div>
+                          ) : filtered.length ? filtered.map(node => renderTreeNode(node, 0, folder)) : (
+                            <div className="workspace-folder-message">{searchQuery ? '沒有符合的筆記' : '資料夾目前是空的'}</div>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
             </>
           ) : (

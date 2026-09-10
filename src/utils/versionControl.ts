@@ -1,3 +1,4 @@
+import { cliWorkspaceHeaders } from './cliWorkspace';
 import {
   getDirectoryHandleByPath,
   createFile,
@@ -44,7 +45,7 @@ export async function loadSnapshots(rootHandle: FileSystemDirectoryHandle | stri
     try {
       const response = await fetch(`${getCliUrl()}/api/workspace/snapshots/load`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: cliWorkspaceHeaders(rootHandle)
       });
       if (response.ok) {
         return await response.json() as Snapshot[];
@@ -140,7 +141,7 @@ export async function getSnapshotFileContent(
   if (typeof rootHandle === 'string') {
     const response = await fetch(`${getCliUrl()}/api/workspace/snapshots/read-file`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(rootHandle),
       body: JSON.stringify({ snapshotId, path: filePath })
     });
     if (response.ok) {
@@ -246,7 +247,7 @@ export async function createSnapshot(
 
     const response = await fetch(`${getCliUrl()}/api/workspace/snapshots/save`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: cliWorkspaceHeaders(rootHandle),
       body: JSON.stringify({
         snapshotId,
         snapshot: newSnapshot,

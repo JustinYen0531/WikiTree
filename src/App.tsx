@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   FolderOpen, 
   Save, 
@@ -45,9 +45,36 @@ import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
+import { SplashScreen } from './components/SplashScreen';
 import { notionHtmlToMarkdown } from './utils/notionImporter';
 
+import { readWorkspaceMemory, writeWorkspaceMemory, workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
+
 function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('fromSplash') === '1') return false;
+      const shown = sessionStorage.getItem('wikitree_splash_shown');
+      return !shown;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleSplashFinish = () => {
+    try {
+      sessionStorage.setItem('wikitree_splash_shown', '1');
+    } catch {}
+    setShowSplash(false);
+  };
+
+  const [initialMemory] = useState(readWorkspaceMemory);
+  const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>(initialMemory.folders);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(initialMemory.activeId);
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const workspaceLock = useRef(false);
+  const restoreAttempted = useRef(false);
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
   const [workspaceName, setWorkspaceName] = useState('');
   const [files, setFiles] = useState<FileNode[]>([]);
@@ -152,74 +179,112 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleOpenOrCreateCliWorkspace = async () => {
-    if (!cliPathInput.trim()) {
-      alert('請輸入有效的路徑！');
-      return;
-    }
+  const rememberFolder = (folder: WorkspaceFolder) => {
+    setWorkspaceFolders(current => {
+      const exists = current.some(item => item.id === folder.id);
+      return exists ? current.map(item => item.id === folder.id ? folder : item) : [...current, folder];
+    });
+  };
 
+  const activateFolder = async (folder: WorkspaceFolder, selectedFile?: FileNode, approved = false): Promise<boolean> => {
+    if (workspaceLock.current) return false;
+    if (!approved && !isSaved && !confirm('筆記還沒儲存。要捨棄修改並切換資料夾嗎？')) return false;
+    workspaceLock.current = true;
+    setWorkspaceBusy(true);
+    try {
+      if (typeof folder.handle !== 'string' && !await verifyPermission(folder.handle, true)) {
+        throw new Error('需要重新允許存取這個資料夾。');
+      }
+      const fileList = await getFilesRecursively(folder.handle);
+      const snapList = await loadSnapshots(folder.handle);
+      rememberFolder({ ...folder, files: fileList, error: undefined });
+      setActiveWorkspaceId(folder.id);
+      setRootHandle(folder.handle);
+      setWorkspaceName(folder.name);
+      setFiles(fileList);
+      setSnapshots(snapList);
+      setActiveFile(null);
+      setContent('');
+      setOriginalContent('');
+      setShowHistoryPanel(false);
+      setShowPublishModal(false);
+      if (selectedFile) await openFile(selectedFile, folder.handle, true);
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '資料夾暫時無法開啟';
+      setWorkspaceFolders(current => current.map(item => item.id === folder.id ? { ...item, error: message } : item));
+      showToast('資料夾無法開啟；若已移動，請重新加入。', 'error');
+      return false;
+    } finally {
+      workspaceLock.current = false;
+      setWorkspaceBusy(false);
+    }
+  };
+
+  const connectCliFolder = async (folderPath: string, create = false) => {
+    if (!folderPath.trim() || workspaceLock.current) return;
+    if (!isSaved && !confirm('筆記還沒儲存。要捨棄修改並切換資料夾嗎？')) return;
     const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
     try {
       const response = await fetch(`${cliUrl}/api/workspace/open`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: cliPathInput.trim() })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: folderPath.trim(), create }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const absolutePath = data.workspace;
-        
-        setRootHandle(absolutePath);
-        setWorkspaceName(data.name || absolutePath);
-        
-        const filesListResponse = await fetch(`${cliUrl}/api/workspace/files`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        });
-        
-        if (filesListResponse.ok) {
-          const filesData = await filesListResponse.json();
-          const enrichFiles = (nodes: any[]): FileNode[] => {
-            return nodes.map(node => ({
-              ...node,
-              handle: { path: node.path, isCli: true, name: node.name, kind: node.kind },
-              children: node.children ? enrichFiles(node.children) : undefined
-            }));
-          };
-          const enriched = enrichFiles(filesData.files || []);
-          setFiles(enriched);
-          
-          const snapListResponse = await fetch(`${cliUrl}/api/workspace/snapshots/load`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          if (snapListResponse.ok) {
-            const snapList = await snapListResponse.json();
-            setSnapshots(snapList);
-          }
-          
-          if (enriched.length > 0) {
-            const firstFile = findFirstFile(enriched);
-            if (firstFile) {
-              await openFile(firstFile);
-            }
-          } else {
-            setActiveFile(null);
-            setContent('');
-            setOriginalContent('');
-          }
-        }
-      } else {
-        const err = await response.json();
-        alert(`開啟工作區失敗: ${err.error || '未知錯誤'}`);
-      }
-    } catch (e: any) {
-      console.error('Failed to connect to CLI to open workspace', e);
-      alert(`連線本機 CLI 伺服器失敗，請確認伺服器運作中。 (${e.message})`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '無法開啟資料夾');
+      await activateFolder({ id: workspaceId(data.workspace), name: data.name, handle: data.workspace }, undefined, true);
+      setSidebarTab('files');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '無法開啟資料夾', 'error');
     }
   };
+
+  const handleOpenOrCreateCliWorkspace = () => connectCliFolder(cliPathInput, true);
+
+  const loadFolderTree = async (folder: WorkspaceFolder) => {
+    try {
+      const fileList = await getFilesRecursively(folder.handle);
+      setWorkspaceFolders(current => current.map(item => item.id === folder.id ? { ...item, files: fileList, error: undefined } : item));
+    } catch {
+      setWorkspaceFolders(current => current.map(item => item.id === folder.id ? { ...item, error: '無法存取，請重試或重新加入資料夾。' } : item));
+    }
+  };
+
+  const removeFolder = (id: string) => {
+    if (workspaceLock.current) return;
+    if (id === activeWorkspaceId) {
+      if (!isSaved && !confirm('筆記還沒儲存。要捨棄修改並關閉這個資料夾嗎？')) return;
+      setActiveWorkspaceId(null);
+      setRootHandle(null);
+      setWorkspaceName('');
+      setFiles([]);
+      setSnapshots([]);
+      setActiveFile(null);
+      setContent('');
+      setOriginalContent('');
+      setShowHistoryPanel(false);
+      setShowPublishModal(false);
+    }
+    setWorkspaceFolders(current => current.filter(folder => folder.id !== id));
+    showToast('已從清單移除，電腦裡的資料夾仍保留。', 'info');
+  };
+
+  useEffect(() => {
+    try { writeWorkspaceMemory(workspaceFolders, activeWorkspaceId); }
+    catch { showToast('無法儲存資料夾清單，請確認本機儲存空間。', 'error'); }
+  }, [workspaceFolders, activeWorkspaceId]);
+
+  useEffect(() => {
+    if (!cliConnected || restoreAttempted.current || rootHandle) return;
+    restoreAttempted.current = true;
+    const folder = initialMemory.folders.find(item => item.id === initialMemory.activeId);
+    if (folder) void activateFolder(folder);
+  }, [cliConnected]);
+
+  useEffect(() => {
+    if (!rootHandle || !activeWorkspaceId) return;
+    setWorkspaceFolders(current => current.map(folder => folder.id === activeWorkspaceId ? { ...folder, files } : folder));
+  }, [files, rootHandle, activeWorkspaceId]);
 
   const [isBrowsing, setIsBrowsing] = useState(false);
 
@@ -266,45 +331,35 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Load directory contents and version history
+  // Native picker folders remain available for this session; desktop paths persist.
   const loadWorkspace = async (handle: FileSystemDirectoryHandle): Promise<FileSystemDirectoryHandle> => {
-    const hasPermission = await verifyPermission(handle, true);
-    if (!hasPermission) {
-      alert('需要讀寫權限才能存取並修改您的本地檔案。');
-      throw new Error('Permission denied');
+    let id = '';
+    for (const folder of workspaceFolders) {
+      if (typeof folder.handle !== 'string' && await folder.handle.isSameEntry(handle)) id = folder.id;
     }
-
-    const fileList = await getFilesRecursively(handle);
-    const snapList = await loadSnapshots(handle);
-
-    setRootHandle(handle);
-    setWorkspaceName(handle.name);
-    setFiles(fileList);
-    setSnapshots(snapList);
-    
+    const folder = { id: id || `browser:${crypto.randomUUID()}`, name: handle.name, handle };
+    if (!await activateFolder(folder)) throw new Error('Workspace not opened');
     return handle;
   };
 
-  // Open directory picker
   const handleSelectDirectory = async () => {
+    if (workspaceLock.current) return;
     try {
-      const handle = await (window as any).showDirectoryPicker();
-      const loadedHandle = await loadWorkspace(handle);
-      
-      // Auto-open the first file if available
-      const fileList = await getFilesRecursively(loadedHandle);
-      if (fileList.length > 0) {
-        const firstFile = findFirstFile(fileList);
-        if (firstFile) {
-          await openFile(firstFile);
-        }
+      if (cliConnected) {
+        setIsBrowsing(true);
+        const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
+        const response = await fetch(`${cliUrl}/api/workspace/browse`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || '無法選擇資料夾');
+        if (data.path) await connectCliFolder(data.path);
+      } else {
+        const handle = await (window as any).showDirectoryPicker();
+        await loadWorkspace(handle);
       }
-    } catch (e: any) {
-      if (e.name !== 'AbortError') {
-        console.error('Error selecting directory', e);
-        alert('開啟資料夾選擇器失敗。');
-      }
-    }
+      setSidebarTab('files');
+    } catch (error: any) {
+      if (error.name !== 'AbortError') showToast('無法加入資料夾，請再試一次。', 'error');
+    } finally { setIsBrowsing(false); }
   };
 
   // Helper to recursively find the first file node in the tree
@@ -320,8 +375,8 @@ function App() {
   };
 
   // Open a note
-  const openFile = async (file: FileNode) => {
-    if (!isSaved) {
+  const openFile = async (file: FileNode, fileRoot = rootHandle, skipConfirm = false) => {
+    if (!skipConfirm && !isSaved) {
       if (!confirm('您目前編輯的筆記有未儲存的變更。確定要捨棄這些修改嗎？')) {
         return;
       }
@@ -329,11 +384,11 @@ function App() {
 
     try {
       const text = await readFileContent(file.handle as FileSystemFileHandle);
-      if (/\.html?$/i.test(file.name) && rootHandle) {
+      if (/\.html?$/i.test(file.name) && fileRoot) {
         const { title, markdown } = notionHtmlToMarkdown(text);
         const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/[. ]+$/, '') || '匯入筆記';
         const parentPath = file.path.split('/').slice(0, -1).join('/');
-        const existingFiles = await getFilesRecursively(rootHandle);
+        const existingFiles = await getFilesRecursively(fileRoot!);
         const paths = new Set<string>();
         const collect = (nodes: FileNode[]) => nodes.forEach(node => {
           paths.add(node.path.toLowerCase());
@@ -343,10 +398,10 @@ function App() {
         let mdName = `${baseName}.md`;
         const fullPath = (name: string) => parentPath ? `${parentPath}/${name}` : name;
         for (let n = 2; paths.has(fullPath(mdName).toLowerCase()); n++) mdName = `${baseName} (${n}).md`;
-        const parentDir = await getDirectoryHandleByPath(rootHandle, parentPath, { create: true });
+        const parentDir = await getDirectoryHandleByPath(fileRoot!, parentPath, { create: true });
         const newHandle = await createFile(parentDir, mdName);
         await writeFileContent(newHandle, markdown);
-        setFiles(await getFilesRecursively(rootHandle));
+        setFiles(await getFilesRecursively(fileRoot!));
         setActiveFile({ name: mdName, path: fullPath(mdName), kind: 'file', handle: newHandle });
         setContent(markdown);
         setOriginalContent(markdown);
@@ -613,6 +668,7 @@ function App() {
   if (!user && !isGuest) {
     return (
       <>
+        {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
         <CustomCursor />
         <LandingPage 
           onLoginClick={() => setShowLoginModal(true)} 
@@ -654,9 +710,21 @@ function App() {
 
   return (
     <div className="app-container">
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
       <CustomCursor />
       {/* Sidebar - file explorer & search */}
       <Sidebar 
+        workspaceFolders={workspaceFolders}
+        activeWorkspaceId={activeWorkspaceId}
+        workspaceBusy={workspaceBusy || isBrowsing}
+        onAddWorkspace={handleSelectDirectory}
+        onExpandWorkspace={loadFolderTree}
+        onActivateWorkspace={folder => { void activateFolder(folder); }}
+        onRemoveWorkspace={removeFolder}
+        onSelectWorkspaceFile={(folder, file) => {
+          if (folder.id === activeWorkspaceId && rootHandle) void openFile(file);
+          else void activateFolder(folder, file);
+        }}
         rootHandle={rootHandle}
         workspaceName={workspaceName}
         files={files}
@@ -672,6 +740,8 @@ function App() {
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
       />
+
+      {workspaceBusy && <div role="status" style={{ position: 'fixed', inset: 0, zIndex: 12000, background: 'rgba(0,0,0,.35)', display: 'grid', placeItems: 'center' }}>正在開啟資料夾…</div>}
 
       {/* Main Panel View */}
       <div className="main-view-container">
@@ -895,6 +965,8 @@ function App() {
             </button>
           </div>
           <AntigravityPlugin
+            key={activeWorkspaceId || 'no-workspace'}
+            workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined}
             currentNotePath={activeFile ? activeFile.path : ''}
             currentNoteContent={content}
             onApplyContent={(newContent) => {

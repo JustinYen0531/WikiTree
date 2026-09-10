@@ -23,8 +23,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { marked } from 'marked';
+import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 
 export interface AntigravityPluginProps {
+  workspacePath?: string;
   currentNotePath: string;
   currentNoteContent: string;
   onApplyContent?: (content: string) => void;
@@ -84,6 +86,7 @@ function splitThoughtAndNote(rawText: string): { thought: string; note: string }
 }
 
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
+  workspacePath,
   currentNotePath,
   currentNoteContent,
   onApplyContent,
@@ -219,7 +222,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     try {
       const response = await fetch(`${cliUrl}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cliWorkspaceHeaders(workspacePath),
         body: JSON.stringify({
           message: text,
           context: {

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WikiTree - 啟動中</title>
+  <link rel="icon" type="image/svg+xml" href="./public/favicon.svg">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: #09090b;
+      color: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* 背景微弱網格環境光，增添沉浸質感 */
+    .bg-glow {
+      position: absolute;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      opacity: 0;
+      transform: scale(0.96);
+      animation: splashAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes splashAppear {
+      0% {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Logo 區域 */
+    .logo-wrapper {
+      position: relative;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.22));
+      animation: logoBreathe 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes logoBreathe {
+      0% {
+        filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.15));
+        transform: translateY(0);
+      }
+      100% {
+        filter: drop-shadow(0 0 32px rgba(255, 255, 255, 0.35));
+        transform: translateY(-3px);
+      }
+    }
+
+    /* 備用 SVG 標誌 */
+    .logo-fallback {
+      width: 80px;
+      height: 80px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* 品牌標題 */
+    .brand-title {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: 0.45em;
+      text-indent: 0.45em;
+      text-transform: uppercase;
+      color: #f4f4f5;
+      margin-bottom: 6px;
+    }
+
+    .brand-subtitle {
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.28em;
+      text-indent: 0.28em;
+      text-transform: uppercase;
+      color: #71717a;
+      margin-bottom: 36px;
+    }
+
+    /* 進度條容器 */
+    .progress-box {
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 999px;
+    }
+
+    /* 狀態提示文字 */
+    .status-text {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: #a1a1aa;
+      font-variant-numeric: tabular-nums;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s ease;
+    }
+
+    /* 轉場淡出樣式 */
+    .fade-out {
+      opacity: 0 !important;
+      transform: scale(1.02) !important;
+      transition: opacity 0.45s ease-out, transform 0.45s ease-out !important;
+    }
+
+    /* 底部微型版權標註 */
+    .bottom-info {
+      position: absolute;
+      bottom: 24px;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: #3f3f46;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="splash-container" id="splash">
+    <div class="logo-wrapper">
+      <img 
+        src="./public/wikitree-logo.png" 
+        alt="WikiTree Logo" 
+        class="logo-img"
+        onerror="this.style.display='none'; document.getElementById('fallback').style.display='flex';"
+      />
+      <div id="fallback" class="logo-fallback" style="display: none;">🌳</div>
+    </div>
+
+    <div class="brand-title">WikiTree</div>
+    <div class="brand-subtitle">Knowledge Ecosystem</div>
+
+    <div class="progress-box">
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status-text" id="statusText">正在喚醒知識生態...</div>
+    </div>
+  </div>
+
+  <div class="bottom-info">WikiTree Workspace Engine</div>
+
+  <script>
+    const targetUrl = 'http://localhost:5173/?mode=app&fromSplash=1';
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const splash = document.getElementById('splash');
+
+    let currentProgress = 5;
+    let targetProgress = 15;
+    let isServerReady = false;
+
+    const stages = [
+      { at: 15, text: '正在喚醒知識生態...' },
+      { at: 40, text: '同步神經枝幹網絡...' },
+      { at: 65, text: '載入工作區記憶核心...' },
+      { at: 85, text: '本機服務準備就緒...' },
+      { at: 100, text: '即將進入森林...' }
+    ];
+
+    function updateStatus(val) {
+      for (let i = stages.length - 1; i >= 0; i--) {
+        if (val >= stages[i].at) {
+          statusText.textContent = stages[i].text;
+          break;
+        }
+      }
+    }
+
+    const progressInterval = setInterval(() => {
+      if (!isServerReady) {
+        if (targetProgress < 82) {
+          targetProgress += Math.random() * 8 + 4;
+          if (targetProgress > 82) targetProgress = 82;
+        }
+      } else {
+        targetProgress = 100;
+      }
+
+      currentProgress += (targetProgress - currentProgress) * 0.25;
+      progressBar.style.width = currentProgress.toFixed(1) + '%';
+      updateStatus(currentProgress);
+
+      if (isServerReady && currentProgress >= 99.5) {
+        progressBar.style.width = '100%';
+        clearInterval(progressInterval);
+        
+        setTimeout(() => {
+          splash.classList.add('fade-out');
+          setTimeout(() => {
+            window.location.replace(targetUrl);
+          }, 350);
+        }, 200);
+      }
+    }, 80);
+
+    async function checkServer() {
+      try {
+        await fetch('http://localhost:5173/favicon.svg?t=' + Date.now(), {
+          mode: 'no-cors',
+          cache: 'no-cache'
+        });
+        isServerReady = true;
+      } catch (err) {
+        setTimeout(checkServer, 400);
+      }
+    }
+
+    setTimeout(checkServer, 500);
+
+    setTimeout(() => {
+      if (!isServerReady) {
+        isServerReady = true;
+      }
+    }, 15000);
+  </script>
+</body>
+</html>

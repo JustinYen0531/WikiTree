@@ -2007,3 +2007,19 @@ textarea:focus {
 }
 .rendered-markdown .math-inline { white-space: nowrap; }
 .rendered-markdown .mermaid svg { max-width: 100%; height: auto; }
+.workspace-folder-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 0;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.workspace-folder-label small { font-size: 10px; opacity: .65; flex-shrink: 0; }
+.workspace-folder-message { padding: 10px; font-size: 12px; color: var(--text-secondary); }

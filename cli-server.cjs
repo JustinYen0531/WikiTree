@@ -35,13 +35,13 @@ function resolveAgyPath() {
 const AGY_PATH = resolveAgyPath();
 
 // Runs a single prompt through `agy --print` and returns the reply text.
-function runAgy(prompt, timeoutMs = 120000) {
+function runAgy(prompt, timeoutMs = 120000, workspace = defaultWorkspace) {
   return new Promise((resolve, reject) => {
     const child = spawn(
       AGY_PATH,
       ['--print', prompt, '--dangerously-skip-permissions', '--print-timeout', '110s'],
       {
-        cwd: currentWorkspace,
+        cwd: workspace,
         windowsHide: true,
       }
     );
@@ -88,14 +88,14 @@ function runAgy(prompt, timeoutMs = 120000) {
 
 const PORT = 18080;
 
-let currentWorkspace = process.cwd();
+let defaultWorkspace = process.cwd();
 
 // Simple HTTP server to act as the Antigravity CLI daemon
 const server = http.createServer((req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-WikiTree-Workspace');
 
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
@@ -105,6 +105,17 @@ const server = http.createServer((req, res) => {
   }
 
   // Route: GET /api/status
+  let currentWorkspace = defaultWorkspace;
+  if (req.headers['x-wikitree-workspace']) {
+    try {
+      currentWorkspace = path.resolve(decodeURIComponent(req.headers['x-wikitree-workspace']));
+      if (!fs.statSync(currentWorkspace).isDirectory()) throw new Error('Not a directory');
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '資料夾已移動或無法存取，請重新加入。' }));
+      return;
+    }
+  }
   if (req.url === '/api/status' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
@@ -220,7 +231,7 @@ const server = http.createServer((req, res) => {
       }
 
       try {
-        const reply = await runAgy(prompt);
+        const reply = await runAgy(prompt, 120000, currentWorkspace);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply }));
       } catch (e) {
@@ -297,9 +308,12 @@ const server = http.createServer((req, res) => {
       targetPath = path.resolve(targetPath);
       try {
         if (!fs.existsSync(targetPath)) {
+          if (payload.create === false) throw new Error('資料夾不存在，請重新選擇。');
           fs.mkdirSync(targetPath, { recursive: true });
         }
+        if (!fs.statSync(targetPath).isDirectory()) throw new Error('請選擇資料夾，而不是檔案。');
         currentWorkspace = targetPath;
+        defaultWorkspace = targetPath;
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ 
           success: true, 
