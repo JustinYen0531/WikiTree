@@ -196,20 +196,27 @@ const server = http.createServer((req, res) => {
         } catch (e) {}
       }
 
+      const formatRequirement =
+        `\n【重要結構規範】\n` +
+        `請在回答時明確分成兩段：\n` +
+        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現）。\n` +
+        `2. 分隔線：請單獨換行輸出一條 '---' 分隔線。\n` +
+        `3. 下半段：分隔線下方請直接輸出純淨、可直接存檔的正式 WikiTree 知識筆記本體（不要夾帶前言寒暄與多餘思考）。`;
+
       if (noteContent || notePath) {
         prompt =
           `【WikiTree 知識生態系統指令】\n` +
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。請遵循「Knowledge grows like forests, not folders」原則。\n` +
           (notePath ? `使用者當前檢視的知識葉片為：「${notePath}」\n` : '') +
           `葉片內容如下：\n"""\n${noteContent}\n"""\n\n` +
-          `使用者任務：${message}\n\n` +
-          `請以繁體中文、極致精煉、結構清晰的方式提供解答或生成筆記（必要時包含 Frontmatter 元資料與生長分支建議）。`;
+          `使用者任務：${message}\n` +
+          formatRequirement;
       } else {
         prompt =
           `【WikiTree 知識生態系統指令】\n` +
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
-          `使用者任務：${message}\n\n` +
-          `請以繁體中文、極致精煉、結構清晰的方式提供解答或生成筆記。`;
+          `使用者任務：${message}\n` +
+          formatRequirement;
       }
 
       try {

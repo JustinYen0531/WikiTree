@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Brain,
   Check,
+  ChevronDown,
+  ChevronUp,
   Clipboard,
   Copy,
   Download,
-  ExternalLink,
+  Eye,
   FileText,
   GitBranch,
   Globe,
@@ -17,7 +20,6 @@ import {
   Send,
   Settings,
   Sparkles,
-  Terminal,
   Trash2,
 } from 'lucide-react';
 import { marked } from 'marked';
@@ -46,13 +48,47 @@ interface ChatMessage {
 
 const DEFAULT_CLI_URL = 'http://localhost:18080';
 
+// 智能切分「思考推導過程」與「純正式筆記內容」
+function splitThoughtAndNote(rawText: string): { thought: string; note: string } {
+  if (!rawText) return { thought: '', note: '' };
+
+  // 1. 顯式標籤檢測
+  if (rawText.includes('<!-- WIKITREE_NOTE_START -->')) {
+    const parts = rawText.split('<!-- WIKITREE_NOTE_START -->');
+    return { thought: parts[0].trim(), note: parts.slice(1).join('<!-- WIKITREE_NOTE_START -->').trim() };
+  }
+
+  // 2. 獨立一行的 --- / *** 分隔線檢測
+  const hrRegex = /\n\s*(?:---+|\*\*\*+|___+)\s*\n/;
+  const hrMatch = rawText.match(hrRegex);
+  if (hrMatch && hrMatch.index !== undefined) {
+    const thoughtPart = rawText.slice(0, hrMatch.index).trim();
+    const notePart = rawText.slice(hrMatch.index + hrMatch[0].length).trim();
+    if (notePart.length > 20) {
+      return { thought: thoughtPart, note: notePart };
+    }
+  }
+
+  // 3. 尋找主標題起點 (如 # 標題 或 🌲 WikiTree 節點標題)
+  const treeHeaderRegex = /\n(?=(?:#+\s+|🌲\s+|```markdown))/;
+  const match = rawText.match(treeHeaderRegex);
+  if (match && match.index !== undefined && match.index > 30) {
+    return {
+      thought: rawText.slice(0, match.index).trim(),
+      note: rawText.slice(match.index).trim(),
+    };
+  }
+
+  // 預設無前言時，全篇即筆記
+  return { thought: '', note: rawText };
+}
+
 export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNotePath,
   currentNoteContent,
   onApplyContent,
   onAppendContent,
 }) => {
-  // 自動偵測模式：檢查 URL 參數、standalone display 模式或本地儲存
   const [mode, setMode] = useState<EnvironmentMode>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -62,7 +98,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       const saved = localStorage.getItem('wikitree_env_mode');
       if (saved === 'app' || saved === 'browser') return saved;
     } catch {}
-    return 'app'; // 預設提供完整功能
+    return 'app';
   });
 
   const [cliUrl, setCliUrl] = useState(() => localStorage.getItem('antigravity_cli_url') || DEFAULT_CLI_URL);
@@ -76,6 +112,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [appliedId, setAppliedId] = useState<string | null>(null);
+  const [expandedPreviewIds, setExpandedPreviewIds] = useState<Record<string, boolean>>({});
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('wikitree_arborist_chat');
@@ -85,14 +123,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
   });
 
-  // Browser 模式狀態（手動複製貼上專用工作區）
+  // Browser 模式狀態
   const [pastedContent, setPastedContent] = useState('');
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const noticeTimer = useRef<number | null>(null);
 
-  // 儲存模式偏好
   const switchMode = (nextMode: EnvironmentMode) => {
     setMode(nextMode);
     localStorage.setItem('wikitree_env_mode', nextMode);
@@ -131,9 +168,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         localStorage.setItem('antigravity_cli_url', urlToCheck);
         return true;
       }
-    } catch {
-      // Offline
-    }
+    } catch {}
     setStatus('disconnected');
     setWorkspace('');
     return false;
@@ -157,7 +192,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     noticeTimer.current = window.setTimeout(() => setNotice(null), ms);
   };
 
-  // App 模式：直接在側邊欄對話生成
   const handleSendMessage = async (customPrompt?: string) => {
     const text = (customPrompt || inputMessage).trim();
     if (!text || loading) return;
@@ -218,7 +252,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
   };
 
-  // 技能庫定義
   const quickSkills = [
     {
       id: 'branch',
@@ -250,7 +283,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     },
   ];
 
-  // 瀏覽器模式：一鍵打包複製完整 Prompt（含系統角色與目前筆記）
   const copyStructuredPrompt = (skillId: string, skillPrompt: string) => {
     const fullPrompt =
       `【WikiTree 知識生態系統指令】\n` +
@@ -258,15 +290,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       (currentNotePath ? `目前正在閱讀的筆記葉片：「${currentNotePath}」\n` : '') +
       `筆記內容如下：\n"""\n${currentNoteContent || '（空白筆記）'}\n"""\n\n` +
       `任務要求：${skillPrompt}\n\n` +
-      `請以繁體中文、極致精煉、高密度的結構回答，輸出時可包含 Frontmatter 與延伸生長建議。`;
+      `請以繁體中文、極致精煉、高密度的結構回答，先列出推導思考步驟，再以單獨行 '---' 分隔線輸出純淨筆記。`;
 
     navigator.clipboard.writeText(fullPrompt);
     setCopiedPromptId(skillId);
     setTimeout(() => setCopiedPromptId(null), 2500);
-    flash({ kind: 'success', text: '已複製結構化提示詞！請直接貼上至 ChatGPT / Claude / 外部 AI。' });
+    flash({ kind: 'success', text: '已複製結構化提示詞！請直接貼上至外部 AI。' });
   };
 
-  // 瀏覽器模式：從系統剪貼簿讀取並貼入
   const pasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -290,7 +321,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       onApplyContent(text);
       setAppliedId(id);
       setTimeout(() => setAppliedId(null), 2500);
-      flash({ kind: 'success', text: '已覆蓋至當前編輯器！記得存檔。' });
+      flash({ kind: 'success', text: '已將純淨筆記覆蓋至目前編輯器！請記得存檔。' });
     }
   };
 
@@ -299,8 +330,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       onAppendContent(text);
       setAppliedId(id);
       setTimeout(() => setAppliedId(null), 2500);
-      flash({ kind: 'success', text: '已附加到筆記末尾！' });
+      flash({ kind: 'success', text: '已將純淨筆記附加至末尾！請記得存檔。' });
     }
+  };
+
+  const togglePreview = (msgId: string) => {
+    setExpandedPreviewIds((prev) => ({
+      ...prev,
+      [msgId]: !prev[msgId],
+    }));
   };
 
   const statusColor =
@@ -308,7 +346,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontSize: '13px', minHeight: 0, backgroundColor: 'var(--bg-sidebar)' }}>
-      {/* 頂部控制列：模式切換與狀態 */}
+      {/* 頂部控制列 */}
       <div
         style={{
           padding: '8px 12px',
@@ -320,7 +358,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           flexShrink: 0,
         }}
       >
-        {/* 雙模式切換 Segment Button */}
         <div
           style={{
             display: 'flex',
@@ -346,7 +383,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               gap: '4px',
               transition: 'all 0.15s ease',
             }}
-            title="應用程式模式：直通本機 AI 大腦，免複製貼上"
+            title="應用程式模式：直通本機 AI 大腦，免手動搬磚"
           >
             <Monitor size={12} />
             <span>應用程式</span>
@@ -367,14 +404,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               gap: '4px',
               transition: 'all 0.15s ease',
             }}
-            title="瀏覽器模式：專屬複製貼上與外部 AI 匯入工作區"
+            title="瀏覽器模式：專屬複製貼上工作區"
           >
             <Globe size={12} />
             <span>瀏覽器</span>
           </button>
         </div>
 
-        {/* 狀態燈與操作按鈕 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {mode === 'app' && (
             <div
@@ -409,7 +445,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         </div>
       </div>
 
-      {/* 設定折疊列 */}
+      {/* 設定面板 */}
       {showSettings && (
         <div
           style={{
@@ -449,7 +485,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         </div>
       )}
 
-      {/* 提示訊息 Toast */}
+      {/* Notice Toast */}
       {notice && (
         <div
           style={{
@@ -465,13 +501,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 視圖 A：應用程式模式（直通 AI 知識大腦，免複製貼上）                     */}
-      {/* ========================================================================= */}
+      {/* 視圖 A：應用程式模式 */}
       {mode === 'app' ? (
         <>
-          {/* Chat Messages / Skill Deck Area */}
-          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {messages.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div
@@ -485,16 +518,16 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, marginBottom: '6px', fontSize: '12.5px' }}>
                     <Sparkles size={14} style={{ color: '#22c55e' }} />
-                    <span>WikiTree 知識生態大腦（應用程式端）</span>
+                    <span>WikiTree 知識生態大腦（雙氣泡架構）</span>
                   </div>
                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '11.5px' }}>
-                    直通本機 AI 終端，生成結果可直接「一鍵套用」到筆記中，無須切換視窗手動搬磚。
+                    AI 會自動將「思維推導過程」與「純正式筆記」分開呈現，並提供 20% 內容預覽，確認無誤後一鍵精準寫入編輯器。
                   </p>
                 </div>
 
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                    一鍵直接生成
+                    快捷筆記生成
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {quickSkills.map((skill) => {
@@ -546,80 +579,234 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </div>
             ) : (
               messages.map((msg) => {
-                const isUser = msg.role === 'user';
-                const parsedHtml = !isUser ? (marked.parse(msg.content) as string) : '';
-                return (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: isUser ? 'flex-end' : 'flex-start',
-                      gap: '4px',
-                    }}
-                  >
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', padding: '0 4px' }}>
-                      {isUser ? 'YOU' : 'ARBORIST'} • {msg.timestamp}
-                    </div>
+                if (msg.role === 'user') {
+                  return (
                     <div
+                      key={msg.id}
                       style={{
-                        maxWidth: '92%',
-                        borderRadius: isUser ? '8px 8px 1px 8px' : '8px 8px 8px 1px',
-                        padding: isUser ? '8px 12px' : '10px 12px',
-                        backgroundColor: isUser ? 'var(--primary-color, #2563eb)' : 'var(--bg-secondary)',
-                        color: isUser ? '#ffffff' : 'var(--text-primary)',
-                        border: isUser ? 'none' : '1px solid var(--border-color)',
-                        fontSize: '12.5px',
-                        lineHeight: 1.5,
-                        wordBreak: 'break-word',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        gap: '3px',
                       }}
                     >
-                      {isUser ? (
-                        msg.content
-                      ) : (
-                        <div
-                          className="markdown-body"
-                          style={{ fontSize: '12px', backgroundColor: 'transparent' }}
-                          dangerouslySetInnerHTML={{ __html: parsedHtml }}
-                        />
-                      )}
+                      <div style={{ fontSize: '10px', color: 'var(--text-secondary)', padding: '0 4px' }}>
+                        YOU • {msg.timestamp}
+                      </div>
+                      <div
+                        style={{
+                          maxWidth: '90%',
+                          borderRadius: '8px 8px 1px 8px',
+                          padding: '8px 12px',
+                          backgroundColor: 'var(--primary-color, #2563eb)',
+                          color: '#ffffff',
+                          fontSize: '12.5px',
+                          lineHeight: 1.5,
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {msg.content}
+                      </div>
                     </div>
+                  );
+                }
 
-                    {!isUser && (
-                      <div style={{ display: 'flex', gap: '4px', marginTop: '3px' }}>
-                        {onApplyContent && (
-                          <button
-                            className="btn"
-                            title="覆蓋至目前編輯器"
-                            onClick={() => applyToNote(msg.id, msg.content)}
-                            style={{ padding: '3px 7px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            {appliedId === msg.id ? <Check size={12} color="#22c55e" /> : <Download size={12} />}
-                            <span>套用</span>
-                          </button>
-                        )}
-                        {onAppendContent && (
-                          <button
-                            className="btn"
-                            title="附加至目前筆記末尾"
-                            onClick={() => appendToNote(msg.id, msg.content)}
-                            style={{ padding: '3px 7px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <Plus size={12} />
-                            <span>附加</span>
-                          </button>
-                        )}
-                        <button
-                          className="btn"
-                          title="複製內容"
-                          onClick={() => copyToClipboard(msg.id, msg.content)}
-                          style={{ padding: '3px 7px', fontSize: '10.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                // Arborist 訊息：拆分為「推導思路泡泡」＋「正式筆記泡泡」
+                const { thought, note } = splitThoughtAndNote(msg.content);
+                const hasThought = Boolean(thought);
+                const isPreviewOpen = Boolean(expandedPreviewIds[msg.id]);
+
+                // 計算 20% 預覽文字長度
+                const previewCharLimit = Math.max(120, Math.floor(note.length * 0.22));
+                const previewSnippet = note.length > previewCharLimit ? note.slice(0, previewCharLimit) + '...' : note;
+
+                return (
+                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* 泡泡 1：架構師思考推導過程 */}
+                    {hasThought && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
+                        <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', padding: '0 4px' }}>
+                          <Brain size={12} style={{ color: '#60a5fa' }} />
+                          <span>ARBORIST 思維推導 • {msg.timestamp}</span>
+                        </div>
+                        <div
+                          style={{
+                            maxWidth: '95%',
+                            borderRadius: '8px 8px 8px 1px',
+                            padding: '10px 12px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px dashed rgba(255, 255, 255, 0.15)',
+                            color: 'var(--text-primary)',
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                          }}
                         >
-                          {copiedId === msg.id ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
-                          <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
-                        </button>
+                          <div
+                            className="markdown-body"
+                            style={{ fontSize: '11.5px', backgroundColor: 'transparent' }}
+                            dangerouslySetInnerHTML={{ __html: marked.parse(thought) as string }}
+                          />
+                        </div>
                       </div>
                     )}
+
+                    {/* 泡泡 2：生成的正式筆記內容 ＋ 插入確認卡片 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                      <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', padding: '0 4px' }}>
+                        <Sparkles size={12} style={{ color: '#22c55e' }} />
+                        <span>WIKITREE 知識葉片成果</span>
+                      </div>
+
+                      <div
+                        style={{
+                          width: '100%',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-secondary)',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                      >
+                        {/* 頂部引導列：是否放入目前的筆記中？ */}
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                            borderBottom: '1px solid var(--border-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🌱 筆記已就緒，是否放入目前筆記？</span>
+                          </div>
+                          <button
+                            className="btn"
+                            onClick={() => togglePreview(msg.id)}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '11px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              backgroundColor: isPreviewOpen ? 'var(--border-color)' : 'var(--bg-secondary)',
+                            }}
+                          >
+                            <Eye size={12} />
+                            <span>{isPreviewOpen ? '收起預覽' : '預覽 20%'}</span>
+                            {isPreviewOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+                        </div>
+
+                        {/* 20% 內容智能縮略預覽盒 */}
+                        {isPreviewOpen ? (
+                          <div style={{ padding: '12px', backgroundColor: 'rgba(0,0,0,0.15)' }}>
+                            <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                              📄 筆記內容預覽（約 20% 摘錄）：
+                            </div>
+                            <div
+                              style={{
+                                maxHeight: '160px',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                borderRadius: '4px',
+                                padding: '8px 10px',
+                                backgroundColor: 'var(--bg-sidebar)',
+                                border: '1px solid var(--border-color)',
+                              }}
+                            >
+                              <div
+                                className="markdown-body"
+                                style={{ fontSize: '11.5px', backgroundColor: 'transparent' }}
+                                dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
+                              />
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: '45px',
+                                  background: 'linear-gradient(to bottom, transparent, var(--bg-sidebar))',
+                                  pointerEvents: 'none',
+                                }}
+                              />
+                            </div>
+                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '5px' }}>
+                              餘下內容將於插入時完整匯入，不包含上方推導過程。
+                            </div>
+                          </div>
+                        ) : (
+                          // 未點展開時顯示精簡筆記摘要
+                          <div style={{ padding: '10px 12px' }}>
+                            <div
+                              className="markdown-body"
+                              style={{ maxHeight: '90px', overflow: 'hidden', position: 'relative', fontSize: '11.5px', backgroundColor: 'transparent' }}
+                              dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
+                            />
+                          </div>
+                        )}
+
+                        {/* 底部確認操作列 */}
+                        <div
+                          style={{
+                            padding: '8px 12px',
+                            borderTop: '1px solid var(--border-color)',
+                            backgroundColor: 'rgba(255,255,255,0.02)',
+                            display: 'flex',
+                            gap: '6px',
+                            alignItems: 'center',
+                          }}
+                        >
+                          {onApplyContent && (
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => applyToNote(msg.id, note)}
+                              style={{
+                                flex: 1,
+                                padding: '5px 10px',
+                                fontSize: '11.5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                              }}
+                            >
+                              {appliedId === msg.id ? <Check size={13} color="#22c55e" /> : <Download size={13} />}
+                              <span>{appliedId === msg.id ? '已覆蓋寫入！' : '📥 覆蓋目前筆記'}</span>
+                            </button>
+                          )}
+                          {onAppendContent && (
+                            <button
+                              className="btn"
+                              onClick={() => appendToNote(msg.id, note)}
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: '11.5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Plus size={13} />
+                              <span>附加末尾</span>
+                            </button>
+                          )}
+                          <button
+                            className="btn"
+                            title="複製純淨筆記"
+                            onClick={() => copyToClipboard(msg.id, note)}
+                            style={{ padding: '5px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            {copiedId === msg.id ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
+                            <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })
@@ -628,7 +815,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '11.5px', padding: '6px' }}>
                 <Loader2 size={14} className="spin" />
-                <span>知識架構師正在思考推導...</span>
+                <span>知識架構師正在思考推導並組織純淨筆記...</span>
               </div>
             )}
             <div ref={chatBottomRef} />
@@ -673,17 +860,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
-              <span>按 Enter 送出 • 免開終端機</span>
-              <span>直通本機 Agent</span>
+              <span>按 Enter 送出 • 自動分離思維與筆記</span>
+              <span>支援 20% 預覽確認</span>
             </div>
           </div>
         </>
       ) : (
-        /* ========================================================================= */
-        /* 視圖 B：瀏覽器模式（專屬複製貼上與外部 AI 匯入工作區）                 */
-        /* ========================================================================= */
+        /* 視圖 B：瀏覽器模式 */
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {/* 瀏覽器說明卡 */}
           <div
             style={{
               border: '1px solid var(--border-color)',
@@ -698,11 +882,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <span>瀏覽器工作流：複製 ➔ 外部提問 ➔ 貼上匯入</span>
             </div>
             <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '11px' }}>
-              在純瀏覽器環境下，點擊下方卡片可一鍵打包複製帶有 WikiTree 格式的提示詞，去 ChatGPT / Claude 提問後，再把結果貼回下方一鍵匯入。
+              點擊卡片複製結構化提示詞，去外部 AI 提問後，再將結果貼回下方，一鍵精準寫入當前編輯器。
             </p>
           </div>
 
-          {/* 第一步：一鍵複製 Prompt */}
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '8px', letterSpacing: '0.5px' }}>
               步驟 1：複製結構化提示詞（已附帶目前筆記）
@@ -747,7 +930,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             </div>
           </div>
 
-          {/* 第二步：貼上 AI 結果並一鍵注入 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.5px' }}>
@@ -816,7 +998,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             </div>
           </div>
 
-          {/* 當前筆記標籤 */}
           {currentNotePath && (
             <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)', borderRadius: '4px' }}>
               當前操作筆記：{currentNotePath}
