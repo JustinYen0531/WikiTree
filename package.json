@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node dev-all.mjs",
+    "app": "node launcher.mjs",
     "dev:web": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
