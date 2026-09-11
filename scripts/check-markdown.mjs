@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createServer } from 'vite';
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true, include: [] } });
@@ -53,6 +54,24 @@ try {
     ['bold keeps inline links and formulas', () => {
       assert.match(renderMarkdownSync('** [文件](https://example.com) **'), /<strong><a href="https:\/\/example.com">文件<\/a><\/strong>/);
       assert.match(renderMarkdownSync('**公式 $x^2$ **'), /<strong>公式 <span class="math-inline">/);
+    }],
+    ['pitfall guide uses valid emphasis without formulas', () => {
+      for (const source of ['1. **過擬合（Overfitting）**：', '2. **GIGO（Garbage In, Garbage Out）**：', '3. **黑盒子問題（Black Box）**：']) {
+        const html = renderInlineMarkdown(source);
+        assert.match(html, /<strong>.+<\/strong>：/);
+        assert.ok(!html.includes('**'));
+      }
+      for (const label of ['症狀', '解法']) {
+        assert.equal(renderInlineMarkdown(`*${label}*：說明`), `<em>${label}</em>：說明`);
+      }
+    }],
+    ['editor does not limit formatted display to math', async () => {
+      const editor = await readFile(new URL('../src/components/Editor.tsx', import.meta.url), 'utf8');
+      assert.doesNotMatch(editor, /hasInlineMath/);
+      // List, task, and ordinary text all show source only while active or empty.
+      assert.equal(editor.split('focusedBlockIndex === index || !getBlockDisplayValue(block).trim()').length - 1, 3);
+      assert.equal(editor.split('onBlur={(event) => finishInlineEditing(index, event)}').length - 1, 3);
+      assert.match(editor, /setFocusedBlockIndex\(current => current === index \? null : current\)/);
     }],
   ];
   for (const [name, check] of cases) { await check(); console.log(`PASS ${name}`); }

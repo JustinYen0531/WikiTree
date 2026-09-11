@@ -92,7 +92,6 @@ export const Editor: React.FC<EditorProps> = ({
     if (body[body.length - 1]?.trim() === '```') body.pop();
     return body.join('\n');
   };
-  const hasInlineMath = (text: string) => /(?<!\\)\$(?!\$)[^\n$]+?(?<!\\)\$/.test(text) || /\\\[|\\\(/.test(text);
   const shouldRenderBlockPreview = (block: Block) =>
     (block.type === 'code' && getCodeFenceLanguage(block.raw) === 'mermaid') ||
     block.type === 'math';
@@ -755,6 +754,15 @@ export const Editor: React.FC<EditorProps> = ({
     );
   };
 
+  const finishInlineEditing = (index: number, event: React.FocusEvent<HTMLTextAreaElement>) => {
+    // Formatting controls still need the current textarea selection.
+    const nextTarget = event.relatedTarget;
+    if (!(nextTarget instanceof Element && nextTarget.closest('.top-bar, .slash-suggestions'))) {
+      setFocusedBlockIndex(current => current === index ? null : current);
+    }
+    setTimeout(() => setShowSlashMenu(false), 180);
+  };
+
   // Auto-focus active block in WYSIWYG mode
   useEffect(() => {
     if (focusedBlockIndex !== null && blockRefs.current[focusedBlockIndex]) {
@@ -1198,6 +1206,7 @@ export const Editor: React.FC<EditorProps> = ({
       case 'header5': return block.raw.replace(/^#####\s*/, '');
       case 'header6': return block.raw.replace(/^######\s*/, '');
       case 'list': return block.raw.replace(/^\s*[-*+]\s+/, '');
+      case 'todo': return block.raw.replace(/^\s*-\s*\[[ x]\]\s*/i, '');
       default: return block.raw;
     }
   };
@@ -1745,7 +1754,7 @@ export const Editor: React.FC<EditorProps> = ({
                       }}>
                         •
                       </span>
-                      {focusedBlockIndex === index || !hasInlineMath(getBlockDisplayValue(block)) ? (
+                      {focusedBlockIndex === index || !getBlockDisplayValue(block).trim() ? (
                         <textarea
                           className="block-textarea"
                           ref={(el) => { blockRefs.current[index] = el; }}
@@ -1754,7 +1763,7 @@ export const Editor: React.FC<EditorProps> = ({
                           onPaste={(e) => handleBlockPaste(index, e)}
                           onKeyDown={(e) => handleBlockKeyDown(index, e)}
                           onFocus={() => setFocusedBlockIndex(index)}
-                          onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                          onBlur={(event) => finishInlineEditing(index, event)}
                           rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
                           placeholder="清單項目..."
                           style={{
@@ -1777,6 +1786,15 @@ export const Editor: React.FC<EditorProps> = ({
                             setFocusedBlockIndex(index);
                             setTimeout(() => blockRefs.current[index]?.focus(), 0);
                           }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label="編輯這一段"
+                          onKeyDown={(event) => {
+                            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                              event.preventDefault();
+                              setFocusedBlockIndex(index);
+                            }
+                          }}
                           className="rendered-markdown"
                           style={{ flex: 1, padding: '2px 0', lineHeight: '1.6', fontSize: '15px', cursor: 'text' }}
                           dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(getBlockDisplayValue(block))) }}
@@ -1791,6 +1809,7 @@ export const Editor: React.FC<EditorProps> = ({
                         onChange={() => handleCheckboxToggle(index, { stopPropagation: () => {} } as any)}
                         style={{ marginTop: '5px', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
                       />
+                      {focusedBlockIndex === index || !getBlockDisplayValue(block).trim() ? (
                       <textarea
                         className="block-textarea"
                         ref={(el) => { blockRefs.current[index] = el; }}
@@ -1802,7 +1821,7 @@ export const Editor: React.FC<EditorProps> = ({
                         onPaste={(e) => handleBlockPaste(index, e)}
                         onKeyDown={(e) => handleBlockKeyDown(index, e)}
                         onFocus={() => setFocusedBlockIndex(index)}
-                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                        onBlur={(event) => finishInlineEditing(index, event)}
                         rows={1}
                         placeholder="待辦事項..."
                         style={{
@@ -1821,10 +1840,27 @@ export const Editor: React.FC<EditorProps> = ({
                           overflow: 'hidden',
                         }}
                       />
+                      ) : (
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          aria-label="編輯待辦事項"
+                          onClick={() => setFocusedBlockIndex(index)}
+                          onKeyDown={(event) => {
+                            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                              event.preventDefault();
+                              setFocusedBlockIndex(index);
+                            }
+                          }}
+                          className="rendered-markdown"
+                          style={{ flex: 1, padding: '2px 0', lineHeight: '1.6', fontSize: '15px', cursor: 'text', opacity: block.raw.includes('- [x]') ? 0.45 : 1, textDecoration: block.raw.includes('- [x]') ? 'line-through' : 'none' }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(getBlockDisplayValue(block))) }}
+                        />
+                      )}
                     </div>
                   ) : (
                     <>
-                      {focusedBlockIndex === index || !hasInlineMath(getBlockDisplayValue(block)) ? (
+                      {focusedBlockIndex === index || !getBlockDisplayValue(block).trim() ? (
                         <textarea
                           className="block-textarea"
                           ref={(el) => { blockRefs.current[index] = el; }}
@@ -1833,7 +1869,7 @@ export const Editor: React.FC<EditorProps> = ({
                           onPaste={(e) => handleBlockPaste(index, e)}
                           onKeyDown={(e) => handleBlockKeyDown(index, e)}
                           onFocus={() => setFocusedBlockIndex(index)}
-                          onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                          onBlur={(event) => finishInlineEditing(index, event)}
                           rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
                           placeholder={getBlockPlaceholder(block, index, blocks.length)}
                           style={{
@@ -1858,6 +1894,15 @@ export const Editor: React.FC<EditorProps> = ({
                           onClick={() => {
                             setFocusedBlockIndex(index);
                             setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label="編輯這一段"
+                          onKeyDown={(event) => {
+                            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                              event.preventDefault();
+                              setFocusedBlockIndex(index);
+                            }
                           }}
                           className="rendered-markdown"
                           style={{
