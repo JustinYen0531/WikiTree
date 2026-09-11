@@ -22,10 +22,12 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import { marked } from 'marked';
+import { renderMarkdownSync } from '../utils/markdownRenderer';
+import { preprocessCallouts } from '../utils/callouts';
 import DOMPurify from 'dompurify';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
+import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
 
 export interface AntigravityPluginProps {
   workspacePath?: string;
@@ -33,6 +35,7 @@ export interface AntigravityPluginProps {
   currentNoteContent: string;
   onApplyContent?: (content: string) => void;
   onAppendContent?: (content: string) => void;
+  onApplyDiff?: (diffInfo: PendingDiffInfo) => void;
 }
 
 type CliStatus = 'connected' | 'disconnected' | 'testing';
@@ -94,6 +97,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNoteContent,
   onApplyContent,
   onAppendContent,
+  onApplyDiff,
 }) => {
   const [mode, setMode] = useState<EnvironmentMode>(() => {
     try {
@@ -130,6 +134,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [appliedId, setAppliedId] = useState<string | null>(null);
   const [expandedPreviewIds, setExpandedPreviewIds] = useState<Record<string, boolean>>({});
+  const [activeTabIds, setActiveTabIds] = useState<Record<string, 'note' | 'diff'>>({});
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
@@ -357,7 +362,27 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       onApplyContent(text);
       setAppliedId(id);
       setTimeout(() => setAppliedId(null), 2500);
-      flash({ kind: 'success', text: '已將純淨筆記覆蓋至目前編輯器！請記得存檔。' });
+      flash({ kind: 'success', text: '🌱 已在編輯器生成待插入綠色區塊，可移動選擇位置！' });
+    }
+  };
+
+  const applyDiffToNote = (id: string, noteText: string, diff: ReturnType<typeof computeLineDiff>) => {
+    if (onApplyDiff) {
+      onApplyDiff({
+        addedContent: diff.addedLines.join('\n'),
+        removedContent: diff.removedLines.join('\n'),
+        fullNewContent: noteText,
+        addedLinesCount: diff.addedCount,
+        removedLinesCount: diff.removedCount,
+      });
+      setAppliedId(id);
+      setTimeout(() => setAppliedId(null), 2500);
+      flash({ kind: 'success', text: '🔀 已在編輯器生成對稱 Diff 修整區塊！' });
+    } else if (onApplyContent) {
+      onApplyContent(noteText);
+      setAppliedId(id);
+      setTimeout(() => setAppliedId(null), 2500);
+      flash({ kind: 'success', text: '🌱 已送至編輯器！' });
     }
   };
 
@@ -654,7 +679,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                         {msg.delivery === 'streaming' ? '正在回覆…' : '回覆未完成 · 已保留收到的文字'}
                       </div>
-                      <div className="markdown-body" style={{ fontSize: '12px', overflowWrap: 'anywhere' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || '等待第一段文字…') as string) }} />
+                      <div className="markdown-body" style={{ fontSize: '12px', overflowWrap: 'anywhere' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(msg.content || '等待第一段文字…'))) }} />
                     </div>
                   );
                 }
@@ -692,82 +717,336 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           <div
                             className="markdown-body"
                             style={{ fontSize: '11.5px', backgroundColor: 'transparent' }}
-                            dangerouslySetInnerHTML={{ __html: marked.parse(thought) as string }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(thought))) }}
                           />
                         </div>
                       </div>
                     )}
 
-                    {/* 泡泡 2：生成的正式筆記內容（100% 完整呈現） */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                      <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', padding: '0 4px' }}>
-                        <Sparkles size={12} style={{ color: '#22c55e' }} />
-                        <span>WIKITREE 知識葉片成果</span>
-                      </div>
+                    {/* 泡泡 2：生成的正式筆記內容（預設收合 20%，支援右上角展開與 Diff 知識修整） */}
+                    {(() => {
+                      const diff = computeLineDiff(currentNoteContent, note);
+                      const activeTab = activeTabIds[msg.id] || (diff.removedCount > 0 ? 'diff' : 'note');
 
-                      <div
-                        style={{
-                          width: '100%',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border-color)',
-                          backgroundColor: 'var(--bg-secondary)',
-                          overflow: 'hidden',
-                          display: 'flex',
-                          flexDirection: 'column',
-                        }}
-                      >
-                        {/* 完整筆記正文展示 */}
-                        <div style={{ padding: '12px 14px' }}>
-                          <div
-                            className="markdown-body"
-                            style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
-                            dangerouslySetInnerHTML={{ __html: marked.parse(note) as string }}
-                          />
-                        </div>
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', width: '100%' }}>
+                          {/* 頂部標題列與右上角 20% 收合/展開控制項 */}
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+                            <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Sparkles size={12} style={{ color: '#22c55e' }} />
+                              <span style={{ fontWeight: 600 }}>WIKITREE 知識葉片成果</span>
+                              {diff.removedCount > 0 && (
+                                <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '3px', backgroundColor: 'rgba(234, 179, 8, 0.15)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)', fontWeight: 600 }}>
+                                  可修整
+                                </span>
+                              )}
+                            </div>
 
-                        {/* 操作控制列：套用（送至編輯器綠色插入區塊）與複製 */}
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            borderTop: '1px solid var(--border-color)',
-                            backgroundColor: 'rgba(255,255,255,0.02)',
-                            display: 'flex',
-                            gap: '8px',
-                            alignItems: 'center',
-                          }}
-                        >
-                          {onApplyContent && (
+                            {/* 右上角收合/展開開關 */}
                             <button
-                              className="btn btn-primary"
-                              onClick={() => applyToNote(msg.id, note)}
+                              className="btn"
+                              onClick={() => togglePreview(msg.id)}
                               style={{
-                                flex: 1,
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                fontWeight: 600,
+                                padding: '2px 8px',
+                                fontSize: '10.5px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '6px',
+                                gap: '3px',
+                                backgroundColor: isPreviewOpen ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-secondary)',
+                                border: '1px solid var(--border-color)',
+                                color: isPreviewOpen ? '#22c55e' : 'var(--text-secondary)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
                               }}
-                              title="在編輯器中生成可拖動的綠色插入區塊"
+                              title={isPreviewOpen ? '收合為前 20% 預覽' : '展開查看 100% 全文'}
                             >
-                              {appliedId === msg.id ? <Check size={14} color="#22c55e" /> : <Download size={14} />}
-                              <span>{appliedId === msg.id ? '已送至編輯器！' : '🌿 套用'}</span>
+                              {isPreviewOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                              <span>{isPreviewOpen ? '收合 (20%)' : '🔍 展開全文'}</span>
                             </button>
-                          )}
-                          <button
-                            className="btn"
-                            title="複製純淨筆記"
-                            onClick={() => copyToClipboard(msg.id, note)}
-                            style={{ padding: '6px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          </div>
+
+                          <div
+                            style={{
+                              width: '100%',
+                              borderRadius: '8px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-secondary)',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+                            }}
                           >
-                            {copiedId === msg.id ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
-                            <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
-                          </button>
+                            {/* 分頁切換列：筆記成果 vs 知識修整 Diff */}
+                            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
+                              <button
+                                onClick={() => setActiveTabIds(prev => ({ ...prev, [msg.id]: 'note' }))}
+                                style={{
+                                  flex: 1,
+                                  padding: '7px 10px',
+                                  fontSize: '11px',
+                                  border: 'none',
+                                  borderBottom: activeTab === 'note' ? '2px solid #22c55e' : '2px solid transparent',
+                                  background: activeTab === 'note' ? 'rgba(34, 197, 94, 0.08)' : 'transparent',
+                                  color: activeTab === 'note' ? '#22c55e' : 'var(--text-secondary)',
+                                  fontWeight: activeTab === 'note' ? 700 : 400,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <span>📄 知識筆記</span>
+                              </button>
+
+                              <button
+                                onClick={() => setActiveTabIds(prev => ({ ...prev, [msg.id]: 'diff' }))}
+                                style={{
+                                  flex: 1,
+                                  padding: '7px 10px',
+                                  fontSize: '11px',
+                                  border: 'none',
+                                  borderBottom: activeTab === 'diff' ? '2px solid #60a5fa' : '2px solid transparent',
+                                  background: activeTab === 'diff' ? 'rgba(96, 165, 250, 0.08)' : 'transparent',
+                                  color: activeTab === 'diff' ? '#60a5fa' : 'var(--text-secondary)',
+                                  fontWeight: activeTab === 'diff' ? 700 : 400,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <span>🔀 知識修整 Diff</span>
+                                <span style={{ fontSize: '9.5px', padding: '1px 4px', borderRadius: '3px', background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', fontWeight: 600 }}>
+                                  +{diff.addedCount}
+                                </span>
+                                {diff.removedCount > 0 && (
+                                  <span style={{ fontSize: '9.5px', padding: '1px 4px', borderRadius: '3px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', fontWeight: 600 }}>
+                                    -{diff.removedCount}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* 筆記正文展示區 */}
+                            {activeTab === 'note' ? (
+                              <div style={{ padding: '12px 14px', position: 'relative' }}>
+                                {!isPreviewOpen ? (
+                                  <div style={{ position: 'relative', maxHeight: '135px', overflow: 'hidden' }}>
+                                    <div
+                                      className="markdown-body"
+                                      style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+                                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(previewSnippet))) }}
+                                    />
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        height: '50px',
+                                        background: 'linear-gradient(to bottom, transparent, var(--bg-secondary))',
+                                        pointerEvents: 'none',
+                                        display: 'flex',
+                                        alignItems: 'flex-end',
+                                        justifyContent: 'center',
+                                        paddingBottom: '4px',
+                                      }}
+                                    >
+                                      <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>
+                                        （目前僅顯示前 20% 內容 • 點右上角展開全文）
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="markdown-body"
+                                    style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(note))) }}
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              /* 🔀 大泡泡：完整的 Diff 審查容器 */
+                              <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {/* 大泡泡頂部統計 */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                    📝 筆記修整對照 (Revision Diff)
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 600 }}>
+                                      +{diff.addedCount} 行 新增/簡化
+                                    </span>
+                                    <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600 }}>
+                                      -{diff.removedCount} 行 舊文修整
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* 子泡泡 1 (上面)：新增了哪些內容 */}
+                                <div
+                                  style={{
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(34, 197, 94, 0.35)',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                                    padding: '10px 12px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '6px',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <span>🟢</span> 新增 / 簡化概念內容
+                                    </span>
+                                    <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>+{diff.addedCount} 行</span>
+                                  </div>
+
+                                  <div style={{ maxHeight: isPreviewOpen ? 'none' : '120px', overflow: 'hidden', position: 'relative' }}>
+                                    <div
+                                      className="markdown-body"
+                                      style={{ fontSize: '11.5px', backgroundColor: 'transparent', lineHeight: 1.5 }}
+                                      dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(
+                                          !isPreviewOpen && diff.addedLines.join('\n').length > previewCharLimit
+                                            ? diff.addedLines.join('\n').slice(0, previewCharLimit) + '...'
+                                            : diff.addedLines.join('\n')
+                                        )))
+                                      }}
+                                    />
+                                    {!isPreviewOpen && diff.addedLines.join('\n').length > previewCharLimit && (
+                                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35px', background: 'linear-gradient(to bottom, transparent, rgba(16, 26, 18, 0.95))', pointerEvents: 'none' }} />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* 子泡泡 2 (下面)：刪除了哪些內容 */}
+                                <div
+                                  style={{
+                                    borderRadius: '6px',
+                                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                    padding: '10px 12px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '6px',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <span>🔴</span> 移除 / 被替換內容
+                                    </span>
+                                    <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 600 }}>-{diff.removedCount} 行</span>
+                                  </div>
+
+                                  <div style={{ maxHeight: isPreviewOpen ? 'none' : '110px', overflowY: 'auto' }}>
+                                    {diff.removedLines.length > 0 ? (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                        {diff.removedLines.map((line, idx) => (
+                                          <div
+                                            key={idx}
+                                            style={{
+                                              fontSize: '11px',
+                                              fontFamily: 'var(--font-mono)',
+                                              color: '#f87171',
+                                              textDecoration: 'line-through',
+                                              opacity: 0.85,
+                                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                              padding: '2px 6px',
+                                              borderRadius: '3px',
+                                              overflowWrap: 'anywhere',
+                                            }}
+                                          >
+                                            - {line}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px 0' }}>
+                                        （目前筆記中無對應刪除內容，本次修整為純新增）
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 操作控制列：套用修整 (Diff) vs 直接插入 (Insert) 與複製 */}
+                            <div
+                              style={{
+                                padding: '8px 12px',
+                                borderTop: '1px solid var(--border-color)',
+                                backgroundColor: 'rgba(255,255,255,0.02)',
+                                display: 'flex',
+                                gap: '8px',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                              }}
+                            >
+                              {/* 按鈕 1: 套用修整 (Diff 替換模式) */}
+                              {onApplyDiff && (
+                                <button
+                                  className="btn btn-primary"
+                                  onClick={() => applyDiffToNote(msg.id, note, diff)}
+                                  style={{
+                                    flex: 1,
+                                    padding: '6px 12px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    backgroundColor: '#2563eb',
+                                    borderColor: '#2563eb',
+                                  }}
+                                  title="在編輯器中呈現對稱的 Diff 審查區塊（綠色新增＋紅色刪除）"
+                                >
+                                  {appliedId === msg.id ? <Check size={14} color="#ffffff" /> : <GitBranch size={14} />}
+                                  <span>{appliedId === msg.id ? '已送至編輯器！' : '🔀 套用修整 (Diff)'}</span>
+                                </button>
+                              )}
+
+                              {/* 按鈕 2: 直接插入新段落 (單純插入模式) */}
+                              {onApplyContent && (
+                                <button
+                                  className="btn"
+                                  onClick={() => applyToNote(msg.id, note)}
+                                  style={{
+                                    padding: '6px 10px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                                    borderColor: 'rgba(34, 197, 94, 0.35)',
+                                    color: '#22c55e',
+                                  }}
+                                  title="以可拖動的綠色膠囊直接插入筆記某一處"
+                                >
+                                  <Plus size={13} />
+                                  <span>➕ 直接插入</span>
+                                </button>
+                              )}
+
+                              <button
+                                className="btn"
+                                title="複製純淨筆記"
+                                onClick={() => copyToClipboard(msg.id, note)}
+                                style={{ padding: '6px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                {copiedId === msg.id ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
+                                <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
                 );
               })

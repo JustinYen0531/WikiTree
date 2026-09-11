@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { Marked, marked } from 'marked';
 import katex from 'katex';
 
 const blockMathPattern = /\$\$([\s\S]+?)\$\$/g;
@@ -111,17 +111,37 @@ export function createMarkdownRenderer() {
   return renderer;
 }
 
+// Keep note rendering isolated from integrations that configure global marked.
+const noteMarkdown = new Marked({
+  gfm: true,
+  breaks: true,
+  renderer: createMarkdownRenderer(),
+  extensions: [{
+    name: 'agentStrong',
+    level: 'inline',
+    start(source) { return source.indexOf('**'); },
+    tokenizer(source) {
+      if (this.lexer.state.inRawBlock) return;
+      // Agent prose often pads the markers or places CJK punctuation directly
+      // beside them. Parse inline tokens, never replace HTML or saved Markdown.
+      // Leave triple markers and complex nested emphasis to the standard parser.
+      const match = /^\*\*(?!\*)((?:(`+)(?:[^`\n]|(?!\2)`)*?\2|\\[^\n]|[^*`\\\n])+?)\*\*(?!\*)/.exec(source);
+      if (!match || !match[1].trim()) return;
+      const text = match[1].trim();
+      return { type: 'agentStrong', raw: match[0], tokens: this.lexer.inlineTokens(text) };
+    },
+    renderer(token) { return `<strong>${this.parser.parseInline(token.tokens ?? [])}</strong>`; },
+  }],
+});
+
+export function renderMarkdownSync(markdown: string): string {
+  return noteMarkdown.parse(preprocessMath(markdown), { async: false });
+}
+
 export async function renderMarkdown(markdown: string): Promise<string> {
-  return await marked.parse(preprocessMath(markdown), {
-    gfm: true,
-    breaks: true,
-    renderer: createMarkdownRenderer(),
-  });
+  return renderMarkdownSync(markdown);
 }
 
 export function renderInlineMarkdown(markdown: string): string {
-  return marked.parseInline(preprocessMath(markdown), {
-    gfm: true,
-    breaks: true,
-  }) as string;
+  return noteMarkdown.parseInline(preprocessMath(markdown), { async: false });
 }

@@ -49,6 +49,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { notionHtmlToMarkdown } from './utils/notionImporter';
 
 import { readWorkspaceMemory, writeWorkspaceMemory, workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
+import { PendingDiffInfo } from './utils/diffUtils';
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -82,6 +83,7 @@ function App() {
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [pendingInsertNote, setPendingInsertNote] = useState<string | null>(null);
+  const [pendingDiff, setPendingDiff] = useState<PendingDiffInfo | null>(null);
   
   // CLI States
   const [cliConnected, setCliConnected] = useState(false);
@@ -1042,6 +1044,8 @@ function App() {
                 setViewMode={setViewMode}
                 pendingInsertContent={pendingInsertNote}
                 onClearPendingInsert={() => setPendingInsertNote(null)}
+                pendingDiff={pendingDiff}
+                onClearPendingDiff={() => setPendingDiff(null)}
               />
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
@@ -1098,6 +1102,10 @@ function App() {
             onAppendContent={(added) => {
               setContent((prev) => (prev ? `${prev}\n\n${added}` : added));
               showToast('🌱 已將內容附加至筆記末尾，請記得儲存！', 'success');
+            }}
+            onApplyDiff={(diffInfo) => {
+              setPendingDiff(diffInfo);
+              showToast('🔀 已在編輯器生成對稱 Diff 修整區塊！', 'success');
             }}
           />
         </aside>

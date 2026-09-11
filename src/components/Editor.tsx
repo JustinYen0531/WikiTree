@@ -14,11 +14,11 @@ import {
   Grid, 
   Sparkles
 } from 'lucide-react';
-import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 import { preprocessCallouts, renderCalloutBlock } from '../utils/callouts';
-import { renderMarkdown, preprocessMath, renderInlineMarkdown } from '../utils/markdownRenderer';
+import { renderMarkdown, renderMarkdownSync, renderInlineMarkdown } from '../utils/markdownRenderer';
+import { PendingDiffInfo } from '../utils/diffUtils';
 
 interface EditorProps {
   content: string;
@@ -29,6 +29,8 @@ interface EditorProps {
   setViewMode: (mode: 'wysiwyg' | 'source' | 'split') => void;
   pendingInsertContent?: string | null;
   onClearPendingInsert?: () => void;
+  pendingDiff?: PendingDiffInfo | null;
+  onClearPendingDiff?: () => void;
 }
 
 interface Block {
@@ -46,6 +48,8 @@ export const Editor: React.FC<EditorProps> = ({
   setViewMode,
   pendingInsertContent,
   onClearPendingInsert,
+  pendingDiff,
+  onClearPendingDiff,
 }) => {
   const [htmlContent, setHtmlContent] = useState('');
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -61,6 +65,10 @@ export const Editor: React.FC<EditorProps> = ({
   // Pending AI Insert Block States (可上下移動、20% 縮略預覽的綠色膠囊)
   const [insertBlockIndex, setInsertBlockIndex] = useState<number>(0);
   const [isPendingExpanded, setIsPendingExpanded] = useState<boolean>(false);
+
+  // Pending AI Diff Review States (對稱 Diff 審查大泡泡：綠色新增＋紅色刪除)
+  const [insertDiffIndex, setInsertDiffIndex] = useState<number>(0);
+  const [isPendingDiffExpanded, setIsPendingDiffExpanded] = useState<boolean>(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
@@ -327,6 +335,43 @@ export const Editor: React.FC<EditorProps> = ({
     if (onClearPendingInsert) onClearPendingInsert();
   };
 
+  // 當從側邊欄點擊「套用修整 (Diff)」送入時，初始化位置與狀態
+  useEffect(() => {
+    if (pendingDiff) {
+      setInsertDiffIndex(focusedBlockIndex !== null ? focusedBlockIndex : 0);
+      setIsPendingDiffExpanded(false);
+    }
+  }, [pendingDiff]);
+
+  const handleConfirmDiff = () => {
+    if (!pendingDiff) return;
+
+    let nextContent = content;
+    const removed = pendingDiff.removedContent.trim();
+    const added = pendingDiff.addedContent.trim();
+
+    if (removed && nextContent.includes(removed)) {
+      nextContent = nextContent.replace(removed, added);
+    } else if (pendingDiff.fullNewContent) {
+      nextContent = pendingDiff.fullNewContent;
+    } else {
+      const newBlocks = parseMarkdownToBlocks(added);
+      const targetIdx = Math.max(0, Math.min(insertDiffIndex, blocks.length));
+      const nextBlocks = [
+        ...blocks.slice(0, targetIdx),
+        ...newBlocks,
+        ...blocks.slice(targetIdx)
+      ];
+      updateContentFromBlocks(nextBlocks);
+      if (onClearPendingDiff) onClearPendingDiff();
+      return;
+    }
+
+    const nextBlocks = parseMarkdownToBlocks(nextContent);
+    updateContentFromBlocks(nextBlocks);
+    if (onClearPendingDiff) onClearPendingDiff();
+  };
+
   // 渲染可上下移動、預設 20% 縮略預覽的綠色膠囊區塊
   const renderPendingInsertCapsule = () => {
     if (!pendingInsertContent) return null;
@@ -450,7 +495,7 @@ export const Editor: React.FC<EditorProps> = ({
               <div
                 className="markdown-body"
                 style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
-                dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(previewSnippet))) }}
               />
               <div
                 style={{
@@ -476,9 +521,235 @@ export const Editor: React.FC<EditorProps> = ({
             <div
               className="markdown-body"
               style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
-              dangerouslySetInnerHTML={{ __html: marked.parse(pendingInsertContent) as string }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(pendingInsertContent))) }}
             />
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染對稱 Diff 審查大泡泡（包含新增綠色子泡泡與刪除紅色子泡泡）
+  const renderPendingDiffCapsule = () => {
+    if (!pendingDiff) return null;
+
+    const addedText = pendingDiff.addedContent || pendingDiff.fullNewContent || '';
+    const removedText = pendingDiff.removedContent || '';
+    const previewCharLimit = Math.max(80, Math.floor(addedText.length * 0.2));
+    const addedPreview = addedText.length > previewCharLimit && !isPendingDiffExpanded
+      ? addedText.slice(0, previewCharLimit) + '...'
+      : addedText;
+
+    const removedLines = removedText ? removedText.split('\n').filter(l => l.trim().length > 0) : [];
+
+    return (
+      <div
+        className="pending-diff-capsule animate-slide-in"
+        style={{
+          margin: '16px 0',
+          border: '2px solid #3b82f6',
+          borderRadius: '10px',
+          backgroundColor: 'rgba(59, 130, 246, 0.04)',
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)',
+          overflow: 'hidden',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {/* 大泡泡頂部控制列 */}
+        <div
+          style={{
+            padding: '8px 14px',
+            backgroundColor: 'rgba(59, 130, 246, 0.12)',
+            borderBottom: '1px solid rgba(59, 130, 246, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px' }}>🔀</span>
+            <span style={{ fontWeight: 700, fontSize: '12px', color: '#60a5fa' }}>
+              知識修整審查 (Diff 對稱模式)
+            </span>
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.35)', fontWeight: 600 }}>
+                +{pendingDiff.addedLinesCount} 行
+              </span>
+              <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.18)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.35)', fontWeight: 600 }}>
+                -{pendingDiff.removedLinesCount} 行
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {/* 上移 / 下移 控制鍵 */}
+            <div style={{ display: 'flex', border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '4px', overflow: 'hidden' }}>
+              <button
+                className="btn"
+                onClick={(e) => { e.stopPropagation(); setInsertDiffIndex(prev => Math.max(0, prev - 1)); }}
+                disabled={insertDiffIndex <= 0}
+                style={{ padding: '3px 8px', fontSize: '11px', border: 'none', borderRadius: 0, backgroundColor: 'var(--bg-secondary)' }}
+                title="向上移動一段"
+              >
+                ⬆ 上移
+              </button>
+              <button
+                className="btn"
+                onClick={(e) => { e.stopPropagation(); setInsertDiffIndex(prev => Math.min(blocks.length, prev + 1)); }}
+                disabled={insertDiffIndex >= blocks.length}
+                style={{ padding: '3px 8px', fontSize: '11px', border: 'none', borderRadius: 0, borderLeft: '1px solid rgba(59, 130, 246, 0.35)', backgroundColor: 'var(--bg-secondary)' }}
+                title="向下移動一段"
+              >
+                ⬇ 下移
+              </button>
+            </div>
+
+            {/* 展開全文 / 收合為 20% */}
+            <button
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); setIsPendingDiffExpanded(v => !v); }}
+              style={{
+                padding: '3px 9px',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: isPendingDiffExpanded ? 'rgba(59, 130, 246, 0.2)' : 'var(--bg-secondary)',
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+              }}
+            >
+              <span>{isPendingDiffExpanded ? '收合 (20%)' : '🔍 展開全文'}</span>
+            </button>
+
+            {/* 確認套用修整 */}
+            <button
+              className="btn btn-primary"
+              onClick={(e) => { e.stopPropagation(); handleConfirmDiff(); }}
+              style={{
+                padding: '4px 12px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>✔ 確認套用修整</span>
+            </button>
+
+            {/* 放棄 */}
+            <button
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); if (onClearPendingDiff) onClearPendingDiff(); }}
+              style={{ padding: '4px 8px', fontSize: '11px' }}
+              title="放棄修整"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* 對稱的兩個子泡泡：綠色新增區 ＋ 紅色刪除區 */}
+        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* 子泡泡 1 (上面)：新增了哪些內容（綠色） */}
+          <div
+            style={{
+              borderRadius: '8px',
+              border: '2px solid #22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.05)',
+              padding: '12px 14px',
+              position: 'relative',
+              boxShadow: '0 0 12px rgba(34, 197, 94, 0.12)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid rgba(34, 197, 94, 0.25)', paddingBottom: '6px' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>🟢</span> 即將寫入筆記的新內容（簡化 / 擴充）
+              </span>
+              <span style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: 600 }}>+{pendingDiff.addedLinesCount} 行</span>
+            </div>
+
+            <div style={{ position: 'relative', maxHeight: isPendingDiffExpanded ? 'none' : '130px', overflow: 'hidden' }}>
+              <div
+                className="markdown-body"
+                style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(addedPreview))) }}
+              />
+              {!isPendingDiffExpanded && addedText.length > previewCharLimit && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '50px',
+                    background: 'linear-gradient(to bottom, transparent, rgba(16, 26, 18, 0.95))',
+                    pointerEvents: 'none',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    paddingBottom: '4px',
+                  }}
+                >
+                  <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>
+                    （目前僅預覽前 20% 內容 • 點右上角「展開全文」可查看整篇）
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 子泡泡 2 (下面)：刪除了哪些內容（紅色集中對稱） */}
+          <div
+            style={{
+              borderRadius: '8px',
+              border: '2px solid #ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              padding: '12px 14px',
+              position: 'relative',
+              boxShadow: '0 0 12px rgba(239, 68, 68, 0.12)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid rgba(239, 68, 68, 0.25)', paddingBottom: '6px' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span>🔴</span> 即將自筆記中移除 / 被精簡的舊內容（集中對稱審查）
+              </span>
+              <span style={{ fontSize: '10.5px', color: '#ef4444', fontWeight: 600 }}>-{pendingDiff.removedLinesCount} 行</span>
+            </div>
+
+            <div style={{ maxHeight: isPendingDiffExpanded ? 'none' : '120px', overflowY: 'auto' }}>
+              {removedLines.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {removedLines.map((line, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        fontSize: '11.5px',
+                        fontFamily: 'var(--font-mono)',
+                        color: '#f87171',
+                        textDecoration: 'line-through',
+                        backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        overflowWrap: 'anywhere',
+                      }}
+                    >
+                      - {line}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+                  （目前筆記無對應刪除行，本次修整為純新增）
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1051,7 +1322,7 @@ export const Editor: React.FC<EditorProps> = ({
     }
 
     try {
-      return marked.parse(preprocessMath(processed)) as string;
+      return renderMarkdownSync(processed);
     } catch (e) {
       return `<p>${block.raw}</p>`;
     }
@@ -1163,6 +1434,7 @@ export const Editor: React.FC<EditorProps> = ({
               {blocks.map((block, index) => (
                 <React.Fragment key={block.id}>
                   {pendingInsertContent && insertBlockIndex === index && renderPendingInsertCapsule()}
+                  {pendingDiff && insertDiffIndex === index && renderPendingDiffCapsule()}
                   <div
                     style={{ position: 'relative', minHeight: '26px' }}
                   >
@@ -1608,6 +1880,7 @@ export const Editor: React.FC<EditorProps> = ({
               </React.Fragment>
             ))}
             {pendingInsertContent && insertBlockIndex >= blocks.length && renderPendingInsertCapsule()}
+            {pendingDiff && insertDiffIndex >= blocks.length && renderPendingDiffCapsule()}
           </div>
             
             {/* Slash Popover Suggestion in WYSIWYG mode */}

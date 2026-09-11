@@ -7,7 +7,6 @@ import {
   FileNode
 } from './fileSystem';
 import { getFlatFileState } from './versionControl';
-import { marked } from 'marked';
 
 import { preprocessCallouts as preprocessSharedCallouts } from './callouts';
 import { renderMarkdown } from './markdownRenderer';
@@ -38,16 +37,6 @@ export async function publishSite(
   // 1. Gather all published files and compile markdown to HTML
   const publishedNotes: Record<string, { title: string; html: string }> = {};
   
-  // Configure marked for custom rendering (e.g. callouts, tasks)
-  const renderer = new marked.Renderer();
-  
-  // Customize marked rendering if needed
-  marked.setOptions({
-    renderer,
-    gfm: true,
-    breaks: true,
-  });
-
   for (const path of config.selectedPaths) {
     const markdown = flatState.get(path);
     if (markdown !== undefined) {
