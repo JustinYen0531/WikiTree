@@ -95,6 +95,47 @@ const PORT = 18080;
 
 let defaultWorkspace = process.cwd();
 
+// Only these reviewed public sources may be fetched by the Orbit Skill Library.
+// Keeping an allowlist prevents the import endpoint from becoming an arbitrary
+// URL fetcher while still letting each skill remain an independent SKILL.md.
+const IMPORTABLE_SKILL_SOURCES = Object.freeze({
+  'public-eli5': 'https://raw.githubusercontent.com/mblode/agent-skills/main/skills/eli5/SKILL.md',
+  'public-feynman-technique': 'https://raw.githubusercontent.com/guicortei/feynman-technique/main/skills/feynman-technique/SKILL.md',
+  'public-study-system': 'https://raw.githubusercontent.com/SkillMedev/personal-operating-system/main/skills/study-system/SKILL.md',
+  'public-guided-learning': 'https://raw.githubusercontent.com/WSE-research/guided-learning-skill/main/SKILL.md',
+  'public-mastery-loop': 'https://raw.githubusercontent.com/all666666all/mastery-loop/main/SKILL.md',
+  'public-retaincraft': 'https://raw.githubusercontent.com/kaixiad/RetainCraft/main/SKILL.md',
+  'public-learn-anything-24h': 'https://raw.githubusercontent.com/adityak74/learn-anything-24h/main/skills/codex/learn-anything-24h/SKILL.md',
+  'public-learning-mode': 'https://raw.githubusercontent.com/Osipchuk/agent-skills/main/skills/learning-mode/SKILL.md',
+  'public-zk-fleeting-note': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/fleeting-note/SKILL.md',
+  'public-zk-literature-note': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/literature-note/SKILL.md',
+  'public-zk-index-note': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/index-note/SKILL.md',
+  'public-zk-connection-discovery': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/connection-discovery/SKILL.md',
+  'public-zk-note-split': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/note-split/SKILL.md',
+  'public-zk-network-maintenance': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/network-maintenance/SKILL.md',
+});
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+      if (body.length > 100_000) {
+        reject(new Error('請求內容過大。'));
+        req.destroy();
+      }
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        reject(new Error('請求格式無效。'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 function parseSkillMd(folderName, rawContent) {
   let name = folderName;
   let description = '';
@@ -288,6 +329,47 @@ const server = http.createServer((req, res) => {
     const skills = loadAllSkills(currentWorkspace);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ skills }));
+    return;
+  }
+
+  // Route: POST /api/skills/import
+  // Fetch one reviewed public SKILL.md and store it under the active workspace.
+  if (req.url === '/api/skills/import' && req.method === 'POST') {
+    if (!req.headers['x-wikitree-workspace']) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: '請先連接本機知識森林，再匯入 Skill。' }));
+      return;
+    }
+
+    void readJsonBody(req).then(async payload => {
+      const sourceUrl = IMPORTABLE_SKILL_SOURCES[payload?.id];
+      if (!sourceUrl) throw new Error('這項 Skill 不在可匯入來源清單中。');
+
+      const response = await fetch(sourceUrl, { headers: { Accept: 'text/plain' } });
+      if (!response.ok) throw new Error(`來源下載失敗（${response.status}）。`);
+      const rawContent = await response.text();
+      if (!rawContent.trim() || !/^---\s*\n[\s\S]*?\n---/m.test(rawContent)) {
+        throw new Error('來源不是有效的 SKILL.md。');
+      }
+
+      const frontmatterName = rawContent.match(/^name:\s*([^\r\n]+)/m)?.[1]?.trim();
+      const folderName = String(frontmatterName || payload.id || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 64);
+      if (!folderName) throw new Error('無法判斷 Skill 名稱。');
+
+      const skillDir = path.join(currentWorkspace, '.wikitree', 'skills', folderName);
+      fs.mkdirSync(skillDir, { recursive: true });
+      fs.writeFileSync(path.join(skillDir, 'SKILL.md'), rawContent, 'utf8');
+
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ success: true, id: folderName, sourceUrl }));
+    }).catch(error => {
+      res.writeHead(400, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Skill 匯入失敗。' }));
+    });
     return;
   }
 

@@ -17,7 +17,8 @@ import {
   Check,
   LogOut,
   ShieldCheck,
-  X
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import type { WorkspaceFolder } from '../utils/workspaceMemory';
@@ -41,8 +42,8 @@ interface SidebarProps {
   onCreateFolder: (parentPath: string) => void;
   onRename: (node: FileNode, newName: string) => void;
   onDelete: (node: FileNode) => void;
-  activeTab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity';
-  setActiveTab: (tab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity') => void;
+  activeTab: 'explore' | 'skills' | 'files' | 'history' | 'publish' | 'antigravity';
+  setActiveTab: (tab: 'explore' | 'skills' | 'files' | 'history' | 'publish' | 'antigravity') => void;
   onQuickNewFile?: () => void;
   user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
@@ -79,7 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
-  const isWorkshopTab = activeTab === 'files' || activeTab === 'history' || activeTab === 'publish' || activeTab === 'antigravity';
+  const isOrbitTab = activeTab === 'explore' || activeTab === 'skills';
+  const isWorkshopTab = !isOrbitTab;
 
   const handleCopyToken = (token: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -273,11 +275,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Primary Navigation */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderBottom: '1px solid var(--border-color)', padding: '8px' }}>
         <button
-          className={`btn ${activeTab === 'courses' ? 'btn-primary' : ''}`}
-          style={{ padding: '8px 6px', fontSize: '12px', border: 'none', background: activeTab === 'courses' ? undefined : 'transparent' }}
-          onClick={() => setActiveTab('courses')}
+          className={`btn ${isOrbitTab ? 'btn-primary' : ''}`}
+          style={{ padding: '8px 6px', fontSize: '12px', border: 'none', background: isOrbitTab ? undefined : 'transparent' }}
+          onClick={() => setActiveTab('explore')}
         >
-          <BookOpen size={14} />
+          <Globe size={14} />
           ORBIT
         </button>
         <button
@@ -289,6 +291,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           FOREST
         </button>
       </div>
+
+      {isOrbitTab && (
+        <div className="orbit-subnav" aria-label="Orbit 導覽">
+          <button
+            type="button"
+            className={`orbit-subnav-button ${activeTab === 'explore' ? 'active' : ''}`}
+            onClick={() => setActiveTab('explore')}
+          >
+            <Globe size={14} />
+            <span><strong>探索</strong><small>知識生態與共享筆記</small></span>
+          </button>
+          <button
+            type="button"
+            className={`orbit-subnav-button ${activeTab === 'skills' ? 'active' : ''}`}
+            onClick={() => setActiveTab('skills')}
+          >
+            <Sparkles size={14} />
+            <span><strong>技能</strong><small>筆記 Skill 與公開來源</small></span>
+          </button>
+        </div>
+      )}
 
       {isWorkshopTab && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', borderBottom: '1px solid var(--border-color)', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)' }}>
@@ -322,9 +345,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Legacy Navigation Tabs kept hidden while the UI migrates to dry/wet separation. */}
       <div style={{ display: 'none' }}>
         <button 
-          className={`btn ${activeTab === 'courses' ? 'btn-primary' : ''}`}
-          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'courses' ? undefined : 'transparent' }}
-          onClick={() => setActiveTab('courses')}
+          className={`btn ${activeTab === 'explore' ? 'btn-primary' : ''}`}
+          style={{ flex: '1 1 72px', padding: '6px 4px', fontSize: '11px', border: 'none', background: activeTab === 'explore' ? undefined : 'transparent' }}
+          onClick={() => setActiveTab('explore')}
         >
           <BookOpen size={14} />
           課程

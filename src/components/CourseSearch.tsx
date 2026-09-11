@@ -279,7 +279,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   const [selectedNotePath, setSelectedNotePath] = useState('');
   const [idSearchMode, setIdSearchMode] = useState(false);
   const [idQuery, setIdQuery] = useState('');
-  const [exploreMode, setExploreMode] = useState(false);
+  // Orbit opens on the shared knowledge exploration view; course filters remain one click away.
+  const [exploreMode, setExploreMode] = useState(true);
   const [publishedNotes, setPublishedNotes] = useState<any[]>([]);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreError, setExploreError] = useState('');

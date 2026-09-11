@@ -44,6 +44,7 @@ import { PublishNoteModal } from './components/PublishNoteModal';
 import { LoginModal } from './components/LoginModal';
 import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
+import { SkillLibrary } from './components/SkillLibrary';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
 import { SplashScreen } from './components/SplashScreen';
@@ -380,7 +381,7 @@ function App() {
   };
 
   // App views and panels
-  const [sidebarTab, setSidebarTab] = useState<'courses' | 'files' | 'history' | 'publish' | 'antigravity'>('courses');
+  const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
@@ -896,8 +897,10 @@ function App() {
 
       {/* Main Panel View */}
       <div className="main-view-container">
-        {sidebarTab === 'courses' ? (
+        {sidebarTab === 'explore' ? (
           <CourseSearch key={rootHandle ? activeWorkspaceId : 'no-folder'} workspaceKey={rootHandle ? activeWorkspaceId || undefined : undefined} files={files} activeFile={activeFile} onOpenNote={file => void runFileOperation(() => openFile(file))} />
+        ) : sidebarTab === 'skills' ? (
+          <SkillLibrary workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined} />
         ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">

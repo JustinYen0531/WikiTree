@@ -37,6 +37,7 @@ import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
+import { DEFAULT_SKILLS, type WikiSkill } from '../utils/learningSkills';
 
 import { FileNode } from '../utils/fileSystem';
 
@@ -66,15 +67,6 @@ export interface AttachmentFile {
   dataUrl?: string;
   path?: string;
   isImage?: boolean;
-}
-
-export interface WikiSkill {
-  id: string;
-  name: string;
-  title: string;
-  badge?: string;
-  description: string;
-  content?: string;
 }
 
 interface ChatMessage {
@@ -643,45 +635,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       addSidebarFileAttachment(name, plainPath);
     }
   };
-
-  // 專業技能 (Skills) 狀態與配置
-  const DEFAULT_SKILLS: WikiSkill[] = [
-    {
-      id: 'humanized-learning-notes',
-      name: 'humanized-learning-notes',
-      title: '終身學習思維筆記',
-      badge: '終身學習',
-      description: '將教材轉化為建立直覺與決策力的終身思維工具書，嚴禁應試死背字眼。',
-    },
-    {
-      id: 'cornell-adaptive-learning',
-      name: 'cornell-adaptive-learning',
-      title: '康奈爾自適應筆記',
-      badge: 'Cornell',
-      description: '結合高密度知識矩陣、因果認知鏈、主動檢索問題（Cue）與掌握度標記。',
-    },
-    {
-      id: 'feynman-technique',
-      name: 'feynman-technique',
-      title: '費曼極簡白話轉譯',
-      badge: '費曼轉譯',
-      description: '以國小生能懂的生動比喻解構複雜事物，徹底粉碎術語障礙，檢驗直覺理解。',
-    },
-    {
-      id: 'first-principles',
-      name: 'first-principles',
-      title: '第一性原理拆解',
-      badge: '第一性',
-      description: '剝除表面所有既成前提與經驗盲區，回歸最本質的物理真理重新向下推演。',
-    },
-    {
-      id: 'branch-evolution',
-      name: 'branch-evolution',
-      title: '知識森林枝幹演化',
-      badge: '生態演化',
-      description: '探詢知識樹的上下層概念脈絡，推導潛在子節點與跨學科學術交叉授粉。',
-    },
-  ];
 
   const [availableSkills, setAvailableSkills] = useState<WikiSkill[]>(DEFAULT_SKILLS);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>(() => {
