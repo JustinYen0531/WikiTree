@@ -43,6 +43,7 @@ interface SidebarProps {
   onDelete: (node: FileNode) => void;
   activeTab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity';
   setActiveTab: (tab: 'courses' | 'files' | 'history' | 'publish' | 'antigravity') => void;
+  onQuickNewFile?: () => void;
   user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
   onTriggerLogin?: () => void;
@@ -68,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDelete,
   activeTab,
   setActiveTab,
+  onQuickNewFile,
   user,
   onLogout,
   onTriggerLogin,
@@ -351,11 +353,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button 
               className="btn btn-primary" 
               disabled={!rootHandle || workspaceBusy}
-              onClick={(e) => handleCreateFileClick('', e)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onQuickNewFile) onQuickNewFile();
+                else handleCreateFileClick('', e);
+              }}
               style={{ flex: 1, padding: '6px 4px', fontSize: '12px', gap: '4px' }}
+              title="立即建立並開啟空白新文件"
             >
               <Plus size={13} />
-              新增葉片
+              空白新筆記
             </button>
             <button 
               className="btn" 

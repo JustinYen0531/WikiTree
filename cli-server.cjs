@@ -117,12 +117,19 @@ const server = http.createServer((req, res) => {
     }
   }
   if (req.url === '/api/status' && req.method === 'GET') {
+    const defaultNotesDir = path.join(process.cwd(), 'notes');
+    try {
+      if (!fs.existsSync(defaultNotesDir)) {
+        fs.mkdirSync(defaultNotesDir, { recursive: true });
+      }
+    } catch {}
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'connected',
       version: '1.2.4',
       scopedWorkspaces: true,
       workspace: currentWorkspace,
+      defaultNotesPath: defaultNotesDir,
       platform: process.platform,
       nodeVersion: process.version
     }));

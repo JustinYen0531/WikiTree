@@ -288,8 +288,56 @@ function App() {
   useEffect(() => {
     if (!cliConnected || restoreAttempted.current || rootHandle) return;
     restoreAttempted.current = true;
-    const folder = initialMemory.folders.find(item => item.id === initialMemory.activeId);
-    if (folder) void activateFolder(folder);
+
+    const autoInit = async () => {
+      // 1. 若有既有工作區，優先恢復
+      const savedFolder = initialMemory.folders.find(item => item.id === initialMemory.activeId) || initialMemory.folders[0];
+      let activeTargetHandle: any = null;
+      if (savedFolder) {
+        const ok = await activateFolder(savedFolder, undefined, true);
+        if (ok) activeTargetHandle = savedFolder.handle;
+      }
+
+      // 2. 若無既有工作區，自動連接應用所在目錄下的預設 notes 資料夾
+      if (!activeTargetHandle) {
+        const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
+        try {
+          const res = await fetch(`${cliUrl}/api/status`);
+          if (res.ok) {
+            const data = await res.json();
+            const targetDir = data.defaultNotesPath || data.workspace;
+            if (targetDir) {
+              await connectCliFolder(targetDir, true);
+              activeTargetHandle = targetDir;
+            }
+          }
+        } catch (err) {
+          console.error('Auto init workspace failed:', err);
+        }
+      }
+
+      // 3. 自動切換至筆記視圖，若無開啟中檔案則自動開啟最新筆記或建立空白新文件
+      setSidebarTab('files');
+      if (activeTargetHandle) {
+        try {
+          const currentFileList = await getFilesRecursively(activeTargetHandle);
+          if (currentFileList.length === 0) {
+            setTimeout(() => {
+              void handleQuickNewFile();
+            }, 250);
+          } else {
+            const firstFile = findFirstFile(currentFileList);
+            if (firstFile) {
+              void openFile(firstFile, activeTargetHandle, true);
+            } else {
+              void handleQuickNewFile();
+            }
+          }
+        } catch {}
+      }
+    };
+
+    void autoInit();
   }, [cliConnected]);
 
   useEffect(() => {
@@ -444,16 +492,70 @@ function App() {
     }
   };
 
-  // Ensure workspace is loaded. If not, trigger folder select first.
+  // Ensure workspace is loaded. If not, automatically connect default notes workspace.
   const ensureWorkspace = async (): Promise<FileSystemDirectoryHandle | string | null> => {
     if (rootHandle) return rootHandle;
 
-    alert('請先選擇一個本地資料夾作為您的筆記工作區！\n(您可以在開啟的視窗中選取現有資料夾，或是新建一個資料夾)');
+    if (cliConnected) {
+      const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
+      try {
+        const res = await fetch(`${cliUrl}/api/status`);
+        if (res.ok) {
+          const data = await res.json();
+          const targetDir = data.defaultNotesPath || data.workspace;
+          if (targetDir) {
+            await connectCliFolder(targetDir, true);
+            return targetDir;
+          }
+        }
+      } catch {}
+    }
+
     try {
       const handle = await (window as any).showDirectoryPicker();
       return await loadWorkspace(handle);
     } catch (e) {
       return null;
+    }
+  };
+
+  // 無痛建立並開啟空白新文件（零彈窗、免手動輸入檔名，直接開寫）
+  const handleQuickNewFile = async () => {
+    const activeRoot = await ensureWorkspace();
+    if (!activeRoot) return;
+
+    try {
+      const currentFiles = await getFilesRecursively(activeRoot);
+      const fileNames = new Set(currentFiles.map(f => f.name.toLowerCase()));
+      
+      let baseName = '未命名筆記';
+      let targetName = `${baseName}.md`;
+      let counter = 2;
+      while (fileNames.has(targetName.toLowerCase())) {
+        targetName = `${baseName} (${counter}).md`;
+        counter++;
+      }
+
+      const parentDir = await getDirectoryHandleByPath(activeRoot, '', { create: true });
+      const newFileHandle = await createFile(parentDir, targetName);
+      await writeFileContent(newFileHandle, '# ' + targetName.replace('.md', '') + '\n\n');
+
+      const updatedFiles = await getFilesRecursively(activeRoot);
+      setFiles(updatedFiles);
+
+      const newNode: FileNode = {
+        name: targetName,
+        path: targetName,
+        kind: 'file',
+        handle: newFileHandle
+      };
+
+      await openFile(newNode, activeRoot, true);
+      setSidebarTab('files');
+      showToast(`✨ 已建立新文件：${targetName}`);
+    } catch (e) {
+      console.error('Create quick note failed', e);
+      showToast('建立新文件失敗', 'error');
     }
   };
 
@@ -747,6 +849,7 @@ function App() {
         onDelete={node => void runFileOperation(() => handleDelete(node))}
         activeTab={sidebarTab}
         setActiveTab={setSidebarTab}
+        onQuickNewFile={() => void runFileOperation(handleQuickNewFile)}
         user={user}
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
@@ -892,6 +995,11 @@ function App() {
               </div>
 
               <div className="navbar-right">
+                <button className="btn" onClick={() => void runFileOperation(handleQuickNewFile)} title="立即建立並開啟空白新文件">
+                  <Plus size={14} />
+                  空白新文件
+                </button>
+
                 {activeFile && (
                   <button className="btn" onClick={() => void runFileOperation(handleSaveFile)} disabled={isSaved}>
                     <Save size={14} />
@@ -936,8 +1044,8 @@ function App() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
                 <p>尚未選擇任何知識葉片。</p>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn" onClick={() => void runFileOperation(() => handleCreateFile(''))}>
-                    <Plus size={14} /> 生成葉片
+                  <button className="btn btn-primary" onClick={() => void runFileOperation(handleQuickNewFile)}>
+                    <Plus size={14} /> 空白新文件
                   </button>
                   <button className="btn" onClick={() => void runFileOperation(() => handleCreateFolder(''))}>
                     <FolderPlus size={14} /> 生成分枝
