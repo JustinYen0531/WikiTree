@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check,
   ExternalLink,
@@ -31,17 +31,25 @@ const isSameSkill = (stored: WikiSkill, candidate: WikiSkill) => {
   return stored.id === candidate.id || stored.name === candidate.name || stored.id === candidate.name;
 };
 
+const getSkillOverview = (skill: WikiSkill) => {
+  if (skill.overview && skill.overview.length >= 2) return skill.overview;
+  return [
+    `${skill.description} 它主要處理的是「${skill.category || '筆記整理'}」，讓 Agent 在生成內容時有一致的方向，知道應該先說明什麼、補充什麼，以及哪些地方需要留下理解線索。`,
+    '它適合希望筆記更容易閱讀、回想，也能繼續連到下一個概念的人。啟用時只會套用這一項獨立規則；你可以隨時切換其他 Skill，不會被迫把不同方法全部混成同一種筆記。',
+  ];
+};
+
 export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => {
   const [storedSkills, setStoredSkills] = useState<WikiSkill[]>(DEFAULT_SKILLS);
   const [selectedId, setSelectedId] = useState(PUBLIC_SKILL_CATALOG[0]?.id || DEFAULT_SKILLS[0].id);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('全部');
-  const [loading, setLoading] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
+  const [rawSkillState, setRawSkillState] = useState<{ id: string; text: string; visible: boolean }>({ id: '', text: '', visible: false });
+  const [rawLoading, setRawLoading] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
-  const loadSkills = async () => {
-    setLoading(true);
+  const loadSkills = useCallback(async () => {
     try {
       const response = await fetch('/api/skills', { headers: cliWorkspaceHeaders(workspacePath) });
       if (!response.ok) throw new Error('技能清單暫時無法讀取');
@@ -51,14 +59,13 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
       }
     } catch {
       // The built-in list remains visible when the local CLI is offline.
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [workspacePath]);
 
   useEffect(() => {
-    void loadSkills();
-  }, [workspacePath]);
+    const timer = window.setTimeout(() => { void loadSkills(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadSkills]);
 
   useEffect(() => {
     if (!notice) return;
@@ -101,6 +108,9 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
     return storedSkill || catalogSkill || storedSkills[0] || PUBLIC_SKILL_CATALOG[0];
   }, [selectedId, storedSkills]);
 
+  const showRawSkill = rawSkillState.id === selectedId && rawSkillState.visible;
+  const rawSkillText = rawSkillState.id === selectedId ? rawSkillState.text : '';
+
   const isStored = (skill: WikiSkill) => storedSkills.some((stored) => isSameSkill(stored, skill));
 
   const handleImport = async (skill: WikiSkill) => {
@@ -128,7 +138,43 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
     }
   };
 
-  const renderStoredBadge = (skill: WikiSkill) => (
+  const toggleRawSkill = async () => {
+    const showRawSkill = rawSkillState.id === selectedId && rawSkillState.visible;
+    const rawSkillText = rawSkillState.id === selectedId ? rawSkillState.text : '';
+    if (showRawSkill) {
+      setRawSkillState((current) => ({ ...current, visible: false }));
+      return;
+    }
+
+    if (rawSkillText) {
+      setRawSkillState((current) => ({ ...current, visible: true }));
+      return;
+    }
+
+    if (!selectedSkill) return;
+    const localRaw = selectedSkill.rawContent || selectedSkill.content;
+    if (localRaw) {
+      setRawSkillState({ id: selectedId, text: localRaw, visible: true });
+      return;
+    }
+    if (!selectedSkill.rawUrl) {
+      setNotice({ kind: 'error', text: '這項 Skill 目前沒有可讀取的原始文字。' });
+      return;
+    }
+
+    setRawLoading(true);
+    try {
+      const response = await fetch(selectedSkill.rawUrl);
+      if (!response.ok) throw new Error('原始 Skill 文字讀取失敗');
+      setRawSkillState({ id: selectedId, text: await response.text(), visible: true });
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : '原始 Skill 文字讀取失敗' });
+    } finally {
+      setRawLoading(false);
+    }
+  };
+
+  const renderStoredBadge = () => (
     <span className="skill-library-status skill-library-status-stored">
       <Check size={12} /> 已儲存
     </span>
@@ -178,7 +224,7 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
         <div className="skill-library-list-pane">
           <div className="skill-library-section-heading">
             <span><Sparkles size={15} /> 目前已儲存</span>
-            <small>{loading ? '同步中…' : `${visibleStored.length} 項`}</small>
+            <small>{`${visibleStored.length} 項`}</small>
           </div>
           <div className="skill-library-card-list">
             {visibleStored.length === 0 ? (
@@ -196,7 +242,7 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
                   <small>{skill.description}</small>
                   <span className="skill-library-card-meta">
                     {skill.badge && <em>{skill.badge}</em>}
-                    {renderStoredBadge(skill)}
+                    {renderStoredBadge()}
                   </span>
                 </span>
               </button>
@@ -223,7 +269,7 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
                     <small>{skill.description}</small>
                     <span className="skill-library-card-meta">
                       {skill.badge && <em>{skill.badge}</em>}
-                      {stored ? renderStoredBadge(skill) : <span className="skill-library-status">可獨立引入</span>}
+                      {stored ? renderStoredBadge() : <span className="skill-library-status">可獨立引入</span>}
                     </span>
                   </span>
                 </button>
@@ -252,10 +298,23 @@ export const SkillLibrary: React.FC<SkillLibraryProps> = ({ workspacePath }) => 
                 <div><span>使用方式</span><strong>在 AI 技能選擇器中獨立啟用</strong></div>
               </div>
 
-              {selectedSkill.content && (
+              <div className="skill-library-raw-toggle-row">
+                <span className="skill-library-detail-label">Skill 內容</span>
+                <button type="button" className="skill-library-raw-toggle" onClick={() => void toggleRawSkill()} disabled={rawLoading}>
+                  {rawLoading ? '讀取原始文字…' : showRawSkill ? '回到簡介' : '查看原始 SKILL.md'}
+                </button>
+              </div>
+
+              {showRawSkill ? (
                 <div className="skill-library-content-preview">
-                  <div className="skill-library-detail-label">目前載入內容</div>
-                  <pre>{selectedSkill.content.slice(0, 1200)}{selectedSkill.content.length > 1200 ? '\n…' : ''}</pre>
+                  <pre>{rawSkillText}</pre>
+                </div>
+              ) : (
+                <div className="skill-library-simple-intro">
+                  <strong>這項 Skill 在做什麼</strong>
+                  {getSkillOverview(selectedSkill).slice(0, 2).map((paragraph, index) => (
+                    <p key={`${selectedSkill.id}-overview-${index}`}>{paragraph}</p>
+                  ))}
                 </div>
               )}
 

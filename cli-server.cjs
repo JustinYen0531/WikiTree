@@ -179,6 +179,7 @@ function parseSkillMd(folderName, rawContent) {
     badge,
     description: description || '專業 WikiTree 筆記技能規範',
     content: body,
+    rawContent,
   };
 }
 
@@ -363,6 +364,20 @@ const server = http.createServer((req, res) => {
       const skillDir = path.join(currentWorkspace, '.wikitree', 'skills', folderName);
       fs.mkdirSync(skillDir, { recursive: true });
       fs.writeFileSync(path.join(skillDir, 'SKILL.md'), rawContent, 'utf8');
+      fs.writeFileSync(
+        path.join(skillDir, 'SOURCE.md'),
+        [
+          '# WikiTree Skill 來源紀錄',
+          '',
+          `- 原始來源：${sourceUrl}`,
+          '- 授權：請依原始專案的 LICENSE 使用；目前目錄標示為 MIT。',
+          `- 匯入時間：${new Date().toISOString()}`,
+          '',
+          '這個檔案用來保留作者、來源與授權線索，請不要刪除。',
+          '',
+        ].join('\n'),
+        'utf8'
+      );
 
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
       res.end(JSON.stringify({ success: true, id: folderName, sourceUrl }));

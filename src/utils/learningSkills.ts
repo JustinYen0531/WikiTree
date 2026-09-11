@@ -4,7 +4,9 @@ export interface WikiSkill {
   title: string;
   badge?: string;
   description: string;
+  overview?: string[];
   content?: string;
+  rawContent?: string;
   sourceUrl?: string;
   rawUrl?: string;
   license?: string;
