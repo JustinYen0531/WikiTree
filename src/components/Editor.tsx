@@ -18,7 +18,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 import { preprocessCallouts, renderCalloutBlock } from '../utils/callouts';
-import { renderMarkdown } from '../utils/markdownRenderer';
+import { renderMarkdown, preprocessMath, renderInlineMarkdown } from '../utils/markdownRenderer';
 
 interface EditorProps {
   content: string;
@@ -33,7 +33,7 @@ interface EditorProps {
 
 interface Block {
   id: string;
-  type: 'header1' | 'header2' | 'header3' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'math' | 'paragraph';
+  type: 'header1' | 'header2' | 'header3' | 'header4' | 'header5' | 'header6' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'math' | 'paragraph';
   raw: string;
 }
 
@@ -84,6 +84,7 @@ export const Editor: React.FC<EditorProps> = ({
     if (body[body.length - 1]?.trim() === '```') body.pop();
     return body.join('\n');
   };
+  const hasInlineMath = (text: string) => /(?<!\\)\$(?!\$)[^\n$]+?(?<!\\)\$/.test(text) || /\\\[|\\\(/.test(text);
   const shouldRenderBlockPreview = (block: Block) =>
     (block.type === 'code' && getCodeFenceLanguage(block.raw) === 'mermaid') ||
     block.type === 'math';
@@ -153,6 +154,21 @@ export const Editor: React.FC<EditorProps> = ({
       }
       if (line.startsWith('### ')) {
         parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header3', raw: line });
+        i++;
+        continue;
+      }
+      if (line.startsWith('#### ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header4', raw: line });
+        i++;
+        continue;
+      }
+      if (line.startsWith('##### ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header5', raw: line });
+        i++;
+        continue;
+      }
+      if (line.startsWith('###### ')) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'header6', raw: line });
         i++;
         continue;
       }
@@ -228,6 +244,9 @@ export const Editor: React.FC<EditorProps> = ({
       header1: '# ',
       header2: '## ',
       header3: '### ',
+      header4: '#### ',
+      header5: '##### ',
+      header6: '###### ',
       list: '- ',
     };
     const prefix = prefixMap[block.type];
@@ -802,6 +821,9 @@ export const Editor: React.FC<EditorProps> = ({
     if (val.startsWith('# ')) newBlocks[index].type = 'header1';
     else if (val.startsWith('## ')) newBlocks[index].type = 'header2';
     else if (val.startsWith('### ')) newBlocks[index].type = 'header3';
+    else if (val.startsWith('#### ')) newBlocks[index].type = 'header4';
+    else if (val.startsWith('##### ')) newBlocks[index].type = 'header5';
+    else if (val.startsWith('###### ')) newBlocks[index].type = 'header6';
     else if (val.trim().startsWith('- [ ]') || val.trim().startsWith('- [x]')) newBlocks[index].type = 'todo';
     else if (/^\s*[-*+]\s+/.test(val)) newBlocks[index].type = 'list';
     else if (val.trim().startsWith('```')) newBlocks[index].type = 'code';
@@ -901,6 +923,9 @@ export const Editor: React.FC<EditorProps> = ({
       case 'header1': return block.raw.replace(/^#\s*/, '');
       case 'header2': return block.raw.replace(/^##\s*/, '');
       case 'header3': return block.raw.replace(/^###\s*/, '');
+      case 'header4': return block.raw.replace(/^####\s*/, '');
+      case 'header5': return block.raw.replace(/^#####\s*/, '');
+      case 'header6': return block.raw.replace(/^######\s*/, '');
       case 'list': return block.raw.replace(/^\s*[-*+]\s+/, '');
       default: return block.raw;
     }
@@ -908,9 +933,12 @@ export const Editor: React.FC<EditorProps> = ({
 
   const getBlockPlaceholder = (block: Block, index: number, totalBlocks: number): string => {
     switch (block.type) {
-      case 'header1': return '大標題...';
-      case 'header2': return '中標題...';
-      case 'header3': return '小標題...';
+      case 'header1': return '大標題 (H1)...';
+      case 'header2': return '中標題 (H2)...';
+      case 'header3': return '小標題 (H3)...';
+      case 'header4': return '四級標題 (H4)...';
+      case 'header5': return '五級標題 (H5)...';
+      case 'header6': return '六級標題 (H6)...';
       case 'todo': return '待辦事項...';
       case 'code': return '```language\ncode...\n```';
       case 'math': return '$$\nlatex...\n$$';
@@ -930,6 +958,9 @@ export const Editor: React.FC<EditorProps> = ({
       if (displayVal === '# ') { handleBlockChange(index, '# '); return; }
       if (displayVal === '## ') { handleBlockChange(index, '## '); return; }
       if (displayVal === '### ') { handleBlockChange(index, '### '); return; }
+      if (displayVal === '#### ') { handleBlockChange(index, '#### '); return; }
+      if (displayVal === '##### ') { handleBlockChange(index, '##### '); return; }
+      if (displayVal === '###### ') { handleBlockChange(index, '###### '); return; }
       if (displayVal === '- ') { handleBlockChange(index, '- '); return; }
       if (displayVal === '* ') { handleBlockChange(index, '- '); return; }
       if (displayVal === '+ ') { handleBlockChange(index, '- '); return; }
@@ -944,6 +975,9 @@ export const Editor: React.FC<EditorProps> = ({
       header1: '# ',
       header2: '## ',
       header3: '### ',
+      header4: '#### ',
+      header5: '##### ',
+      header6: '###### ',
     };
     const prefix = prefixMap[currentType];
     if (prefix) {
@@ -1017,7 +1051,7 @@ export const Editor: React.FC<EditorProps> = ({
     }
 
     try {
-      return marked.parse(processed) as string;
+      return marked.parse(preprocessMath(processed)) as string;
     } catch (e) {
       return `<p>${block.raw}</p>`;
     }
@@ -1028,6 +1062,9 @@ export const Editor: React.FC<EditorProps> = ({
       case 'header1': return '28px';
       case 'header2': return '22px';
       case 'header3': return '18px';
+      case 'header4': return '16px';
+      case 'header5': return '14.5px';
+      case 'header6': return '13.5px';
       default: return '15px';
     }
   };
@@ -1209,6 +1246,221 @@ export const Editor: React.FC<EditorProps> = ({
                         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderBlockToHtml(block)) }} />
                       )}
                     </div>
+                  ) : block.type === 'code' ? (
+                    <div
+                      onClick={() => {
+                        setFocusedBlockIndex(index);
+                        setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                      }}
+                      style={{ cursor: 'text', margin: '8px 0' }}
+                    >
+                      {focusedBlockIndex === index ? (
+                        <div
+                          style={{
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.22)',
+                            backgroundColor: 'var(--bg-sidebar)',
+                            padding: '12px 14px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)' }}>
+                            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                              💻 {getCodeFenceLanguage(block.raw) || 'code'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>編輯程式碼區塊</span>
+                          </div>
+                          <textarea
+                            className="block-textarea"
+                            ref={(el) => { blockRefs.current[index] = el; }}
+                            value={block.raw}
+                            onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                            onPaste={(e) => handleBlockPaste(index, e)}
+                            onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                            onFocus={() => setFocusedBlockIndex(index)}
+                            onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                            rows={Math.max(3, block.raw.split('\n').length)}
+                            style={{
+                              width: '100%',
+                              border: 'none',
+                              outline: 'none',
+                              resize: 'none',
+                              background: 'transparent',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '13px',
+                              color: 'var(--text-primary)',
+                              padding: 0,
+                              margin: 0,
+                              lineHeight: '1.6',
+                              overflow: 'hidden',
+                            }}
+                          />
+                          {getCodeFenceLanguage(block.raw) === 'mermaid' && blockPreviewHtml[block.id] && (
+                            <div
+                              className="rendered-markdown block-render-preview"
+                              style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--border-color)' }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blockPreviewHtml[block.id]) }}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ position: 'relative' }}>
+                          {getCodeFenceLanguage(block.raw) === 'mermaid' && blockPreviewHtml[block.id] ? (
+                            <div
+                              className="rendered-markdown block-render-preview"
+                              style={{
+                                padding: '16px',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                backgroundColor: 'var(--bg-secondary)',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                overflowX: 'auto',
+                              }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blockPreviewHtml[block.id]) }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-sidebar)',
+                                padding: '12px 16px',
+                                position: 'relative',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', opacity: 0.65 }}>
+                                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                                  {getCodeFenceLanguage(block.raw) || 'code'}
+                                </span>
+                              </div>
+                              <pre style={{ margin: 0, padding: 0, background: 'none', border: 'none', overflowX: 'auto' }}>
+                                <code style={{ fontFamily: 'var(--font-mono)', fontSize: '13.5px', color: 'var(--text-primary)', background: 'none', padding: 0, lineHeight: 1.5 }}>
+                                  {extractCodeFenceBody(block.raw)}
+                                </code>
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : block.type === 'table' ? (
+                    <div
+                      onClick={() => {
+                        setFocusedBlockIndex(index);
+                        setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                      }}
+                      style={{ cursor: 'text', margin: '10px 0' }}
+                    >
+                      {focusedBlockIndex === index ? (
+                        <div
+                          style={{
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.22)',
+                            backgroundColor: 'var(--bg-sidebar)',
+                            padding: '10px 14px',
+                          }}
+                        >
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>📊 Markdown 表格編輯</div>
+                          <textarea
+                            className="block-textarea"
+                            ref={(el) => { blockRefs.current[index] = el; }}
+                            value={block.raw}
+                            onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                            onPaste={(e) => handleBlockPaste(index, e)}
+                            onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                            onFocus={() => setFocusedBlockIndex(index)}
+                            onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                            rows={Math.max(3, block.raw.split('\n').length)}
+                            style={{
+                              width: '100%',
+                              border: 'none',
+                              outline: 'none',
+                              resize: 'none',
+                              background: 'transparent',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '13.5px',
+                              color: 'var(--text-primary)',
+                              padding: 0,
+                              margin: 0,
+                              lineHeight: '1.6',
+                              overflow: 'hidden',
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div
+                          className="rendered-markdown"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderBlockToHtml(block)) }}
+                        />
+                      )}
+                    </div>
+                  ) : block.type === 'math' ? (
+                    <div
+                      onClick={() => {
+                        setFocusedBlockIndex(index);
+                        setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                      }}
+                      style={{ cursor: 'text', margin: '10px 0' }}
+                    >
+                      {focusedBlockIndex === index ? (
+                        <div
+                          style={{
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.22)',
+                            backgroundColor: 'var(--bg-sidebar)',
+                            padding: '10px 14px',
+                          }}
+                        >
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>∑ LaTeX 數學公式編輯</div>
+                          <textarea
+                            className="block-textarea"
+                            ref={(el) => { blockRefs.current[index] = el; }}
+                            value={block.raw}
+                            onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                            onPaste={(e) => handleBlockPaste(index, e)}
+                            onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                            onFocus={() => setFocusedBlockIndex(index)}
+                            onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                            rows={Math.max(2, block.raw.split('\n').length)}
+                            style={{
+                              width: '100%',
+                              border: 'none',
+                              outline: 'none',
+                              resize: 'none',
+                              background: 'transparent',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '14px',
+                              color: 'var(--text-primary)',
+                              padding: 0,
+                              margin: 0,
+                              lineHeight: '1.5',
+                              overflow: 'hidden',
+                            }}
+                          />
+                          {blockPreviewHtml[block.id] && (
+                            <div
+                              className="rendered-markdown block-render-preview"
+                              style={{ marginTop: '10px', textAlign: 'center' }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blockPreviewHtml[block.id]) }}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className="rendered-markdown"
+                          style={{
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid var(--border-color)',
+                            textAlign: 'center',
+                            overflowX: 'auto',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blockPreviewHtml[block.id] || renderBlockToHtml(block)) }}
+                        />
+                      )}
+                    </div>
                   ) : block.type === 'list' ? (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
                       <span style={{
@@ -1221,31 +1473,43 @@ export const Editor: React.FC<EditorProps> = ({
                       }}>
                         •
                       </span>
-                      <textarea
-                        className="block-textarea"
-                        ref={(el) => { blockRefs.current[index] = el; }}
-                        value={getBlockDisplayValue(block)}
-                        onChange={(e) => handleBlockInputChange(index, e.target.value)}
-                        onPaste={(e) => handleBlockPaste(index, e)}
-                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
-                        onFocus={() => setFocusedBlockIndex(index)}
-                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
-                        rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
-                        placeholder="清單項目..."
-                        style={{
-                          flex: 1,
-                          border: 'none',
-                          outline: 'none',
-                          resize: 'none',
-                          background: 'transparent',
-                          fontSize: '15px',
-                          fontFamily: 'inherit',
-                          color: 'var(--text-primary)',
-                          padding: '2px 0',
-                          lineHeight: '1.6',
-                          overflow: 'hidden',
-                        }}
-                      />
+                      {focusedBlockIndex === index || !hasInlineMath(getBlockDisplayValue(block)) ? (
+                        <textarea
+                          className="block-textarea"
+                          ref={(el) => { blockRefs.current[index] = el; }}
+                          value={getBlockDisplayValue(block)}
+                          onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onPaste={(e) => handleBlockPaste(index, e)}
+                          onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                          onFocus={() => setFocusedBlockIndex(index)}
+                          onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                          rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
+                          placeholder="清單項目..."
+                          style={{
+                            flex: 1,
+                            border: 'none',
+                            outline: 'none',
+                            resize: 'none',
+                            background: 'transparent',
+                            fontSize: '15px',
+                            fontFamily: 'inherit',
+                            color: 'var(--text-primary)',
+                            padding: '2px 0',
+                            lineHeight: '1.6',
+                            overflow: 'hidden',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          onClick={() => {
+                            setFocusedBlockIndex(index);
+                            setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                          }}
+                          className="rendered-markdown"
+                          style={{ flex: 1, padding: '2px 0', lineHeight: '1.6', fontSize: '15px', cursor: 'text' }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(getBlockDisplayValue(block))) }}
+                        />
+                      )}
                     </div>
                   ) : block.type === 'todo' ? (
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '2px 0' }}>
@@ -1288,45 +1552,54 @@ export const Editor: React.FC<EditorProps> = ({
                     </div>
                   ) : (
                     <>
-                      <textarea
-                        className="block-textarea"
-                        ref={(el) => { blockRefs.current[index] = el; }}
-                        value={getBlockDisplayValue(block)}
-                        onChange={(e) => handleBlockInputChange(index, e.target.value)}
-                        onPaste={(e) => handleBlockPaste(index, e)}
-                        onKeyDown={(e) => handleBlockKeyDown(index, e)}
-                        onFocus={() => setFocusedBlockIndex(index)}
-                        onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
-                        rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
-                        placeholder={getBlockPlaceholder(block, index, blocks.length)}
-                        style={{
-                          width: '100%',
-                          border: 'none',
-                          outline: 'none',
-                          resize: 'none',
-                          background: 'transparent',
-                          fontFamily: block.type === 'code' ? 'var(--font-mono)' : 'inherit',
-                          fontSize: getBlockFontSize(block.type),
-                          fontWeight: getBlockFontWeight(block.type),
-                          color: 'var(--text-primary)',
-                          padding: '4px 0',
-                          margin: 0,
-                          lineHeight: '1.7',
-                          letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
-                          overflow: 'hidden',
-                        }}
-                      />
-                      {blockPreviewHtml[block.id] && (
-                        <div
-                          className="rendered-markdown block-render-preview"
+                      {focusedBlockIndex === index || !hasInlineMath(getBlockDisplayValue(block)) ? (
+                        <textarea
+                          className="block-textarea"
+                          ref={(el) => { blockRefs.current[index] = el; }}
+                          value={getBlockDisplayValue(block)}
+                          onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onPaste={(e) => handleBlockPaste(index, e)}
+                          onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                          onFocus={() => setFocusedBlockIndex(index)}
+                          onBlur={() => setTimeout(() => setShowSlashMenu(false), 180)}
+                          rows={Math.max(1, getBlockDisplayValue(block).split('\n').length)}
+                          placeholder={getBlockPlaceholder(block, index, blocks.length)}
                           style={{
-                            marginTop: '10px',
-                            padding: '10px 12px',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '10px',
-                            backgroundColor: 'var(--bg-secondary)',
+                            width: '100%',
+                            border: 'none',
+                            outline: 'none',
+                            resize: 'none',
+                            background: 'transparent',
+                            fontFamily: 'inherit',
+                            fontSize: getBlockFontSize(block.type),
+                            fontWeight: getBlockFontWeight(block.type),
+                            color: 'var(--text-primary)',
+                            padding: '4px 0',
+                            margin: 0,
+                            lineHeight: '1.7',
+                            letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
+                            overflow: 'hidden',
                           }}
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(blockPreviewHtml[block.id]) }}
+                        />
+                      ) : (
+                        <div
+                          onClick={() => {
+                            setFocusedBlockIndex(index);
+                            setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                          }}
+                          className="rendered-markdown"
+                          style={{
+                            width: '100%',
+                            fontFamily: 'inherit',
+                            fontSize: getBlockFontSize(block.type),
+                            fontWeight: getBlockFontWeight(block.type),
+                            color: 'var(--text-primary)',
+                            padding: '4px 0',
+                            lineHeight: '1.7',
+                            letterSpacing: block.type.startsWith('header') ? '-0.02em' : 'normal',
+                            cursor: 'text',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderInlineMarkdown(getBlockDisplayValue(block))) }}
                         />
                       )}
                     </>
