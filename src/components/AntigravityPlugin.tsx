@@ -653,7 +653,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       </div>
                     )}
 
-                    {/* 泡泡 2：生成的正式筆記內容 ＋ 插入確認卡片 */}
+                    {/* 泡泡 2：生成的正式筆記內容（100% 完整呈現） */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                       <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', padding: '0 4px' }}>
                         <Sparkles size={12} style={{ color: '#22c55e' }} />
@@ -671,96 +671,23 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           flexDirection: 'column',
                         }}
                       >
-                        {/* 頂部引導列：是否放入目前的筆記中？ */}
-                        <div
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'rgba(34, 197, 94, 0.08)',
-                            borderBottom: '1px solid var(--border-color)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '8px',
-                          }}
-                        >
-                          <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>🌱 筆記已就緒，是否放入目前筆記？</span>
-                          </div>
-                          <button
-                            className="btn"
-                            onClick={() => togglePreview(msg.id)}
-                            style={{
-                              padding: '3px 8px',
-                              fontSize: '11px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              backgroundColor: isPreviewOpen ? 'var(--border-color)' : 'var(--bg-secondary)',
-                            }}
-                          >
-                            <Eye size={12} />
-                            <span>{isPreviewOpen ? '收起預覽' : '預覽 20%'}</span>
-                            {isPreviewOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                          </button>
+                        {/* 完整筆記正文展示 */}
+                        <div style={{ padding: '12px 14px' }}>
+                          <div
+                            className="markdown-body"
+                            style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+                            dangerouslySetInnerHTML={{ __html: marked.parse(note) as string }}
+                          />
                         </div>
 
-                        {/* 20% 內容智能縮略預覽盒 */}
-                        {isPreviewOpen ? (
-                          <div style={{ padding: '12px', backgroundColor: 'rgba(0,0,0,0.15)' }}>
-                            <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                              📄 筆記內容預覽（約 20% 摘錄）：
-                            </div>
-                            <div
-                              style={{
-                                maxHeight: '160px',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                borderRadius: '4px',
-                                padding: '8px 10px',
-                                backgroundColor: 'var(--bg-sidebar)',
-                                border: '1px solid var(--border-color)',
-                              }}
-                            >
-                              <div
-                                className="markdown-body"
-                                style={{ fontSize: '11.5px', backgroundColor: 'transparent' }}
-                                dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
-                              />
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height: '45px',
-                                  background: 'linear-gradient(to bottom, transparent, var(--bg-sidebar))',
-                                  pointerEvents: 'none',
-                                }}
-                              />
-                            </div>
-                            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '5px' }}>
-                              餘下內容將於插入時完整匯入，不包含上方推導過程。
-                            </div>
-                          </div>
-                        ) : (
-                          // 未點展開時顯示精簡筆記摘要
-                          <div style={{ padding: '10px 12px' }}>
-                            <div
-                              className="markdown-body"
-                              style={{ maxHeight: '90px', overflow: 'hidden', position: 'relative', fontSize: '11.5px', backgroundColor: 'transparent' }}
-                              dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
-                            />
-                          </div>
-                        )}
-
-                        {/* 底部確認操作列 */}
+                        {/* 操作控制列：套用（送至編輯器綠色插入區塊）與複製 */}
                         <div
                           style={{
                             padding: '8px 12px',
                             borderTop: '1px solid var(--border-color)',
                             backgroundColor: 'rgba(255,255,255,0.02)',
                             display: 'flex',
-                            gap: '6px',
+                            gap: '8px',
                             alignItems: 'center',
                           }}
                         >
@@ -770,41 +697,27 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               onClick={() => applyToNote(msg.id, note)}
                               style={{
                                 flex: 1,
-                                padding: '5px 10px',
-                                fontSize: '11.5px',
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                fontWeight: 600,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '5px',
+                                gap: '6px',
                               }}
+                              title="在編輯器中生成可拖動的綠色插入區塊"
                             >
-                              {appliedId === msg.id ? <Check size={13} color="#22c55e" /> : <Download size={13} />}
-                              <span>{appliedId === msg.id ? '已覆蓋寫入！' : '📥 覆蓋目前筆記'}</span>
-                            </button>
-                          )}
-                          {onAppendContent && (
-                            <button
-                              className="btn"
-                              onClick={() => appendToNote(msg.id, note)}
-                              style={{
-                                padding: '5px 10px',
-                                fontSize: '11.5px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              <Plus size={13} />
-                              <span>附加末尾</span>
+                              {appliedId === msg.id ? <Check size={14} color="#22c55e" /> : <Download size={14} />}
+                              <span>{appliedId === msg.id ? '已送至編輯器！' : '🌿 套用'}</span>
                             </button>
                           )}
                           <button
                             className="btn"
                             title="複製純淨筆記"
                             onClick={() => copyToClipboard(msg.id, note)}
-                            style={{ padding: '5px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            style={{ padding: '6px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
-                            {copiedId === msg.id ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
+                            {copiedId === msg.id ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
                             <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
                           </button>
                         </div>

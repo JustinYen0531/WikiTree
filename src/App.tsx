@@ -81,6 +81,7 @@ function App() {
   const [activeFile, setActiveFile] = useState<FileNode | null>(null);
   const [content, setContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
+  const [pendingInsertNote, setPendingInsertNote] = useState<string | null>(null);
   
   // CLI States
   const [cliConnected, setCliConnected] = useState(false);
@@ -1039,6 +1040,8 @@ function App() {
                 isSaved={isSaved}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
+                pendingInsertContent={pendingInsertNote}
+                onClearPendingInsert={() => setPendingInsertNote(null)}
               />
             ) : (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
@@ -1089,8 +1092,8 @@ function App() {
             currentNotePath={activeFile ? activeFile.path : ''}
             currentNoteContent={content}
             onApplyContent={(newContent) => {
-              setContent(newContent);
-              showToast('✨ 已將 AI 生成內容套用至編輯器，請記得儲存！', 'success');
+              setPendingInsertNote(newContent);
+              showToast('🌱 已在編輯器生成待插入綠色區塊，可移動選擇位置！', 'success');
             }}
             onAppendContent={(added) => {
               setContent((prev) => (prev ? `${prev}\n\n${added}` : added));

@@ -27,6 +27,8 @@ interface EditorProps {
   isSaved: boolean;
   viewMode: 'wysiwyg' | 'source' | 'split';
   setViewMode: (mode: 'wysiwyg' | 'source' | 'split') => void;
+  pendingInsertContent?: string | null;
+  onClearPendingInsert?: () => void;
 }
 
 interface Block {
@@ -42,6 +44,8 @@ export const Editor: React.FC<EditorProps> = ({
   isSaved,
   viewMode,
   setViewMode,
+  pendingInsertContent,
+  onClearPendingInsert,
 }) => {
   const [htmlContent, setHtmlContent] = useState('');
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -53,6 +57,10 @@ export const Editor: React.FC<EditorProps> = ({
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [blockPreviewHtml, setBlockPreviewHtml] = useState<Record<string, string>>({});
   const [focusedBlockIndex, setFocusedBlockIndex] = useState<number | null>(null);
+
+  // Pending AI Insert Block States (可上下移動、20% 縮略預覽的綠色膠囊)
+  const [insertBlockIndex, setInsertBlockIndex] = useState<number>(0);
+  const [isPendingExpanded, setIsPendingExpanded] = useState<boolean>(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
@@ -277,6 +285,184 @@ export const Editor: React.FC<EditorProps> = ({
   const updateContentFromBlocks = (newBlocks: Block[]) => {
     setBlocks(newBlocks);
     onChange(blocksToMarkdown(newBlocks));
+  };
+
+  // 當從側邊欄點擊「套用」送入新的筆記內容時，初始化插入位置與 20% 預覽
+  useEffect(() => {
+    if (pendingInsertContent) {
+      setInsertBlockIndex(focusedBlockIndex !== null ? focusedBlockIndex + 1 : blocks.length);
+      setIsPendingExpanded(false);
+    }
+  }, [pendingInsertContent]);
+
+  const handleConfirmInsert = () => {
+    if (!pendingInsertContent) return;
+    const newBlocks = parseMarkdownToBlocks(pendingInsertContent);
+    const targetIdx = Math.max(0, Math.min(insertBlockIndex, blocks.length));
+    const nextBlocks = [
+      ...blocks.slice(0, targetIdx),
+      ...newBlocks,
+      ...blocks.slice(targetIdx)
+    ];
+    updateContentFromBlocks(nextBlocks);
+    if (onClearPendingInsert) onClearPendingInsert();
+  };
+
+  // 渲染可上下移動、預設 20% 縮略預覽的綠色膠囊區塊
+  const renderPendingInsertCapsule = () => {
+    if (!pendingInsertContent) return null;
+
+    const previewCharLimit = Math.max(80, Math.floor(pendingInsertContent.length * 0.2));
+    const previewSnippet = pendingInsertContent.length > previewCharLimit
+      ? pendingInsertContent.slice(0, previewCharLimit) + '...'
+      : pendingInsertContent;
+
+    return (
+      <div
+        className="pending-insert-capsule animate-slide-in"
+        style={{
+          margin: '14px 0',
+          border: '2px solid #22c55e',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(34, 197, 94, 0.05)',
+          boxShadow: '0 0 16px rgba(34, 197, 94, 0.18)',
+          overflow: 'hidden',
+          transition: 'all 0.2s ease',
+        }}
+      >
+        {/* 頂部控制列 */}
+        <div
+          style={{
+            padding: '8px 12px',
+            backgroundColor: 'rgba(34, 197, 94, 0.14)',
+            borderBottom: '1px solid rgba(34, 197, 94, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '13px' }}>🌱</span>
+            <span style={{ fontWeight: 700, fontSize: '12px', color: '#22c55e' }}>
+              待插入知識芽片
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '4px' }}>
+              （目前停在第 {insertBlockIndex + 1} 段 / 共 {blocks.length + 1} 段）
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {/* 上移 / 下移 控制鍵 */}
+            <div style={{ display: 'flex', border: '1px solid rgba(34, 197, 94, 0.35)', borderRadius: '4px', overflow: 'hidden' }}>
+              <button
+                className="btn"
+                onClick={(e) => { e.stopPropagation(); setInsertBlockIndex(prev => Math.max(0, prev - 1)); }}
+                disabled={insertBlockIndex <= 0}
+                style={{ padding: '3px 8px', fontSize: '11px', border: 'none', borderRadius: 0, backgroundColor: 'var(--bg-secondary)' }}
+                title="向上移動一段"
+              >
+                ⬆ 上移
+              </button>
+              <button
+                className="btn"
+                onClick={(e) => { e.stopPropagation(); setInsertBlockIndex(prev => Math.min(blocks.length, prev + 1)); }}
+                disabled={insertBlockIndex >= blocks.length}
+                style={{ padding: '3px 8px', fontSize: '11px', border: 'none', borderRadius: 0, borderLeft: '1px solid rgba(34, 197, 94, 0.35)', backgroundColor: 'var(--bg-secondary)' }}
+                title="向下移動一段"
+              >
+                ⬇ 下移
+              </button>
+            </div>
+
+            {/* 展開全文 / 收合為 20% */}
+            <button
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); setIsPendingExpanded(v => !v); }}
+              style={{
+                padding: '3px 9px',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: isPendingExpanded ? 'rgba(34, 197, 94, 0.2)' : 'var(--bg-secondary)',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+              }}
+            >
+              <span>{isPendingExpanded ? '收合 (20%)' : '🔍 展開全文'}</span>
+            </button>
+
+            {/* 確認插入 */}
+            <button
+              className="btn btn-primary"
+              onClick={(e) => { e.stopPropagation(); handleConfirmInsert(); }}
+              style={{
+                padding: '4px 12px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                backgroundColor: '#22c55e',
+                color: '#000000',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>✔ 插入此處</span>
+            </button>
+
+            {/* 放棄 */}
+            <button
+              className="btn"
+              onClick={(e) => { e.stopPropagation(); if (onClearPendingInsert) onClearPendingInsert(); }}
+              style={{ padding: '4px 8px', fontSize: '11px' }}
+              title="放棄插入"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* 預覽內容區：預設 20% 漸層預覽，展開時顯示 100% 全文 */}
+        <div style={{ padding: '12px 16px', position: 'relative' }}>
+          {!isPendingExpanded ? (
+            <div style={{ position: 'relative', maxHeight: '130px', overflow: 'hidden' }}>
+              <div
+                className="markdown-body"
+                style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+                dangerouslySetInnerHTML={{ __html: marked.parse(previewSnippet) as string }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '55px',
+                  background: 'linear-gradient(to bottom, transparent, rgba(16, 26, 18, 0.95))',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center',
+                  paddingBottom: '4px',
+                }}
+              >
+                <span style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: 600 }}>
+                  （目前僅預覽前 20% 內容 • 點右上角「展開全文」可查看整份筆記）
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="markdown-body"
+              style={{ fontSize: '12px', backgroundColor: 'transparent', lineHeight: 1.6 }}
+              dangerouslySetInnerHTML={{ __html: marked.parse(pendingInsertContent) as string }}
+            />
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Auto-focus active block in WYSIWYG mode
@@ -938,10 +1124,11 @@ export const Editor: React.FC<EditorProps> = ({
           >
             <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {blocks.map((block, index) => (
-                <div
-                  key={block.id}
-                  style={{ position: 'relative', minHeight: '26px' }}
-                >
+                <React.Fragment key={block.id}>
+                  {pendingInsertContent && insertBlockIndex === index && renderPendingInsertCapsule()}
+                  <div
+                    style={{ position: 'relative', minHeight: '26px' }}
+                  >
                   {block.type === 'hr' ? (
                     <div
                       onClick={() => {
@@ -1145,8 +1332,10 @@ export const Editor: React.FC<EditorProps> = ({
                     </>
                   )}
                 </div>
-              ))}
-            </div>
+              </React.Fragment>
+            ))}
+            {pendingInsertContent && insertBlockIndex >= blocks.length && renderPendingInsertCapsule()}
+          </div>
             
             {/* Slash Popover Suggestion in WYSIWYG mode */}
             {showSlashMenu && filteredCommands.length > 0 && (
@@ -1187,7 +1376,12 @@ export const Editor: React.FC<EditorProps> = ({
           /* ORIGINAL TEXT AREA PANELS (SOURCE & SPLIT) */
           <div className="editor-panel" style={{ flex: 1, display: 'flex' }}>
             {(viewMode === 'source' || viewMode === 'split') && (
-              <div className="editor-pane" style={{ flex: 1 }}>
+              <div className="editor-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {pendingInsertContent && (
+                  <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
+                    {renderPendingInsertCapsule()}
+                  </div>
+                )}
                 <textarea
                   ref={textareaRef}
                   className="markdown-textarea"
