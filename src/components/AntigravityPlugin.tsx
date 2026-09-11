@@ -373,6 +373,118 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const noticeTimer = useRef<number | null>(null);
 
+  // 附件參考與拖放狀態
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentFile[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processUploadedFiles = async (files: File[]) => {
+    const newAttachments: AttachmentFile[] = [];
+
+    for (const file of files) {
+      const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(file.name);
+      let dataUrl: string | undefined = undefined;
+
+      if (isImage || file.size < 10 * 1024 * 1024) {
+        try {
+          dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        } catch (err) {
+          console.error('Failed to read file as dataUrl', err);
+        }
+      }
+
+      newAttachments.push({
+        id: 'att-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        dataUrl,
+        isImage,
+      });
+    }
+
+    if (newAttachments.length > 0) {
+      setPendingAttachments((prev) => [...prev, ...newAttachments]);
+      flash({ kind: 'success', text: `📎 已附加 ${newAttachments.length} 個參考檔案/圖片` });
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const fileList = Array.from(e.target.files);
+      void processUploadedFiles(fileList);
+      e.target.value = '';
+    }
+  };
+
+  const addSidebarFileAttachment = (name: string, filePath: string) => {
+    const isImage = /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(name);
+    const newAtt: AttachmentFile = {
+      id: 'att-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      name,
+      type: isImage ? `image/${name.split('.').pop()?.toLowerCase() || 'png'}` : 'text/plain',
+      path: filePath,
+      isImage,
+    };
+
+    setPendingAttachments((prev) => [...prev, newAtt]);
+    flash({ kind: 'success', text: `📎 已附加檔案「${name}」作為參考依據！` });
+  };
+
+  const removeAttachment = (id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDraggingOver) setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+
+    // 1. 本機檔案系統拖放 (OS Drag & Drop)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      await processUploadedFiles(files);
+      return;
+    }
+
+    // 2. 左側檔案樹拖放 (Sidebar Tree Node Drag & Drop)
+    const rawJson = e.dataTransfer.getData('application/json');
+    if (rawJson) {
+      try {
+        const data = JSON.parse(rawJson);
+        if (data && data.name) {
+          addSidebarFileAttachment(data.name, data.path);
+          return;
+        }
+      } catch {}
+    }
+
+    const plainPath = e.dataTransfer.getData('text/plain');
+    if (plainPath) {
+      const name = plainPath.split('/').pop() || plainPath;
+      addSidebarFileAttachment(name, plainPath);
+    }
+  };
+
   const switchMode = (nextMode: EnvironmentMode) => {
     setMode(nextMode);
     localStorage.setItem('wikitree_env_mode', nextMode);
@@ -430,8 +542,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   };
 
   const handleSendMessage = async (customPrompt?: string, skillLabel?: string) => {
-    const text = (customPrompt || inputMessage).trim();
+    const currentAttachments = [...pendingAttachments];
+    const text = (customPrompt || inputMessage).trim() || (currentAttachments.length > 0 ? '請參考附帶的圖片/檔案，為我提煉並製作詳細的知識筆記。' : '');
     if (!text) return;
+    setPendingAttachments([]);
 
     // 檢查是否有進行中的任務（不支援跨 session 同時進行任務）
     if (generatingSessionId) {
@@ -504,6 +618,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       role: 'user',
       content: text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
     };
 
     const botId = 'bot-' + crypto.randomUUID();
@@ -547,6 +662,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           model: aiSelection.model,
           message: text,
           stream: true,
+          attachments: currentAttachments,
           context: {
             path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
@@ -1532,12 +1648,55 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-end',
-                        gap: '3px',
+                        gap: '4px',
                       }}
                     >
                       <div style={{ fontSize: '10px', color: 'var(--text-secondary)', padding: '0 4px' }}>
                         YOU • {msg.timestamp}
                       </div>
+
+                      {/* 渲染附加的圖片或參考檔案 */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '90%' }}>
+                          {msg.attachments.map((att) => (
+                            <div
+                              key={att.id}
+                              style={{
+                                borderRadius: '6px',
+                                overflow: 'hidden',
+                                border: '1px solid var(--border-color)',
+                                backgroundColor: 'var(--bg-secondary)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: att.isImage && att.dataUrl ? '2px' : '4px 8px',
+                              }}
+                            >
+                              {att.isImage && att.dataUrl ? (
+                                <img
+                                  src={att.dataUrl}
+                                  alt={att.name}
+                                  style={{
+                                    maxWidth: '180px',
+                                    maxHeight: '140px',
+                                    borderRadius: '4px',
+                                    objectFit: 'contain',
+                                    display: 'block',
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-primary)' }}>
+                                  <FileText size={13} color="#22c55e" />
+                                  <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {att.name}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <div
                         style={{
                           maxWidth: '90%',
@@ -1958,26 +2117,159 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
           {/* 輸入欄 */}
           <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
             style={{
               padding: '10px 12px',
               borderTop: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-secondary)',
+              backgroundColor: isDraggingOver ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+              border: isDraggingOver ? '1px dashed #2563eb' : undefined,
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
               flexShrink: 0,
+              position: 'relative',
+              transition: 'all 0.15s ease',
             }}
           >
+            {/* 拖放覆蓋提示 */}
+            {isDraggingOver && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                  backdropFilter: 'blur(2px)',
+                  border: '2px dashed #2563eb',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  color: '#2563eb',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  zIndex: 10,
+                  pointerEvents: 'none',
+                }}
+              >
+                <ImageIcon size={18} />
+                <span>放開滑鼠以附加參考圖片或檔案</span>
+              </div>
+            )}
+
+            {/* 待發送的附件縮圖/列表 */}
+            {pendingAttachments.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  overflowX: 'auto',
+                  paddingBottom: '4px',
+                  maxWidth: '100%',
+                }}
+              >
+                {pendingAttachments.map((att) => (
+                  <div
+                    key={att.id}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: att.isImage && att.dataUrl ? '2px 6px 2px 2px' : '4px 8px',
+                      backgroundColor: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      flexShrink: 0,
+                      maxWidth: '180px',
+                    }}
+                  >
+                    {att.isImage && att.dataUrl ? (
+                      <img
+                        src={att.dataUrl}
+                        alt={att.name}
+                        style={{ width: '26px', height: '26px', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                    ) : (
+                      <Paperclip size={13} color="#2563eb" />
+                    )}
+                    <span
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        color: 'var(--text-primary)',
+                        flex: 1,
+                      }}
+                      title={att.name}
+                    >
+                      {att.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(att.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: 'var(--text-secondary)',
+                      }}
+                      title="移除此附件"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 隱藏的檔案選取器 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.txt,.md,.json,.csv,.doc,.docx"
+              style={{ display: 'none' }}
+              onChange={handleFileInputChange}
+            />
+
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {/* 「+」按鈕：選取本機檔案或圖片 */}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
+                title="附加參考圖片或檔案 (+)"
+                style={{
+                  padding: '7px 9px',
+                  height: '34px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <Plus size={15} />
+              </button>
+
               <input
                 type="text"
                 className="form-input"
                 placeholder={
                   generatingSessionId && generatingSessionId !== activeSessionId
                     ? '另一個對話任務正在執行中（不支援同時任務）…'
+                    : pendingAttachments.length > 0
+                    ? `已附加 ${pendingAttachments.length} 個檔案，輸入指令或直接按送出...`
                     : currentNotePath
-                    ? `對「${getNoteName(currentNotePath)}」提問...`
-                    : '輸入任務或提問...'
+                    ? `對「${getNoteName(currentNotePath)}」提問或拖放圖片...`
+                    : '輸入任務或拖放圖片/檔案...'
                 }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -1994,7 +2286,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 className="btn btn-primary"
                 onClick={() => handleSendMessage()}
                 disabled={
-                  !inputMessage.trim() ||
+                  (!inputMessage.trim() && pendingAttachments.length === 0) ||
                   loading ||
                   !aiReady ||
                   (!!generatingSessionId && generatingSessionId !== activeSessionId)
@@ -2014,7 +2306,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
-              <span>按 Enter 送出 • 自動分離思維與筆記</span>
+              <span>按 Enter 送出 • 支援拖放/「+」圖片與參考檔案</span>
               <span>支援 20% 預覽確認</span>
             </div>
           </div>
