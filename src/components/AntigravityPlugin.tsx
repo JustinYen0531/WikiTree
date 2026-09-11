@@ -1965,14 +1965,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               width: '28px',
                               height: '28px',
                               borderRadius: '4px',
-                              backgroundColor: 'rgba(255,255,255,0.06)',
+                              backgroundColor: 'rgba(255,255,255,0.08)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               flexShrink: 0,
                             }}
                           >
-                            <Icon size={15} />
+                            <Icon size={16} color="#ffffff" strokeWidth={2} style={{ stroke: '#ffffff' }} />
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div style={{ fontWeight: 600, fontSize: '12px' }}>{skill.label}</div>
@@ -2677,168 +2677,47 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
 
               {/* 閃電按鈕：選擇技能 (Skill) */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setShowSkillsPopover((v) => !v)}
-                  disabled={loading || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
-                  title={`選擇專業技能 (${selectedSkillIds.length} 個已啟用)`}
-                  style={{
-                    padding: '7px 9px',
-                    height: '34px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: selectedSkillIds.length > 0 ? '#f59e0b' : 'var(--text-secondary)',
-                    backgroundColor: selectedSkillIds.length > 0 ? 'rgba(245, 158, 11, 0.12)' : undefined,
-                    borderColor: selectedSkillIds.length > 0 ? '#f59e0b' : undefined,
-                    position: 'relative',
-                  }}
-                >
-                  <Zap size={15} fill={selectedSkillIds.length > 0 ? '#f59e0b' : 'none'} />
-                  {selectedSkillIds.length > 0 && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: '-4px',
-                        right: '-4px',
-                        backgroundColor: '#f59e0b',
-                        color: '#000000',
-                        fontSize: '9px',
-                        fontWeight: 700,
-                        width: '14px',
-                        height: '14px',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {selectedSkillIds.length}
-                    </span>
-                  )}
-                </button>
-
-                {/* 技能選擇浮層 Popover */}
-                {showSkillsPopover && (
-                  <div
-                    ref={skillsPopoverRef}
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setShowSkillsPopover((v) => !v)}
+                disabled={loading || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
+                title={`選擇專業技能 (${selectedSkillIds.length} 個已啟用)`}
+                style={{
+                  padding: '7px 9px',
+                  height: '34px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: selectedSkillIds.length > 0 ? '#f59e0b' : 'var(--text-secondary)',
+                  backgroundColor: selectedSkillIds.length > 0 ? 'rgba(245, 158, 11, 0.12)' : undefined,
+                  borderColor: selectedSkillIds.length > 0 ? '#f59e0b' : undefined,
+                  position: 'relative',
+                }}
+              >
+                <Zap size={15} fill={selectedSkillIds.length > 0 ? '#f59e0b' : 'none'} />
+                {selectedSkillIds.length > 0 && (
+                  <span
                     style={{
                       position: 'absolute',
-                      bottom: '42px',
-                      left: '0',
-                      width: '320px',
-                      maxHeight: '390px',
-                      backgroundColor: 'var(--bg-primary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                      zIndex: 100,
+                      top: '-4px',
+                      right: '-4px',
+                      backgroundColor: '#f59e0b',
+                      color: '#000000',
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
                       display: 'flex',
-                      flexDirection: 'column',
-                      overflow: 'hidden',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        borderBottom: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        backgroundColor: 'var(--bg-secondary)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '12px' }}>
-                        <Zap size={14} color="#f59e0b" fill="#f59e0b" />
-                        <span>選擇 WikiTree 技能 (可多選)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowSkillsPopover(false)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: 'var(--text-secondary)' }}
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-
-                    <div style={{ padding: '8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px' }}>
-                      {availableSkills.map((skill) => {
-                        const isSelected = selectedSkillIds.includes(skill.id);
-                        return (
-                          <div
-                            key={skill.id}
-                            onClick={() => toggleSkill(skill.id)}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: '8px',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              border: `1px solid ${isSelected ? '#f59e0b' : 'var(--border-color)'}`,
-                              backgroundColor: isSelected ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-secondary)',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              style={{ marginTop: '2px', cursor: 'pointer', accentColor: '#f59e0b' }}
-                            />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontWeight: 600, fontSize: '12px', color: isSelected ? '#f59e0b' : 'var(--text-primary)' }}>
-                                  {skill.title}
-                                </span>
-                                {skill.badge && (
-                                  <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                                    {skill.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
-                                {skill.description}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      style={{
-                        padding: '8px 12px',
-                        borderTop: '1px solid var(--border-color)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        backgroundColor: 'var(--bg-secondary)',
-                        fontSize: '11px',
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => setSelectedSkillIds([])}
-                        style={{ padding: '4px 8px', fontSize: '11px' }}
-                      >
-                        清除全部
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => setShowSkillsPopover(false)}
-                        style={{ padding: '4px 12px', fontSize: '11px' }}
-                      >
-                        完成 ({selectedSkillIds.length})
-                      </button>
-                    </div>
-                  </div>
+                    {selectedSkillIds.length}
+                  </span>
                 )}
-              </div>
+              </button>
 
               <input
                 type="text"
@@ -3033,6 +2912,138 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         </div>
       )}
 
+      {/* 專業技能選擇置中彈窗 */}
+      {showSkillsPopover && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowSkillsPopover(false)}
+        >
+          <div
+            ref={skillsPopoverRef}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '360px',
+              maxHeight: '440px',
+              backgroundColor: 'var(--bg-primary, #1e1e1e)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+              zIndex: 1000,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                padding: '12px 14px',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: 'var(--bg-secondary)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '13px' }}>
+                <Zap size={15} color="#f59e0b" fill="#f59e0b" />
+                <span>選擇 WikiTree 技能 (可多選)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSkillsPopover(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px', color: 'var(--text-secondary)' }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div style={{ padding: '10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '310px' }}>
+              {availableSkills.map((skill) => {
+                const isSelected = selectedSkillIds.includes(skill.id);
+                return (
+                  <div
+                    key={skill.id}
+                    onClick={() => toggleSkill(skill.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${isSelected ? '#f59e0b' : 'var(--border-color)'}`,
+                      backgroundColor: isSelected ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => {}}
+                      style={{ marginTop: '2px', cursor: 'pointer', accentColor: '#f59e0b' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '12.5px', color: isSelected ? '#f59e0b' : 'var(--text-primary)' }}>
+                          {skill.title}
+                        </span>
+                        {skill.badge && (
+                          <span style={{ fontSize: '9.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                            {skill.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        {skill.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                padding: '10px 14px',
+                borderTop: '1px solid var(--border-color)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: 'var(--bg-secondary)',
+                fontSize: '11px',
+              }}
+            >
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setSelectedSkillIds([])}
+                style={{ padding: '5px 10px', fontSize: '11.5px' }}
+              >
+                清除全部
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setShowSkillsPopover(false)}
+                style={{ padding: '5px 14px', fontSize: '11.5px' }}
+              >
+                完成 ({selectedSkillIds.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 建立新對話詢問彈窗 */}
       {showCreateModal && (
