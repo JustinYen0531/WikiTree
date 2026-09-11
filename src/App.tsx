@@ -1181,6 +1181,7 @@ function App() {
             workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined}
             currentNotePath={activeFile ? activeFile.path : ''}
             currentNoteContent={content}
+            availableFiles={files}
             onApplyContent={(newContent) => {
               setPendingInsertNote(newContent);
               showToast('🌱 已在編輯器生成待插入綠色區塊，可移動選擇位置！', 'success');

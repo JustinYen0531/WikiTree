@@ -37,10 +37,13 @@ import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
 
+import { FileNode } from '../utils/fileSystem';
+
 export interface AntigravityPluginProps {
   workspacePath?: string;
   currentNotePath: string;
   currentNoteContent: string;
+  availableFiles?: FileNode[];
   onApplyContent?: (content: string) => void;
   onAppendContent?: (content: string) => void;
   onApplyDiff?: (diffInfo: PendingDiffInfo) => void;
@@ -84,7 +87,7 @@ export interface ChatSession {
 }
 
 function getNoteName(path?: string): string {
-  if (!path) return '全域對話';
+  if (!path) return '未命名筆記';
   const parts = path.split('/');
   return parts[parts.length - 1] || path;
 }
@@ -130,6 +133,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   workspacePath,
   currentNotePath,
   currentNoteContent,
+  availableFiles,
   onApplyContent,
   onAppendContent,
   onApplyDiff,
@@ -192,45 +196,58 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((s: any) => ({
-            id: s.id || 'session-' + Date.now(),
-            title: s.title || '未命名對話',
-            notePath: s.notePath || '',
-            noteName: s.noteName || (s.notePath ? getNoteName(s.notePath) : '全域對話'),
-            messages: Array.isArray(s.messages)
-              ? s.messages.map((m: ChatMessage) => (m.delivery === 'streaming' ? { ...m, delivery: 'incomplete' } : m))
-              : [],
-            createdAt: s.createdAt || Date.now(),
-            updatedAt: s.updatedAt || Date.now(),
-          }));
+          return parsed.map((s: any) => {
+            const resolvedPath = s.notePath || '';
+            let resolvedName = s.noteName || (resolvedPath ? getNoteName(resolvedPath) : '');
+            if (resolvedName === '歷史備份' || resolvedName === '全域對話' || !resolvedName) {
+              resolvedName = currentNotePath ? getNoteName(currentNotePath) : '未命名筆記';
+            }
+            return {
+              id: s.id || 'session-' + Date.now(),
+              title: s.title || '未命名對話',
+              notePath: resolvedPath,
+              noteName: resolvedName,
+              messages: Array.isArray(s.messages)
+                ? s.messages.map((m: ChatMessage) => (m.delivery === 'streaming' ? { ...m, delivery: 'incomplete' } : m))
+                : [],
+              createdAt: s.createdAt || Date.now(),
+              updatedAt: s.updatedAt || Date.now(),
+            };
+          });
         }
       }
     } catch (e) {
       console.error('Failed to parse sessions', e);
     }
-
-    // 遷移舊的單一對話紀錄
-    try {
-      const oldChatRaw = localStorage.getItem('wikitree_arborist_chat');
-      if (oldChatRaw) {
-        const oldMsgs = JSON.parse(oldChatRaw);
-        if (Array.isArray(oldMsgs) && oldMsgs.length > 0) {
-          const migrated: ChatSession = {
-            id: 'session-legacy',
-            title: '歷史筆記對話',
-            notePath: '',
-            noteName: '歷史備份',
-            messages: oldMsgs,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
-          return [migrated];
-        }
-      }
-    } catch {}
-
     return [];
   };
+
+  // 提取工作區所有可用筆記清單
+  const allMarkdownNotes = React.useMemo(() => {
+    const list: Array<{ name: string; path: string }> = [];
+    const seen = new Set<string>();
+
+    const traverse = (nodes?: FileNode[]) => {
+      if (!nodes) return;
+      for (const node of nodes) {
+        if (node.kind === 'file') {
+          if (!seen.has(node.path)) {
+            seen.add(node.path);
+            list.push({ name: node.name, path: node.path });
+          }
+        } else if (node.children) {
+          traverse(node.children);
+        }
+      }
+    };
+    traverse(availableFiles);
+
+    if (currentNotePath && !seen.has(currentNotePath)) {
+      list.unshift({ name: getNoteName(currentNotePath), path: currentNotePath });
+    }
+
+    return list;
+  }, [availableFiles, currentNotePath]);
 
   const [sessions, setSessions] = useState<ChatSession[]>(loadInitialSessions);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
@@ -253,13 +270,37 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [listEditingSessionId, setListEditingSessionId] = useState<string | null>(null);
   const [listEditingTitle, setListEditingTitle] = useState('');
 
+  // 建立新對話詢問彈窗狀態
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedNoteForCreation, setSelectedNoteForCreation] = useState<{ name: string; path: string }>({
+    name: currentNotePath ? getNoteName(currentNotePath) : '',
+    path: currentNotePath || '',
+  });
+  const [createSessionTitle, setCreateSessionTitle] = useState('新對話');
+
+  // 更換對話隸屬筆記彈窗狀態
+  const [reassignModalSession, setReassignModalSession] = useState<ChatSession | null>(null);
+
+  // 當 currentNotePath 改變且 modal 未開啟時保持同步
+  useEffect(() => {
+    if (currentNotePath) {
+      setSelectedNoteForCreation({
+        name: getNoteName(currentNotePath),
+        path: currentNotePath,
+      });
+    }
+  }, [currentNotePath]);
+
   // 依照隸屬文件對對話進行分組索引
   const groupedSessions = React.useMemo(() => {
     const map = new Map<string, { noteName: string; notePath: string; sessions: ChatSession[]; latestUpdatedAt: number }>();
 
     sessions.forEach((s) => {
-      const key = s.notePath || s.noteName || '__global__';
-      const name = s.noteName || (s.notePath ? getNoteName(s.notePath) : '全域對話');
+      const key = s.notePath || s.noteName || '__default__';
+      let name = s.noteName;
+      if (!name || name === '歷史備份' || name === '全域對話') {
+        name = s.notePath ? getNoteName(s.notePath) : (currentNotePath ? getNoteName(currentNotePath) : '未命名筆記');
+      }
       const existing = map.get(key);
       if (existing) {
         existing.sessions.push(s);
@@ -283,7 +324,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }));
 
     return groups.sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
-  }, [sessions]);
+  }, [sessions, currentNotePath]);
 
   const startListTitleEdit = (session: ChatSession, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -321,12 +362,46 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     setSessionView('chat');
   };
 
-  const handleCreateNewSession = (targetPath?: string) => {
-    const nPath = targetPath !== undefined ? targetPath : currentNotePath;
-    const nName = getNoteName(nPath);
+  // 開啟建立新對話彈窗
+  const handleOpenCreateModal = (targetPath?: string, targetName?: string) => {
+    const activePath = targetPath !== undefined ? targetPath : (currentNotePath || (allMarkdownNotes[0]?.path || ''));
+    const activeName = targetName !== undefined ? targetName : (activePath ? getNoteName(activePath) : (allMarkdownNotes[0]?.name || '未命名筆記'));
+
+    setSelectedNoteForCreation({ name: activeName, path: activePath });
+    setCreateSessionTitle(activeName ? `${activeName.replace(/\.md$/i, '')} 對話` : '新對話');
+    setShowCreateModal(true);
+  };
+
+  // 確認建立新對話
+  const handleConfirmCreateSession = () => {
+    const nPath = selectedNoteForCreation.path;
+    const nName = selectedNoteForCreation.name || getNoteName(nPath);
+    const title = createSessionTitle.trim() || '新對話';
+
     const newSession: ChatSession = {
       id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      title: '新對話',
+      title,
+      notePath: nPath || '',
+      noteName: nName,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    setSessions((prev) => [newSession, ...prev]);
+    setActiveSessionId(newSession.id);
+    setSessionView('chat');
+    setShowCreateModal(false);
+    flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
+  };
+
+  // 快速建立對話（無需彈窗）
+  const handleCreateNewSessionDirect = (targetPath?: string, targetName?: string) => {
+    const nPath = targetPath !== undefined ? targetPath : currentNotePath;
+    const nName = targetName || getNoteName(nPath);
+    const newSession: ChatSession = {
+      id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      title: `${nName.replace(/\.md$/i, '')} 對話`,
       notePath: nPath || '',
       noteName: nName,
       messages: [],
@@ -337,6 +412,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     setActiveSessionId(newSession.id);
     setSessionView('chat');
     flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
+  };
+
+  // 更換對話隸屬筆記
+  const handleReassignSessionNote = (sessionId: string, newPath: string, newName: string) => {
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, notePath: newPath, noteName: newName, updatedAt: Date.now() } : s))
+    );
+    setReassignModalSession(null);
+    flash({ kind: 'info', text: `已將對話重新隸屬於筆記：「${newName}」` });
   };
 
   const handleDeleteSession = (sessionId: string, e?: React.MouseEvent) => {
@@ -932,7 +1016,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               onClick={() => {
                 if (sessionView === 'list') {
                   if (activeSessionId) setSessionView('chat');
-                  else handleCreateNewSession();
+                  else handleOpenCreateModal();
                 } else {
                   setSessionView('list');
                 }
@@ -1066,7 +1150,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
               <button
                 className="btn btn-primary"
-                onClick={() => handleCreateNewSession()}
+                onClick={() => handleOpenCreateModal()}
                 style={{
                   padding: '4px 10px',
                   fontSize: '11px',
@@ -1075,7 +1159,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   alignItems: 'center',
                   gap: '4px',
                 }}
-                title="開啟全新對話欄"
+                title="建立新對話（自動偵測當前筆記）"
               >
                 <Plus size={13} />
                 <span>新增對話</span>
@@ -1160,12 +1244,12 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       目前尚無對話記錄
                     </div>
                     <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      點擊下方按鈕，為當前葉片「{getNoteName(currentNotePath)}」開啟第一個專屬對話欄！
+                      點擊下方按鈕，為當前正在修改的筆記「{getNoteName(currentNotePath)}」開啟專屬對話欄！
                     </div>
                   </div>
                   <button
                     className="btn btn-primary"
-                    onClick={() => handleCreateNewSession()}
+                    onClick={() => handleOpenCreateModal()}
                     style={{
                       padding: '6px 14px',
                       fontSize: '12px',
@@ -1239,7 +1323,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       <button
                         className="theme-toggle-btn"
                         title={`在「${group.noteName}」下新增對話`}
-                        onClick={() => handleCreateNewSession(group.notePath)}
+                        onClick={() => handleCreateNewSessionDirect(group.notePath, group.noteName)}
                         style={{
                           padding: '2px 6px',
                           fontSize: '10.5px',
@@ -1283,7 +1367,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                             }}
                           >
-                            {/* 第一列：標題（可編輯） ＋ 操作（運算中 / 刪除） */}
+                            {/* 第一列：標題（可編輯） ＋ 操作（更換筆記 / 運算中 / 刪除） */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                               {isEditingThisTitle ? (
                                 <input
@@ -1358,7 +1442,20 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                 </div>
                               )}
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                                <button
+                                  className="theme-toggle-btn"
+                                  title="更換隸屬筆記"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReassignModalSession(session);
+                                  }}
+                                  style={{ padding: '3px', opacity: 0.6 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                                >
+                                  <FileText size={11.5} color="#22c55e" />
+                                </button>
                                 {isGenerating && (
                                   <span
                                     style={{
@@ -1504,7 +1601,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   </div>
                 )}
 
-                {/* 頂部隸屬文件索引 */}
+                {/* 頂部隸屬文件索引 ＋ 更換按鈕 */}
                 <div
                   style={{
                     display: 'inline-flex',
@@ -1512,19 +1609,58 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     gap: '4px',
                     fontSize: '10px',
                     color: 'var(--text-secondary)',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
                   }}
                 >
-                  <FileText size={10} color="#22c55e" />
+                  <FileText size={10} color="#22c55e" style={{ flexShrink: 0 }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    隸屬文件：<strong style={{ color: 'var(--text-primary)' }}>{activeSession?.noteName || '全域對話'}</strong>
+                    隸屬文件：<strong style={{ color: 'var(--text-primary)' }}>{activeSession?.noteName || '未指定筆記'}</strong>
                   </span>
+                  <button
+                    onClick={() => activeSession && setReassignModalSession(activeSession)}
+                    className="theme-toggle-btn"
+                    title="更換隸屬筆記"
+                    style={{
+                      padding: '1px 5px',
+                      fontSize: '9.5px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-color)',
+                      lineHeight: '1.2',
+                      flexShrink: 0,
+                      color: '#22c55e',
+                    }}
+                  >
+                    更換
+                  </button>
+
+                  {/* 若當前對話並非隸屬當前編輯筆記，提供一鍵綁定快捷 */}
+                  {currentNotePath && activeSession && activeSession.notePath !== currentNotePath && (
+                    <button
+                      onClick={() => handleReassignSessionNote(activeSession.id, currentNotePath, getNoteName(currentNotePath))}
+                      className="theme-toggle-btn"
+                      title={`一鍵綁定為目前正在修改的筆記：「${getNoteName(currentNotePath)}」`}
+                      style={{
+                        padding: '1px 5px',
+                        fontSize: '9.5px',
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e',
+                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                        lineHeight: '1.2',
+                        flexShrink: 0,
+                      }}
+                    >
+                      綁定為當前筆記
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                 <button
                   className="btn"
-                  onClick={() => handleCreateNewSession()}
+                  onClick={() => handleOpenCreateModal()}
                   style={{ padding: '3px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}
                   title="建立並切換至新對話"
                 >
@@ -2449,6 +2585,267 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               當前操作筆記：{currentNotePath}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 建立新對話詢問彈窗 */}
+      {showCreateModal && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '340px',
+              backgroundColor: 'var(--bg-primary, #1e1e1e)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '16px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <Sparkles size={15} color="#22c55e" />
+                <span>建立筆記專屬對話</span>
+              </div>
+              <button
+                className="theme-toggle-btn"
+                onClick={() => setShowCreateModal(false)}
+                style={{ padding: '3px', opacity: 0.7 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* 自動偵測提示 / 推薦區塊 */}
+            {currentNotePath ? (
+              <div
+                onClick={() => {
+                  setSelectedNoteForCreation({
+                    name: getNoteName(currentNotePath),
+                    path: currentNotePath,
+                  });
+                  setCreateSessionTitle(`${getNoteName(currentNotePath).replace(/\.md$/i, '')} 對話`);
+                }}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: selectedNoteForCreation.path === currentNotePath ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-secondary)',
+                  border: selectedNoteForCreation.path === currentNotePath ? '1px solid #22c55e' : '1px dashed var(--border-color)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '3px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <div style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={11} />
+                  <span>⚡ 自動偵測目前正在修改的筆記：</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {getNoteName(currentNotePath)}
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
+                ℹ️ 目前未開啟任何筆記，請從下方選擇欲隸屬的筆記檔案：
+              </div>
+            )}
+
+            {/* 選擇要隸屬的筆記清單 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                隸屬筆記檔案：
+              </label>
+              <select
+                className="form-input"
+                value={selectedNoteForCreation.path}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const matched = allMarkdownNotes.find((n) => n.path === val);
+                  const noteName = matched ? matched.name : (val ? getNoteName(val) : '未命名筆記');
+                  setSelectedNoteForCreation({ name: noteName, path: val });
+                  setCreateSessionTitle(`${noteName.replace(/\.md$/i, '')} 對話`);
+                }}
+                style={{ fontSize: '12px', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+              >
+                {allMarkdownNotes.length > 0 ? (
+                  allMarkdownNotes.map((note) => (
+                    <option key={note.path} value={note.path}>
+                      📄 {note.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">{currentNotePath ? getNoteName(currentNotePath) : '未命名筆記.md'}</option>
+                )}
+              </select>
+            </div>
+
+            {/* 對話自訂名稱 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                對話名稱：
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={createSessionTitle}
+                onChange={(e) => setCreateSessionTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConfirmCreateSession();
+                }}
+                placeholder="例如：機器學習重點整理"
+                style={{ fontSize: '12px', padding: '6px 8px' }}
+              />
+            </div>
+
+            {/* 動作按鈕 */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button
+                className="btn"
+                onClick={() => setShowCreateModal(false)}
+                style={{ flex: 1, padding: '6px', fontSize: '11.5px' }}
+              >
+                取消
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleConfirmCreateSession}
+                style={{ flex: 1, padding: '6px', fontSize: '11.5px', fontWeight: 600 }}
+              >
+                確認建立
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 更換隸屬筆記彈窗 */}
+      {reassignModalSession && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setReassignModalSession(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '340px',
+              backgroundColor: 'var(--bg-primary, #1e1e1e)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '16px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <FileText size={15} color="#22c55e" />
+                <span>更換對話的隸屬筆記</span>
+              </div>
+              <button
+                className="theme-toggle-btn"
+                onClick={() => setReassignModalSession(null)}
+                style={{ padding: '3px', opacity: 0.7 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+              對話「<strong style={{ color: 'var(--text-primary)' }}>{reassignModalSession.title}</strong>」目前隸屬：
+              <span style={{ color: '#22c55e', fontWeight: 600, marginLeft: '4px' }}>{reassignModalSession.noteName}</span>
+            </div>
+
+            {/* 一鍵綁定為當前正在修改的筆記 */}
+            {currentNotePath && (
+              <button
+                className="btn btn-primary"
+                onClick={() => handleReassignSessionNote(reassignModalSession.id, currentNotePath, getNoteName(currentNotePath))}
+                style={{
+                  padding: '7px 10px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Sparkles size={13} />
+                <span>綁定為目前正在修改的「{getNoteName(currentNotePath)}」</span>
+              </button>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                或選擇工作區中的其他筆記：
+              </div>
+              <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {allMarkdownNotes.map((note) => (
+                  <div
+                    key={note.path}
+                    onClick={() => handleReassignSessionNote(reassignModalSession.id, note.path, note.name)}
+                    style={{
+                      padding: '6px 8px',
+                      borderRadius: '5px',
+                      backgroundColor: reassignModalSession.notePath === note.path ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-secondary)',
+                      border: reassignModalSession.notePath === note.path ? '1px solid #22c55e' : '1px solid var(--border-color)',
+                      cursor: 'pointer',
+                      fontSize: '11.5px',
+                      color: 'var(--text-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <FileText size={12} color="#22c55e" />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button
+                className="btn"
+                onClick={() => setReassignModalSession(null)}
+                style={{ padding: '5px 12px', fontSize: '11.5px' }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
