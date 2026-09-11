@@ -66,7 +66,7 @@ try {
   console.log('PASS two sidebar roots start collapsed and offer non-deleting removal');
 } finally { await vite.close(); }
 
-const require = createRequire(import.meta.url);
+const require = createRequire(new URL('../cli-server.cjs', import.meta.url));
 const rootA = path.resolve('mock-folder-A');
 const rootB = path.resolve('mock-folder-B');
 const dirs = new Set([rootA, rootB]);

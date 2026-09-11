@@ -23,6 +23,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 
 export interface AntigravityPluginProps {
@@ -42,6 +44,7 @@ interface Notice {
 }
 
 interface ChatMessage {
+  delivery?: 'streaming' | 'incomplete';
   id: string;
   role: 'user' | 'arborist';
   content: string;
@@ -113,6 +116,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   // App 模式狀態
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [streamStatus, setStreamStatus] = useState('');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => requestRef.current?.abort(), []);
+  useEffect(() => {
+    if (!loading) return;
+    const start = Date.now();
+    setElapsedSeconds(0);
+    const timer = window.setInterval(() => setElapsedSeconds(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, [loading]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [appliedId, setAppliedId] = useState<string | null>(null);
   const [expandedPreviewIds, setExpandedPreviewIds] = useState<Record<string, boolean>>({});
@@ -120,7 +134,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = localStorage.getItem('wikitree_arborist_chat');
-      return saved ? JSON.parse(saved) : [];
+      const history = saved ? JSON.parse(saved) : [];
+      return Array.isArray(history) ? history.map((msg: ChatMessage) => msg.delivery === 'streaming' ? { ...msg, delivery: 'incomplete' } : msg) : [];
     } catch {
       return [];
     }
@@ -197,10 +212,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   const handleSendMessage = async (customPrompt?: string) => {
     const text = (customPrompt || inputMessage).trim();
-    if (!text || loading) return;
+    if (!text || loading || requestRef.current) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
 
     const connected = status === 'connected' || (await testConnection(cliUrl));
+    if (controller.signal.aborted) { requestRef.current = null; return; }
     if (!connected) {
+      requestRef.current = null;
       flash({
         kind: 'error',
         text: '本機 AI 服務尚未連線。如果是純瀏覽器環境，建議切換至「瀏覽器模式」使用複製貼上！',
@@ -215,16 +234,23 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const botId = 'bot-' + crypto.randomUUID();
+    setMessages(prev => [...prev, userMsg, {
+      id: botId, role: 'arborist', content: '', delivery: 'streaming',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }]);
+    setStreamStatus('請求已送出，等待 AI 回覆…');
     if (!customPrompt) setInputMessage('');
     setLoading(true);
 
     try {
       const response = await fetch(`${cliUrl}/api/chat`, {
         method: 'POST',
+        signal: controller.signal,
         headers: cliWorkspaceHeaders(workspacePath),
         body: JSON.stringify({
           message: text,
+          stream: true,
           context: {
             path: currentNotePath,
             content: currentNoteContent,
@@ -237,20 +263,27 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         throw new Error(errData.error || `HTTP ${response.status}`);
       }
 
-      const data = await response.json();
-      const replyText = data.reply || '（知識架構師未回傳內容）';
-
-      const botMsg: ChatMessage = {
-        id: 'bot-' + Date.now(),
-        role: 'arborist',
-        content: replyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
-      setMessages((prev) => [...prev, botMsg]);
+      if (!(response.headers.get('content-type') || '').includes('application/x-ndjson')) {
+        throw new Error('請重新啟動桌面服務，以啟用即時回覆。');
+      }
+      await readChatStream(response, event => {
+        if (controller.signal.aborted) return;
+        if (event.type === 'status') setStreamStatus(event.text);
+        if (event.type === 'delta') {
+          setStreamStatus('正在產生回覆…');
+          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: msg.content + event.text } : msg));
+        }
+        if (event.type === 'done') {
+          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: event.text || msg.content || '（AI 未回傳文字）', delivery: undefined } : msg));
+        }
+      });
     } catch (e: any) {
-      flash({ kind: 'error', text: `生成失敗：${e.message}` });
+      const message = controller.signal.aborted ? '回覆已停止，已收到的文字仍保留。' : e.message;
+      setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, delivery: 'incomplete' } : msg));
+      setStreamStatus(message);
+      if (!controller.signal.aborted) flash({ kind: 'error', text: `生成失敗：${message}` });
     } finally {
+      requestRef.current = null;
       setLoading(false);
     }
   };
@@ -431,6 +464,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             <button
               className="theme-toggle-btn"
               title="清空對話"
+              disabled={loading}
               onClick={() => setMessages([])}
               style={{ padding: '3px' }}
             >
@@ -614,6 +648,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   );
                 }
 
+                if (msg.delivery) {
+                  return (
+                    <div key={msg.id} style={{ padding: '12px', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'var(--bg-secondary)' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        {msg.delivery === 'streaming' ? '正在回覆…' : '回覆未完成 · 已保留收到的文字'}
+                      </div>
+                      <div className="markdown-body" style={{ fontSize: '12px', overflowWrap: 'anywhere' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(msg.content || '等待第一段文字…') as string) }} />
+                    </div>
+                  );
+                }
+
                 // Arborist 訊息：拆分為「推導思路泡泡」＋「正式筆記泡泡」
                 const { thought, note } = splitThoughtAndNote(msg.content);
                 const hasThought = Boolean(thought);
@@ -731,7 +776,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             {loading && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '11.5px', padding: '6px' }}>
                 <Loader2 size={14} className="spin" />
-                <span>知識架構師正在思考推導並組織純淨筆記...</span>
+                <details style={{ flex: 1 }}>
+                  <summary>回覆中 · 已等待 {elapsedSeconds} 秒</summary>
+                  <div style={{ marginTop: '6px' }}>{streamStatus}</div>
+                </details>
+                <button className="btn" onClick={() => requestRef.current?.abort()} style={{ fontSize: '11px' }}>停止</button>
               </div>
             )}
             <div ref={chatBottomRef} />

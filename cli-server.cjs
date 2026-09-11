@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { exec, spawn } = require('child_process');
+const { runAgyStream } = require('./agy-stream.cjs');
 
 const isWin = process.platform === 'win32';
 const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
@@ -128,6 +129,7 @@ const server = http.createServer((req, res) => {
       status: 'connected',
       version: '1.2.4',
       scopedWorkspaces: true,
+      streamingChat: true,
       workspace: currentWorkspace,
       defaultNotesPath: defaultNotesDir,
       platform: process.platform,
@@ -236,6 +238,22 @@ const server = http.createServer((req, res) => {
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
           `使用者任務：${message}\n` +
           formatRequirement;
+      }
+
+      if (payload.stream === true) {
+        res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
+        res.flushHeaders();
+        const controller = new AbortController();
+        const disconnect = () => { if (!res.writableEnded) controller.abort(); };
+        res.on('close', disconnect);
+        const emit = event => { if (!res.destroyed && !res.writableEnded) res.write(JSON.stringify(event) + '\n'); };
+        emit({ type: 'status', text: '請求已送出，正在啟動 AI…' });
+        try {
+          const reply = await runAgyStream(AGY_PATH, prompt, currentWorkspace, emit, controller.signal);
+          emit({ type: 'done', text: reply });
+        } catch (error) { emit({ type: 'error', text: error.message }); }
+        finally { res.removeListener('close', disconnect); res.end(); }
+        return;
       }
 
       try {
