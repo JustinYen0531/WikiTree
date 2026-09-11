@@ -21,6 +21,10 @@ import {
   Settings,
   Sparkles,
   Trash2,
+  ChevronLeft,
+  MessageSquare,
+  Clock,
+  Edit2,
 } from 'lucide-react';
 import { renderMarkdownSync } from '../utils/markdownRenderer';
 import { preprocessCallouts } from '../utils/callouts';
@@ -53,6 +57,22 @@ interface ChatMessage {
   role: 'user' | 'arborist';
   content: string;
   timestamp: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  notePath: string;
+  noteName: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+function getNoteName(path?: string): string {
+  if (!path) return '全域對話';
+  const parts = path.split('/');
+  return parts[parts.length - 1] || path;
 }
 
 const DEFAULT_CLI_URL = 'http://localhost:18080';
@@ -152,20 +172,138 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [expandedPreviewIds, setExpandedPreviewIds] = useState<Record<string, boolean>>({});
   const [activeTabIds, setActiveTabIds] = useState<Record<string, 'note' | 'diff'>>({});
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+  const loadInitialSessions = (): ChatSession[] => {
     try {
-      const saved = localStorage.getItem('wikitree_arborist_chat');
-      const history = saved ? JSON.parse(saved) : [];
-      return Array.isArray(history) ? history.map((msg: ChatMessage) => msg.delivery === 'streaming' ? { ...msg, delivery: 'incomplete' } : msg) : [];
-    } catch {
-      return [];
+      const raw = localStorage.getItem('wikitree_arborist_sessions');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s: any) => ({
+            id: s.id || 'session-' + Date.now(),
+            title: s.title || '未命名對話',
+            notePath: s.notePath || '',
+            noteName: s.noteName || (s.notePath ? getNoteName(s.notePath) : '全域對話'),
+            messages: Array.isArray(s.messages)
+              ? s.messages.map((m: ChatMessage) => (m.delivery === 'streaming' ? { ...m, delivery: 'incomplete' } : m))
+              : [],
+            createdAt: s.createdAt || Date.now(),
+            updatedAt: s.updatedAt || Date.now(),
+          }));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse sessions', e);
     }
+
+    // 遷移舊的單一對話紀錄
+    try {
+      const oldChatRaw = localStorage.getItem('wikitree_arborist_chat');
+      if (oldChatRaw) {
+        const oldMsgs = JSON.parse(oldChatRaw);
+        if (Array.isArray(oldMsgs) && oldMsgs.length > 0) {
+          const migrated: ChatSession = {
+            id: 'session-legacy',
+            title: '歷史筆記對話',
+            notePath: '',
+            noteName: '歷史備份',
+            messages: oldMsgs,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          return [migrated];
+        }
+      }
+    } catch {}
+
+    return [];
+  };
+
+  const [sessions, setSessions] = useState<ChatSession[]>(loadInitialSessions);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    const init = loadInitialSessions();
+    const saved = localStorage.getItem('wikitree_arborist_active_session_id');
+    if (saved && init.some((s) => s.id === saved)) return saved;
+    return init.length > 0 ? init[0].id : null;
   });
 
-  // Browser 模式狀態
+  // 視圖切換：預設一開始進入 AI 功能時顯示對話欄清單（'list'），點擊對話後進入聊天（'chat'）
+  const [sessionView, setSessionView] = useState<'list' | 'chat'>('list');
+  // 跨 Session 單一任務鎖定：紀錄當前正在運算生成的 Session ID
+  const [generatingSessionId, setGeneratingSessionId] = useState<string | null>(null);
+
+  // 對話標題即時編輯狀態
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState('');
+
+  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
+  const messages = activeSession ? activeSession.messages : [];
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wikitree_arborist_sessions', JSON.stringify(sessions));
+    } catch {}
+  }, [sessions]);
+
+  useEffect(() => {
+    if (activeSessionId) {
+      localStorage.setItem('wikitree_arborist_active_session_id', activeSessionId);
+    }
+  }, [activeSessionId]);
+
+  const handleSelectSession = (id: string) => {
+    setActiveSessionId(id);
+    setSessionView('chat');
+  };
+
+  const handleCreateNewSession = (targetPath?: string) => {
+    const nPath = targetPath !== undefined ? targetPath : currentNotePath;
+    const nName = getNoteName(nPath);
+    const newSession: ChatSession = {
+      id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      title: '新對話',
+      notePath: nPath || '',
+      noteName: nName,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setSessions((prev) => [newSession, ...prev]);
+    setActiveSessionId(newSession.id);
+    setSessionView('chat');
+    flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
+  };
+
+  const handleDeleteSession = (sessionId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (generatingSessionId === sessionId) {
+      flash({ kind: 'error', text: '此對話正在運算中，請先終止任務再刪除。' });
+      return;
+    }
+    const target = sessions.find((s) => s.id === sessionId);
+    if (!confirm(`確定要刪除對話「${target?.title || '此對話'}」嗎？`)) return;
+
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(null);
+      setSessionView('list');
+    }
+    flash({ kind: 'info', text: '已刪除對話欄' });
+  };
+
+  const commitTitleEdit = () => {
+    if (!activeSessionId) return;
+    const trimmed = titleInput.trim();
+    if (trimmed) {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === activeSessionId ? { ...s, title: trimmed, updatedAt: Date.now() } : s))
+      );
+    }
+    setIsEditingTitle(false);
+  };
+
+  // Browser 模式狀態與共用 Ref
   const [pastedContent, setPastedContent] = useState('');
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
-
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const noticeTimer = useRef<number | null>(null);
 
@@ -177,12 +315,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       text: nextMode === 'app' ? '已切換為【應用程式模式】（直通 AI 知識大腦）' : '已切換為【瀏覽器模式】（專屬複製貼上工作區）',
     });
   };
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('wikitree_arborist_chat', JSON.stringify(messages.slice(-30)));
-    } catch {}
-  }, [messages]);
 
   useEffect(() => {
     if (mode === 'app') {
@@ -231,13 +363,46 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     noticeTimer.current = window.setTimeout(() => setNotice(null), ms);
   };
 
-  const handleSendMessage = async (customPrompt?: string) => {
+  const handleSendMessage = async (customPrompt?: string, skillLabel?: string) => {
     const text = (customPrompt || inputMessage).trim();
-    if (!text || loading || requestRef.current) return;
+    if (!text) return;
+
+    // 檢查是否有進行中的任務（不支援跨 session 同時進行任務）
+    if (generatingSessionId) {
+      const busySession = sessions.find((s) => s.id === generatingSessionId);
+      flash({
+        kind: 'error',
+        text: `⚠️ 對話「${busySession?.title || '其他對話'}」正在進行任務中！暫不支援同時執行多個任務。`,
+      });
+      return;
+    }
+
+    if (loading || requestRef.current) return;
     if (!aiReady) {
       flash({ kind: 'info', text: '請先在輸入區下方選擇廠商、完成登入並選擇模型。' });
       return;
     }
+
+    // 確定目標對話 Session
+    let targetSession = activeSession;
+    let targetId = activeSessionId;
+    if (!targetSession || !targetId) {
+      const nName = getNoteName(currentNotePath);
+      const newSession: ChatSession = {
+        id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        title: '新對話',
+        notePath: currentNotePath || '',
+        noteName: nName,
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      setSessions((prev) => [newSession, ...prev]);
+      setActiveSessionId(newSession.id);
+      targetSession = newSession;
+      targetId = newSession.id;
+    }
+
     const controller = new AbortController();
     requestRef.current = controller;
 
@@ -252,6 +417,22 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       return;
     }
 
+    // 第一次與筆記互動時，自動推導並命名對話標題
+    let derivedTitle: string | undefined = undefined;
+    if (targetSession.title === '新對話' || targetSession.title === '未命名對話' || targetSession.messages.length === 0) {
+      if (skillLabel) {
+        derivedTitle = targetSession.noteName && targetSession.noteName !== '全域對話'
+          ? `${targetSession.noteName.replace(/\.md$/i, '')} · ${skillLabel}`
+          : skillLabel;
+      } else {
+        const cleanPrompt = text.replace(/^[#\s\-*]+/, '').split('\n')[0].trim();
+        const shortPrompt = cleanPrompt.length > 18 ? cleanPrompt.slice(0, 18) + '…' : cleanPrompt;
+        derivedTitle = targetSession.noteName && targetSession.noteName !== '全域對話'
+          ? `${targetSession.noteName.replace(/\.md$/i, '')} · ${shortPrompt}`
+          : shortPrompt || '筆記思維對話';
+      }
+    }
+
     const userMsg: ChatMessage = {
       id: 'msg-' + Date.now(),
       role: 'user',
@@ -260,13 +441,35 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     };
 
     const botId = 'bot-' + crypto.randomUUID();
-    setMessages(prev => [...prev, userMsg, {
-      id: botId, role: 'arborist', content: '', delivery: 'streaming',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }]);
+    const currentTargetId = targetId;
+
+    // 將使用者問題及串流訊息加入目標 Session
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== currentTargetId) return s;
+        return {
+          ...s,
+          title: derivedTitle !== undefined ? derivedTitle : s.title,
+          messages: [
+            ...s.messages,
+            userMsg,
+            {
+              id: botId,
+              role: 'arborist',
+              content: '',
+              delivery: 'streaming',
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ],
+          updatedAt: Date.now(),
+        };
+      })
+    );
+
     setStreamStatus('請求已送出，等待 AI 回覆…');
     if (!customPrompt) setInputMessage('');
     setLoading(true);
+    setGeneratingSessionId(currentTargetId);
 
     try {
       const response = await fetch(`${cliUrl}/api/chat`, {
@@ -279,7 +482,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           message: text,
           stream: true,
           context: {
-            path: currentNotePath,
+            path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
           },
         }),
@@ -293,25 +496,58 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       if (!(response.headers.get('content-type') || '').includes('application/x-ndjson')) {
         throw new Error('請重新啟動桌面服務，以啟用即時回覆。');
       }
-      await readChatStream(response, event => {
+
+      await readChatStream(response, (event) => {
         if (controller.signal.aborted) return;
         if (event.type === 'status') setStreamStatus(event.text);
         if (event.type === 'delta') {
           setStreamStatus('正在產生回覆…');
-          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: msg.content + event.text } : msg));
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id !== currentTargetId) return s;
+              return {
+                ...s,
+                messages: s.messages.map((msg) =>
+                  msg.id === botId ? { ...msg, content: msg.content + event.text } : msg
+                ),
+                updatedAt: Date.now(),
+              };
+            })
+          );
         }
         if (event.type === 'done') {
-          setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, content: event.text || msg.content || '（AI 未回傳文字）', delivery: undefined } : msg));
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id !== currentTargetId) return s;
+              return {
+                ...s,
+                messages: s.messages.map((msg) =>
+                  msg.id === botId ? { ...msg, content: event.text || msg.content || '（AI 未回傳文字）', delivery: undefined } : msg
+                ),
+                updatedAt: Date.now(),
+              };
+            })
+          );
         }
       });
     } catch (e: any) {
       const message = controller.signal.aborted ? '回覆已停止，已收到的文字仍保留。' : e.message;
-      setMessages(prev => prev.map(msg => msg.id === botId ? { ...msg, delivery: 'incomplete' } : msg));
+      setSessions((prev) =>
+        prev.map((s) => {
+          if (s.id !== currentTargetId) return s;
+          return {
+            ...s,
+            messages: s.messages.map((msg) => (msg.id === botId ? { ...msg, delivery: 'incomplete' } : msg)),
+            updatedAt: Date.now(),
+          };
+        })
+      );
       setStreamStatus(message);
       if (!controller.signal.aborted) flash({ kind: 'error', text: `生成失敗：${message}` });
     } finally {
       requestRef.current = null;
       setLoading(false);
+      setGeneratingSessionId(null);
     }
   };
 
@@ -510,9 +746,36 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           {mode === 'app' && (
             <button
               className="theme-toggle-btn"
-              title="清空對話"
+              title={sessionView === 'list' ? '查看當前對話' : '切換對話列表'}
+              onClick={() => {
+                if (sessionView === 'list') {
+                  if (activeSessionId) setSessionView('chat');
+                  else handleCreateNewSession();
+                } else {
+                  setSessionView('list');
+                }
+              }}
+              style={{
+                padding: '3px',
+                color: sessionView === 'list' ? 'var(--primary-color, #2563eb)' : 'inherit',
+              }}
+            >
+              <MessageSquare size={12} />
+            </button>
+          )}
+          {mode === 'app' && sessionView === 'chat' && (
+            <button
+              className="theme-toggle-btn"
+              title="清空此對話紀錄"
               disabled={loading}
-              onClick={() => setMessages([])}
+              onClick={() => {
+                if (!activeSessionId) return;
+                if (confirm('確定要清空此對話內容嗎？')) {
+                  setSessions((prev) =>
+                    prev.map((s) => (s.id === activeSessionId ? { ...s, messages: [], updatedAt: Date.now() } : s))
+                  );
+                }
+              }}
               style={{ padding: '3px' }}
             >
               <Trash2 size={12} />
@@ -596,9 +859,421 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
       {/* 視圖 A：應用程式模式 */}
       {mode === 'app' ? (
-        <>
-          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {messages.length === 0 ? (
+        sessionView === 'list' ? (
+          /* 對話欄列表管理視圖 */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+            {/* 列表頂部工具列 */}
+            <div
+              style={{
+                padding: '10px 12px',
+                borderBottom: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <MessageSquare size={14} style={{ color: 'var(--primary-color, #2563eb)' }} />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  對話欄列表 ({sessions.length})
+                </span>
+              </div>
+
+              <button
+                className="btn btn-primary"
+                onClick={() => handleCreateNewSession()}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="開啟全新對話欄"
+              >
+                <Plus size={13} />
+                <span>新增對話</span>
+              </button>
+            </div>
+
+            {/* 進行中任務鎖定提醒 */}
+            {generatingSessionId && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                  borderBottom: '1px solid rgba(37, 99, 235, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '11px',
+                  color: '#2563eb',
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Loader2 size={13} className="spin" />
+                  <span>「{sessions.find((s) => s.id === generatingSessionId)?.title || '對話'}」運算中 ({elapsedSeconds}s)</span>
+                </span>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setActiveSessionId(generatingSessionId);
+                    setSessionView('chat');
+                  }}
+                  style={{ padding: '2px 8px', fontSize: '10.5px' }}
+                >
+                  查看
+                </button>
+              </div>
+            )}
+
+            {/* 對話清單滾動區 */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '10px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              {sessions.length === 0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '36px 16px',
+                    textAlign: 'center',
+                    gap: '12px',
+                    border: '1px dashed var(--border-color)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    marginTop: '12px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#22c55e',
+                    }}
+                  >
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>
+                      目前尚無對話記錄
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      點擊下方按鈕，為當前葉片「{getNoteName(currentNotePath)}」開啟第一個專屬對話欄！
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleCreateNewSession()}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>建立第一個對話</span>
+                  </button>
+                </div>
+              ) : (
+                sessions.map((session) => {
+                  const isSelected = activeSessionId === session.id;
+                  const isGenerating = generatingSessionId === session.id;
+                  const noteTitle = session.noteName || '全域對話';
+
+                  return (
+                    <div
+                      key={session.id}
+                      onClick={() => handleSelectSession(session.id)}
+                      style={{
+                        border: isSelected ? '1px solid var(--primary-color, #2563eb)' : '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.04))';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                      }}
+                    >
+                      {/* 第一列：標題 ＋ 狀態/操作 */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '12.5px',
+                            color: 'var(--text-primary)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                          }}
+                          title={session.title}
+                        >
+                          {session.title}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                          {isGenerating && (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                                color: '#2563eb',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              <Loader2 size={10} className="spin" />
+                              運算中
+                            </span>
+                          )}
+                          <button
+                            className="theme-toggle-btn"
+                            title="刪除此對話欄"
+                            onClick={(e) => handleDeleteSession(session.id, e)}
+                            style={{ padding: '3px', opacity: 0.6 }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 第二列：文件索引（顯式標註隸屬於哪一個文件） */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span
+                          style={{
+                            fontSize: '10.5px',
+                            padding: '2px 7px',
+                            borderRadius: '10px',
+                            backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                            color: '#22c55e',
+                            border: '1px solid rgba(34, 197, 94, 0.25)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            maxWidth: '100%',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 500,
+                          }}
+                          title={`隸屬於文件：${noteTitle}`}
+                        >
+                          <FileText size={10.5} />
+                          <span>隸屬文件：{noteTitle}</span>
+                        </span>
+                      </div>
+
+                      {/* 第三列：訊息統計與時間 */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '10.5px',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MessageSquare size={10} />
+                          <span>{session.messages.length} 則訊息</span>
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <Clock size={10} />
+                          <span>
+                            {new Date(session.updatedAt).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}{' '}
+                            {new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : (
+          /* 對話聊天視圖 */
+          <>
+            {/* 對話頁面頂部控制列：返回列表 ＋ 標題與隸屬文件索引 ＋ 新增對話 */}
+            <div
+              style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                flexShrink: 0,
+              }}
+            >
+              <button
+                className="btn"
+                onClick={() => setSessionView('list')}
+                style={{
+                  padding: '3px 8px',
+                  fontSize: '11px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  flexShrink: 0,
+                }}
+                title="返回對話欄列表"
+              >
+                <ChevronLeft size={13} />
+                <span>對話列表</span>
+              </button>
+
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {isEditingTitle ? (
+                  <input
+                    type="text"
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitTitleEdit();
+                      if (e.key === 'Escape') setIsEditingTitle(false);
+                    }}
+                    onBlur={commitTitleEdit}
+                    autoFocus
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--primary-color, #2563eb)',
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <div
+                    onClick={() => {
+                      setTitleInput(activeSession?.title || '新對話');
+                      setIsEditingTitle(true);
+                    }}
+                    title="點擊自訂對話標題"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {activeSession?.title || '新對話'}
+                    </span>
+                    <Edit2 size={10.5} style={{ opacity: 0.5, flexShrink: 0 }} />
+                  </div>
+                )}
+
+                {/* 頂部隸屬文件索引 */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '10px',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  <FileText size={10} color="#22c55e" />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    隸屬文件：<strong style={{ color: 'var(--text-primary)' }}>{activeSession?.noteName || '全域對話'}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <button
+                  className="btn"
+                  onClick={() => handleCreateNewSession()}
+                  style={{ padding: '3px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                  title="建立並切換至新對話"
+                >
+                  <Plus size={12} />
+                  <span>新對話</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 跨對話任務鎖定提示 */}
+            {generatingSessionId && generatingSessionId !== activeSessionId && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: 'rgba(234, 179, 8, 0.12)',
+                  borderBottom: '1px solid rgba(234, 179, 8, 0.3)',
+                  fontSize: '11px',
+                  color: '#ca8a04',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Loader2 size={12} className="spin" />
+                  <span>對話「{sessions.find((s) => s.id === generatingSessionId)?.title}」正在進行任務中</span>
+                </div>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setActiveSessionId(generatingSessionId);
+                  }}
+                  style={{ padding: '2px 6px', fontSize: '10px' }}
+                >
+                  前往該對話
+                </button>
+              </div>
+            )}
+
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {messages.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div
                   style={{
@@ -629,8 +1304,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       return (
                         <button
                           key={skill.id}
-                          onClick={() => handleSendMessage(skill.prompt)}
-                          disabled={loading || disabled}
+                          onClick={() => handleSendMessage(skill.prompt, skill.label)}
+                          disabled={loading || disabled || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
                           style={{
                             textAlign: 'left',
                             border: '1px solid var(--border-color)',
@@ -1091,7 +1766,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               })
             )}
 
-            {loading && (
+            {loading && generatingSessionId === activeSessionId && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '11.5px', padding: '6px' }}>
                 <Loader2 size={14} className="spin" />
                 <details style={{ flex: 1 }}>
@@ -1120,7 +1795,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder={currentNotePath ? `對「${currentNotePath}」提問...` : '輸入任務或提問...'}
+                placeholder={
+                  generatingSessionId && generatingSessionId !== activeSessionId
+                    ? '另一個對話任務正在執行中（不支援同時任務）…'
+                    : currentNotePath
+                    ? `對「${getNoteName(currentNotePath)}」提問...`
+                    : '輸入任務或提問...'
+                }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => {
@@ -1129,17 +1810,30 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     handleSendMessage();
                   }
                 }}
-                disabled={loading}
+                disabled={loading || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
                 style={{ flex: 1, padding: '7px 10px', height: '34px', fontSize: '12px' }}
               />
               <button
                 className="btn btn-primary"
                 onClick={() => handleSendMessage()}
-                disabled={!inputMessage.trim() || loading || !aiReady}
-                title="送出 (Enter)"
+                disabled={
+                  !inputMessage.trim() ||
+                  loading ||
+                  !aiReady ||
+                  (!!generatingSessionId && generatingSessionId !== activeSessionId)
+                }
+                title={
+                  generatingSessionId && generatingSessionId !== activeSessionId
+                    ? '另一個對話任務正在執行中'
+                    : '送出 (Enter)'
+                }
                 style={{ padding: '7px 12px', height: '34px' }}
               >
-                {loading ? <Loader2 size={14} className="spin" /> : <Send size={14} />}
+                {loading && generatingSessionId === activeSessionId ? (
+                  <Loader2 size={14} className="spin" />
+                ) : (
+                  <Send size={14} />
+                )}
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
@@ -1147,7 +1841,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <span>支援 20% 預覽確認</span>
             </div>
           </div>
-        </>
+        </>)
       ) : (
         /* 視圖 B：瀏覽器模式 */
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '12px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
