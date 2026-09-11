@@ -92,6 +92,7 @@ export interface ChatSession {
   title: string;
   notePath: string;
   noteName: string;
+  isFloating?: boolean; // 是否為不綁定任何筆記的自由浮動對話 (全域工作台)
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
@@ -218,6 +219,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               title: s.title || '未命名對話',
               notePath: resolvedPath,
               noteName: resolvedName,
+              isFloating: Boolean(s.isFloating),
               messages: Array.isArray(s.messages)
                 ? s.messages.map((m: ChatMessage) => (m.delivery === 'streaming' ? { ...m, delivery: 'incomplete' } : m))
                 : [],
@@ -283,43 +285,53 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   // 建立新對話詢問彈窗狀態
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isFloatingForCreation, setIsFloatingForCreation] = useState(false);
   const [selectedNoteForCreation, setSelectedNoteForCreation] = useState<{ name: string; path: string }>({
     name: currentNotePath ? getNoteName(currentNotePath) : '',
     path: currentNotePath || '',
   });
   const [createSessionTitle, setCreateSessionTitle] = useState('新對話');
 
-  // 更換對話隸屬筆記彈窗狀態
-  const [reassignModalSession, setReassignModalSession] = useState<ChatSession | null>(null);
+  // 解除綁定確認彈窗（專屬對話轉為自由對話）
+  const [unbindConfirmSession, setUnbindConfirmSession] = useState<ChatSession | null>(null);
+
+  // 自由浮動對話切換目標筆記彈窗
+  const [switchNoteModalSession, setSwitchNoteModalSession] = useState<ChatSession | null>(null);
 
   // 當 currentNotePath 改變且 modal 未開啟時保持同步
   useEffect(() => {
-    if (currentNotePath) {
+    if (currentNotePath && !isFloatingForCreation) {
       setSelectedNoteForCreation({
         name: getNoteName(currentNotePath),
         path: currentNotePath,
       });
     }
-  }, [currentNotePath]);
+  }, [currentNotePath, isFloatingForCreation]);
 
-  // 依照隸屬文件對對話進行分組索引
+  // 依照隸屬文件對對話進行分組索引（自由浮動對話置於最底部）
   const groupedSessions = React.useMemo(() => {
-    const map = new Map<string, { noteName: string; notePath: string; sessions: ChatSession[]; latestUpdatedAt: number }>();
+    const specificMap = new Map<string, { noteName: string; notePath: string; sessions: ChatSession[]; latestUpdatedAt: number }>();
+    const floatingSessions: ChatSession[] = [];
 
     sessions.forEach((s) => {
+      if (s.isFloating) {
+        floatingSessions.push(s);
+        return;
+      }
+
       const key = s.notePath || s.noteName || '__default__';
       let name = s.noteName;
       if (!name || name === '歷史備份' || name === '全域對話') {
         name = s.notePath ? getNoteName(s.notePath) : (currentNotePath ? getNoteName(currentNotePath) : '未命名筆記');
       }
-      const existing = map.get(key);
+      const existing = specificMap.get(key);
       if (existing) {
         existing.sessions.push(s);
         if (s.updatedAt > existing.latestUpdatedAt) {
           existing.latestUpdatedAt = s.updatedAt;
         }
       } else {
-        map.set(key, {
+        specificMap.set(key, {
           noteName: name,
           notePath: s.notePath || '',
           sessions: [s],
@@ -328,13 +340,27 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       }
     });
 
-    const groups = Array.from(map.entries()).map(([key, value]) => ({
+    const specificGroups = Array.from(specificMap.entries()).map(([key, value]) => ({
       groupKey: key,
+      isFloatingGroup: false,
       ...value,
       sessions: [...value.sessions].sort((a, b) => b.updatedAt - a.updatedAt),
-    }));
+    })).sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
 
-    return groups.sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
+    // 自由浮動對話群組：固定放置於最下方
+    if (floatingSessions.length > 0) {
+      const sortedFloating = [...floatingSessions].sort((a, b) => b.updatedAt - a.updatedAt);
+      specificGroups.push({
+        groupKey: '__floating_workspace_group__',
+        noteName: '自由浮動對話（不限固定文件）',
+        notePath: '',
+        isFloatingGroup: true,
+        sessions: sortedFloating,
+        latestUpdatedAt: sortedFloating[0]?.updatedAt || 0,
+      });
+    }
+
+    return specificGroups;
   }, [sessions, currentNotePath]);
 
   const startListTitleEdit = (session: ChatSession, e?: React.MouseEvent) => {
@@ -374,12 +400,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   };
 
   // 開啟建立新對話彈窗
-  const handleOpenCreateModal = (targetPath?: string, targetName?: string) => {
+  const handleOpenCreateModal = (targetPath?: string, targetName?: string, forceFloating = false) => {
+    setIsFloatingForCreation(forceFloating);
     const activePath = targetPath !== undefined ? targetPath : (currentNotePath || (allMarkdownNotes[0]?.path || ''));
     const activeName = targetName !== undefined ? targetName : (activePath ? getNoteName(activePath) : (allMarkdownNotes[0]?.name || '未命名筆記'));
 
     setSelectedNoteForCreation({ name: activeName, path: activePath });
-    setCreateSessionTitle(activeName ? `${activeName.replace(/\.md$/i, '')} 對話` : '新對話');
+    if (forceFloating) {
+      setCreateSessionTitle('自由浮動對話');
+    } else {
+      setCreateSessionTitle(activeName ? `${activeName.replace(/\.md$/i, '')} 對話` : '新對話');
+    }
     setShowCreateModal(true);
   };
 
@@ -387,13 +418,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const handleConfirmCreateSession = () => {
     const nPath = selectedNoteForCreation.path;
     const nName = selectedNoteForCreation.name || getNoteName(nPath);
-    const title = createSessionTitle.trim() || '新對話';
+    const title = createSessionTitle.trim() || (isFloatingForCreation ? '自由浮動對話' : '新對話');
 
     const newSession: ChatSession = {
       id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
       title,
       notePath: nPath || '',
       noteName: nName,
+      isFloating: isFloatingForCreation,
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -403,10 +435,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     setActiveSessionId(newSession.id);
     setSessionView('chat');
     setShowCreateModal(false);
-    flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
+    flash({
+      kind: 'info',
+      text: isFloatingForCreation
+        ? '已建立【自由浮動對話】，可隨時切換操作筆記！'
+        : `已建立專屬對話（隸屬於：${nName}）`,
+    });
   };
 
-  // 快速建立對話（無需彈窗）
+  // 快速建立專屬對話（無需彈窗）
   const handleCreateNewSessionDirect = (targetPath?: string, targetName?: string) => {
     const nPath = targetPath !== undefined ? targetPath : currentNotePath;
     const nName = targetName || getNoteName(nPath);
@@ -415,6 +452,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       title: `${nName.replace(/\.md$/i, '')} 對話`,
       notePath: nPath || '',
       noteName: nName,
+      isFloating: false,
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -425,13 +463,39 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
   };
 
-  // 更換對話隸屬筆記
-  const handleReassignSessionNote = (sessionId: string, newPath: string, newName: string) => {
+  // 專屬對話解除綁定（單向轉為自由浮動對話）
+  const handleConfirmUnbindToFloating = (sessionId: string) => {
     setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? { ...s, notePath: newPath, noteName: newName, updatedAt: Date.now() } : s))
+      prev.map((s) => (s.id === sessionId ? { ...s, isFloating: true, updatedAt: Date.now() } : s))
     );
-    setReassignModalSession(null);
-    flash({ kind: 'info', text: `已將對話重新隸屬於筆記：「${newName}」` });
+    setUnbindConfirmSession(null);
+    flash({ kind: 'info', text: '🔓 已轉為自由浮動對話，現在可隨時切換操作目標筆記！' });
+  };
+
+  // 自由浮動對話切換操作目標筆記
+  const handleSwitchFloatingTargetNote = (sessionId: string, newPath: string, newName: string) => {
+    const noticeMessage: ChatMessage = {
+      id: 'sys-' + Date.now(),
+      role: 'arborist',
+      content: `🔄 **【操作目標已切換】**\n當前對話的操作目標已切換至筆記：**「${newName}」**。\n後續的 AI 提問、生成與修整將針對此文件進行。`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId
+          ? {
+              ...s,
+              notePath: newPath,
+              noteName: newName,
+              messages: [...s.messages, noticeMessage],
+              updatedAt: Date.now(),
+            }
+          : s
+      )
+    );
+    setSwitchNoteModalSession(null);
+    flash({ kind: 'info', text: `已將操作目標切換至筆記：「${newName}」` });
   };
 
   const handleDeleteSession = (sessionId: string, e?: React.MouseEvent) => {
@@ -1373,7 +1437,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '6px',
-                      marginBottom: '10px',
+                      marginBottom: '12px',
                     }}
                   >
                     {/* 文件索引分組標頭 */}
@@ -1382,10 +1446,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '4px 8px',
+                        padding: '5px 8px',
                         borderRadius: '6px',
-                        backgroundColor: 'rgba(34, 197, 94, 0.08)',
-                        border: '1px solid rgba(34, 197, 94, 0.2)',
+                        backgroundColor: group.isFloatingGroup ? 'rgba(99, 102, 241, 0.1)' : 'rgba(34, 197, 94, 0.08)',
+                        border: group.isFloatingGroup ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid rgba(34, 197, 94, 0.2)',
                       }}
                     >
                       <div
@@ -1399,7 +1463,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           minWidth: 0,
                         }}
                       >
-                        <FileText size={12} color="#22c55e" style={{ flexShrink: 0 }} />
+                        {group.isFloatingGroup ? (
+                          <Globe size={13} color="#6366f1" style={{ flexShrink: 0 }} />
+                        ) : (
+                          <FileText size={12} color="#22c55e" style={{ flexShrink: 0 }} />
+                        )}
                         <span
                           style={{
                             overflow: 'hidden',
@@ -1408,7 +1476,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           }}
                           title={group.noteName}
                         >
-                          隸屬文件：{group.noteName}
+                          {group.isFloatingGroup ? '🌐 自由浮動對話（不限固定文件）' : `隸屬文件：${group.noteName}`}
                         </span>
                         <span
                           style={{
@@ -1424,15 +1492,18 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
                       <button
                         className="theme-toggle-btn"
-                        title={`在「${group.noteName}」下新增對話`}
-                        onClick={() => handleCreateNewSessionDirect(group.notePath, group.noteName)}
+                        title={group.isFloatingGroup ? '建立自由浮動對話' : `在「${group.noteName}」下新增專屬對話`}
+                        onClick={() => {
+                          if (group.isFloatingGroup) handleOpenCreateModal(undefined, undefined, true);
+                          else handleCreateNewSessionDirect(group.notePath, group.noteName);
+                        }}
                         style={{
                           padding: '2px 6px',
                           fontSize: '10.5px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '3px',
-                          color: 'var(--text-secondary)',
+                          color: group.isFloatingGroup ? '#6366f1' : 'var(--text-secondary)',
                         }}
                       >
                         <Plus size={11} />
@@ -1452,7 +1523,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                             key={session.id}
                             onClick={() => handleSelectSession(session.id)}
                             style={{
-                              border: isSelected ? '1px solid var(--primary-color, #2563eb)' : '1px solid var(--border-color)',
+                              border: isSelected
+                                ? (session.isFloating ? '1px solid #6366f1' : '1px solid var(--primary-color, #2563eb)')
+                                : '1px solid var(--border-color)',
                               borderRadius: '6px',
                               padding: '9px 11px',
                               backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
@@ -1469,7 +1542,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
                             }}
                           >
-                            {/* 第一列：標題（可編輯） ＋ 操作（更換筆記 / 運算中 / 刪除） */}
+                            {/* 第一列：標題（可編輯） ＋ 操作（解除綁定 / 運算中 / 刪除） */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                               {isEditingThisTitle ? (
                                 <input
@@ -1545,19 +1618,23 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               )}
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-                                <button
-                                  className="theme-toggle-btn"
-                                  title="更換隸屬筆記"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setReassignModalSession(session);
-                                  }}
-                                  style={{ padding: '3px', opacity: 0.6 }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
-                                >
-                                  <FileText size={11.5} color="#22c55e" />
-                                </button>
+                                {/* 專屬對話提供解除綁定按鈕 */}
+                                {!session.isFloating && (
+                                  <button
+                                    className="theme-toggle-btn"
+                                    title="解除筆記綁定（轉為自由浮動對話）"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setUnbindConfirmSession(session);
+                                    }}
+                                    style={{ padding: '3px', opacity: 0.6 }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                                  >
+                                    <Globe size={11.5} color="var(--text-secondary)" />
+                                  </button>
+                                )}
+
                                 {isGenerating && (
                                   <span
                                     style={{
@@ -1589,7 +1666,33 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               </div>
                             </div>
 
-                            {/* 第二列：訊息統計與時間 */}
+                            {/* 若為自由浮動對話，顯示當前操作目標標籤 */}
+                            {session.isFloating && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
+                                <span
+                                  style={{
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                                    color: '#6366f1',
+                                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    fontWeight: 500,
+                                    maxWidth: '100%',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <Globe size={9.5} />
+                                  <span>目前操作：{session.noteName || '未指定筆記'}</span>
+                                </span>
+                              </div>
+                            )}
+
+                            {/* 訊息統計與時間 */}
                             <div
                               style={{
                                 display: 'flex',
@@ -1703,7 +1806,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   </div>
                 )}
 
-                {/* 頂部隸屬文件索引 ＋ 更換按鈕 */}
+                {/* 頂部隸屬文件索引 ＋ 操作按鈕 */}
                 <div
                   style={{
                     display: 'inline-flex',
@@ -1715,46 +1818,53 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     overflow: 'hidden',
                   }}
                 >
-                  <FileText size={10} color="#22c55e" style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    隸屬文件：<strong style={{ color: 'var(--text-primary)' }}>{activeSession?.noteName || '未指定筆記'}</strong>
-                  </span>
-                  <button
-                    onClick={() => activeSession && setReassignModalSession(activeSession)}
-                    className="theme-toggle-btn"
-                    title="更換隸屬筆記"
-                    style={{
-                      padding: '1px 5px',
-                      fontSize: '9.5px',
-                      borderRadius: '4px',
-                      border: '1px solid var(--border-color)',
-                      lineHeight: '1.2',
-                      flexShrink: 0,
-                      color: '#22c55e',
-                    }}
-                  >
-                    更換
-                  </button>
-
-                  {/* 若當前對話並非隸屬當前編輯筆記，提供一鍵綁定快捷 */}
-                  {currentNotePath && activeSession && activeSession.notePath !== currentNotePath && (
-                    <button
-                      onClick={() => handleReassignSessionNote(activeSession.id, currentNotePath, getNoteName(currentNotePath))}
-                      className="theme-toggle-btn"
-                      title={`一鍵綁定為目前正在修改的筆記：「${getNoteName(currentNotePath)}」`}
-                      style={{
-                        padding: '1px 5px',
-                        fontSize: '9.5px',
-                        borderRadius: '4px',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        color: '#22c55e',
-                        border: '1px solid rgba(34, 197, 94, 0.3)',
-                        lineHeight: '1.2',
-                        flexShrink: 0,
-                      }}
-                    >
-                      綁定為當前筆記
-                    </button>
+                  {activeSession?.isFloating ? (
+                    <>
+                      <Globe size={10.5} color="#6366f1" style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        自由浮動 | 目前操作：<strong style={{ color: '#6366f1' }}>{activeSession.noteName || '未指定筆記'}</strong>
+                      </span>
+                      <button
+                        onClick={() => setSwitchNoteModalSession(activeSession)}
+                        className="theme-toggle-btn"
+                        title="切換此自由對話正在操作的目標筆記"
+                        style={{
+                          padding: '1px 5px',
+                          fontSize: '9.5px',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(99, 102, 241, 0.4)',
+                          lineHeight: '1.2',
+                          flexShrink: 0,
+                          color: '#6366f1',
+                          backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                        }}
+                      >
+                        🔄 切換筆記
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={10} color="#22c55e" style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        專屬隸屬：<strong style={{ color: 'var(--text-primary)' }}>{activeSession?.noteName || '未指定筆記'}</strong>
+                      </span>
+                      <button
+                        onClick={() => activeSession && setUnbindConfirmSession(activeSession)}
+                        className="theme-toggle-btn"
+                        title="解除筆記綁定（轉為可切換筆記的自由浮動對話）"
+                        style={{
+                          padding: '1px 5px',
+                          fontSize: '9.5px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border-color)',
+                          lineHeight: '1.2',
+                          flexShrink: 0,
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        🔓 解除綁定
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -1764,7 +1874,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   className="btn"
                   onClick={() => handleOpenCreateModal()}
                   style={{ padding: '3px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}
-                  title="建立並切換至新對話"
+                  title="建立新對話"
                 >
                   <Plus size={12} />
                   <span>新對話</span>
@@ -2923,6 +3033,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         </div>
       )}
 
+
       {/* 建立新對話詢問彈窗 */}
       {showCreateModal && (
         <div
@@ -2942,7 +3053,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           <div
             style={{
               width: '100%',
-              maxWidth: '340px',
+              maxWidth: '350px',
               backgroundColor: 'var(--bg-primary, #1e1e1e)',
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
@@ -2957,7 +3068,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
                 <Sparkles size={15} color="#22c55e" />
-                <span>建立筆記專屬對話</span>
+                <span>建立 AI 對話欄</span>
               </div>
               <button
                 className="theme-toggle-btn"
@@ -2968,75 +3079,181 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
             </div>
 
-            {/* 自動偵測提示 / 推薦區塊 */}
-            {currentNotePath ? (
-              <div
+            {/* 模式選擇：專屬筆記 vs 自由浮動 */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '6px',
+                padding: '3px',
+                backgroundColor: 'var(--bg-secondary)',
+                borderRadius: '8px',
+              }}
+            >
+              <button
+                type="button"
                 onClick={() => {
-                  setSelectedNoteForCreation({
-                    name: getNoteName(currentNotePath),
-                    path: currentNotePath,
-                  });
-                  setCreateSessionTitle(`${getNoteName(currentNotePath).replace(/\.md$/i, '')} 對話`);
+                  setIsFloatingForCreation(false);
+                  if (currentNotePath) {
+                    setSelectedNoteForCreation({ name: getNoteName(currentNotePath), path: currentNotePath });
+                    setCreateSessionTitle(`${getNoteName(currentNotePath).replace(/\.md$/i, '')} 對話`);
+                  }
                 }}
                 style={{
-                  padding: '8px 10px',
+                  padding: '6px 4px',
                   borderRadius: '6px',
-                  backgroundColor: selectedNoteForCreation.path === currentNotePath ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-secondary)',
-                  border: selectedNoteForCreation.path === currentNotePath ? '1px solid #22c55e' : '1px dashed var(--border-color)',
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: !isFloatingForCreation ? 700 : 500,
+                  backgroundColor: !isFloatingForCreation ? 'var(--bg-tertiary, #2a2a2a)' : 'transparent',
+                  color: !isFloatingForCreation ? '#22c55e' : 'var(--text-secondary)',
                   cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '3px',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  boxShadow: !isFloatingForCreation ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <div style={{ fontSize: '10.5px', color: '#22c55e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Sparkles size={11} />
-                  <span>⚡ 自動偵測目前正在修改的筆記：</span>
+                <FileText size={11} />
+                <span>🌱 專屬筆記對話</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFloatingForCreation(true);
+                  setCreateSessionTitle('自由浮動對話');
+                }}
+                style={{
+                  padding: '6px 4px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '11px',
+                  fontWeight: isFloatingForCreation ? 700 : 500,
+                  backgroundColor: isFloatingForCreation ? 'var(--bg-tertiary, #2a2a2a)' : 'transparent',
+                  color: isFloatingForCreation ? '#6366f1' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  boxShadow: isFloatingForCreation ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Globe size={11} />
+                <span>🌐 自由浮動對話</span>
+              </button>
+            </div>
+
+            {/* 模式說明與筆記設定 */}
+            {!isFloatingForCreation ? (
+              /* 專屬筆記模式 */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  🔒 <strong>專屬模式</strong>：對話將固定綁定於指定筆記脈絡中，專注編輯不干擾。
                 </div>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {getNoteName(currentNotePath)}
+
+                {currentNotePath && (
+                  <div
+                    onClick={() => {
+                      setSelectedNoteForCreation({
+                        name: getNoteName(currentNotePath),
+                        path: currentNotePath,
+                      });
+                      setCreateSessionTitle(`${getNoteName(currentNotePath).replace(/\.md$/i, '')} 對話`);
+                    }}
+                    style={{
+                      padding: '7px 9px',
+                      borderRadius: '6px',
+                      backgroundColor: selectedNoteForCreation.path === currentNotePath ? 'rgba(34, 197, 94, 0.12)' : 'var(--bg-secondary)',
+                      border: selectedNoteForCreation.path === currentNotePath ? '1px solid #22c55e' : '1px dashed var(--border-color)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Sparkles size={12} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>⚡ 自動偵測目前正在修改的筆記：</div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {getNoteName(currentNotePath)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    指定隸屬筆記：
+                  </label>
+                  <select
+                    className="form-input"
+                    value={selectedNoteForCreation.path}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const matched = allMarkdownNotes.find((n) => n.path === val);
+                      const noteName = matched ? matched.name : (val ? getNoteName(val) : '未命名筆記');
+                      setSelectedNoteForCreation({ name: noteName, path: val });
+                      setCreateSessionTitle(`${noteName.replace(/\.md$/i, '')} 對話`);
+                    }}
+                    style={{ fontSize: '11.5px', padding: '5px 8px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  >
+                    {allMarkdownNotes.length > 0 ? (
+                      allMarkdownNotes.map((note) => (
+                        <option key={note.path} value={note.path}>
+                          📄 {note.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">{currentNotePath ? getNoteName(currentNotePath) : '未命名筆記.md'}</option>
+                    )}
+                  </select>
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                ℹ️ 目前未開啟任何筆記，請從下方選擇欲隸屬的筆記檔案：
+              /* 自由浮動模式 */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  🌐 <strong>自由浮動模式</strong>：不綁定單一文件，放在清單最下方，在對話中可隨時自由切換目標筆記。
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    初始操作筆記（可自行指定，對話中可隨時更換）：
+                  </label>
+                  <select
+                    className="form-input"
+                    value={selectedNoteForCreation.path}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const matched = allMarkdownNotes.find((n) => n.path === val);
+                      const noteName = matched ? matched.name : (val ? getNoteName(val) : '未命名筆記');
+                      setSelectedNoteForCreation({ name: noteName, path: val });
+                    }}
+                    style={{ fontSize: '11.5px', padding: '5px 8px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                  >
+                    {allMarkdownNotes.length > 0 ? (
+                      allMarkdownNotes.map((note) => (
+                        <option key={note.path} value={note.path}>
+                          📄 {note.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">{currentNotePath ? getNoteName(currentNotePath) : '未命名筆記.md'}</option>
+                    )}
+                  </select>
+                </div>
               </div>
             )}
 
-            {/* 選擇要隸屬的筆記清單 */}
+            {/* 對話名稱 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                隸屬筆記檔案：
-              </label>
-              <select
-                className="form-input"
-                value={selectedNoteForCreation.path}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const matched = allMarkdownNotes.find((n) => n.path === val);
-                  const noteName = matched ? matched.name : (val ? getNoteName(val) : '未命名筆記');
-                  setSelectedNoteForCreation({ name: noteName, path: val });
-                  setCreateSessionTitle(`${noteName.replace(/\.md$/i, '')} 對話`);
-                }}
-                style={{ fontSize: '12px', padding: '6px 8px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-              >
-                {allMarkdownNotes.length > 0 ? (
-                  allMarkdownNotes.map((note) => (
-                    <option key={note.path} value={note.path}>
-                      📄 {note.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">{currentNotePath ? getNoteName(currentNotePath) : '未命名筆記.md'}</option>
-                )}
-              </select>
-            </div>
-
-            {/* 對話自訂名稱 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                對話名稱：
+              <label style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                對話標題：
               </label>
               <input
                 type="text"
@@ -3046,8 +3263,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleConfirmCreateSession();
                 }}
-                placeholder="例如：機器學習重點整理"
-                style={{ fontSize: '12px', padding: '6px 8px' }}
+                placeholder="輸入對話標題..."
+                style={{ fontSize: '11.5px', padding: '5px 8px' }}
               />
             </div>
 
@@ -3063,17 +3280,24 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <button
                 className="btn btn-primary"
                 onClick={handleConfirmCreateSession}
-                style={{ flex: 1, padding: '6px', fontSize: '11.5px', fontWeight: 600 }}
+                style={{
+                  flex: 1,
+                  padding: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  backgroundColor: isFloatingForCreation ? '#6366f1' : undefined,
+                  borderColor: isFloatingForCreation ? '#6366f1' : undefined,
+                }}
               >
-                確認建立
+                {isFloatingForCreation ? '🚀 建立自由對話' : '🚀 建立專屬對話'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 更換隸屬筆記彈窗 */}
-      {reassignModalSession && (
+      {/* 專屬對話解除綁定確認彈窗 */}
+      {unbindConfirmSession && (
         <div
           style={{
             position: 'absolute',
@@ -3086,7 +3310,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             padding: '16px',
             backdropFilter: 'blur(3px)',
           }}
-          onClick={() => setReassignModalSession(null)}
+          onClick={() => setUnbindConfirmSession(null)}
         >
           <div
             style={{
@@ -3105,12 +3329,107 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                <FileText size={15} color="#22c55e" />
-                <span>更換對話的隸屬筆記</span>
+                <Globe size={15} color="#6366f1" />
+                <span>解除筆記綁定確認</span>
               </div>
               <button
                 className="theme-toggle-btn"
-                onClick={() => setReassignModalSession(null)}
+                onClick={() => setUnbindConfirmSession(null)}
+                style={{ padding: '3px', opacity: 0.7 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              確定要將對話「<strong style={{ color: 'var(--text-primary)' }}>{unbindConfirmSession.title}</strong>」轉為【自由浮動對話】嗎？
+            </div>
+
+            <div
+              style={{
+                fontSize: '11px',
+                padding: '8px 10px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                border: '1px solid rgba(234, 179, 8, 0.3)',
+                color: '#ca8a04',
+                lineHeight: 1.4,
+              }}
+            >
+              ⚠️ <strong>重要提醒</strong>：
+              <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                <li>轉為自由對話後，您可以在對話中隨時切換正在操作的筆記。</li>
+                <li><strong>此操作不可逆</strong>，一旦解除綁定後將無法再改回專屬綁定單一筆記。</li>
+              </ul>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button
+                className="btn"
+                onClick={() => setUnbindConfirmSession(null)}
+                style={{ flex: 1, padding: '6px', fontSize: '11.5px' }}
+              >
+                取消
+              </button>
+              <button
+                className="btn"
+                onClick={() => handleConfirmUnbindToFloating(unbindConfirmSession.id)}
+                style={{
+                  flex: 1,
+                  padding: '6px',
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  backgroundColor: '#6366f1',
+                  color: '#fff',
+                  border: 'none',
+                }}
+              >
+                確認轉為自由對話
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 自由浮動對話切換目標筆記彈窗 */}
+      {switchNoteModalSession && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setSwitchNoteModalSession(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '340px',
+              backgroundColor: 'var(--bg-primary, #1e1e1e)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '16px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <Globe size={15} color="#6366f1" />
+                <span>切換操作目標筆記</span>
+              </div>
+              <button
+                className="theme-toggle-btn"
+                onClick={() => setSwitchNoteModalSession(null)}
                 style={{ padding: '3px', opacity: 0.7 }}
               >
                 <X size={14} />
@@ -3118,63 +3437,57 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             </div>
 
             <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              對話「<strong style={{ color: 'var(--text-primary)' }}>{reassignModalSession.title}</strong>」目前隸屬：
-              <span style={{ color: '#22c55e', fontWeight: 600, marginLeft: '4px' }}>{reassignModalSession.noteName}</span>
+              自由對話「<strong style={{ color: 'var(--text-primary)' }}>{switchNoteModalSession.title}</strong>」目前操作：
+              <span style={{ color: '#6366f1', fontWeight: 600, marginLeft: '4px' }}>{switchNoteModalSession.noteName}</span>
             </div>
 
-            {/* 一鍵綁定為當前正在修改的筆記 */}
-            {currentNotePath && (
-              <button
-                className="btn btn-primary"
-                onClick={() => handleReassignSessionNote(reassignModalSession.id, currentNotePath, getNoteName(currentNotePath))}
-                style={{
-                  padding: '7px 10px',
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                }}
-              >
-                <Sparkles size={13} />
-                <span>綁定為目前正在修改的「{getNoteName(currentNotePath)}」</span>
-              </button>
-            )}
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                或選擇工作區中的其他筆記：
+              <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                選擇要切換至哪一份筆記：
               </div>
-              <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {allMarkdownNotes.map((note) => (
-                  <div
-                    key={note.path}
-                    onClick={() => handleReassignSessionNote(reassignModalSession.id, note.path, note.name)}
-                    style={{
-                      padding: '6px 8px',
-                      borderRadius: '5px',
-                      backgroundColor: reassignModalSession.notePath === note.path ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-secondary)',
-                      border: reassignModalSession.notePath === note.path ? '1px solid #22c55e' : '1px solid var(--border-color)',
-                      cursor: 'pointer',
-                      fontSize: '11.5px',
-                      color: 'var(--text-primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <FileText size={12} color="#22c55e" />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.name}</span>
-                  </div>
-                ))}
+              <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {allMarkdownNotes.map((note) => {
+                  const isCurrentTarget = switchNoteModalSession.notePath === note.path;
+                  const isCurrentEditor = currentNotePath === note.path;
+
+                  return (
+                    <div
+                      key={note.path}
+                      onClick={() => handleSwitchFloatingTargetNote(switchNoteModalSession.id, note.path, note.name)}
+                      style={{
+                        padding: '6px 8px',
+                        borderRadius: '5px',
+                        backgroundColor: isCurrentTarget ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-secondary)',
+                        border: isCurrentTarget ? '1px solid #6366f1' : '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        fontSize: '11.5px',
+                        color: 'var(--text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '6px',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                        <FileText size={12} color={isCurrentTarget ? '#6366f1' : '#22c55e'} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note.name}</span>
+                      </div>
+                      {isCurrentEditor && (
+                        <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: '3px', backgroundColor: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', flexShrink: 0 }}>
+                          編輯中
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
               <button
                 className="btn"
-                onClick={() => setReassignModalSession(null)}
+                onClick={() => setSwitchNoteModalSession(null)}
                 style={{ padding: '5px 12px', fontSize: '11.5px' }}
               >
                 取消
