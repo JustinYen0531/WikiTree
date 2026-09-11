@@ -974,7 +974,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               </div>
                             )}
 
-                            {/* 操作控制列：套用修整 (Diff) vs 直接插入 (Insert) 與複製 */}
+                            {/* 操作控制列：依據 activeTab 嚴格區分動作 */}
                             <div
                               style={{
                                 padding: '8px 12px',
@@ -983,65 +983,73 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                 display: 'flex',
                                 gap: '8px',
                                 alignItems: 'center',
-                                flexWrap: 'wrap',
                               }}
                             >
-                              {/* 按鈕 1: 套用修整 (Diff 替換模式) */}
-                              {onApplyDiff && (
-                                <button
-                                  className="btn btn-primary"
-                                  onClick={() => applyDiffToNote(msg.id, note, diff)}
-                                  style={{
-                                    flex: 1,
-                                    padding: '6px 12px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 600,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '6px',
-                                    backgroundColor: '#2563eb',
-                                    borderColor: '#2563eb',
-                                  }}
-                                  title="在編輯器中呈現對稱的 Diff 審查區塊（綠色新增＋紅色刪除）"
-                                >
-                                  {appliedId === msg.id ? <Check size={14} color="#ffffff" /> : <GitBranch size={14} />}
-                                  <span>{appliedId === msg.id ? '已送至編輯器！' : '🔀 套用修整 (Diff)'}</span>
-                                </button>
-                              )}
+                              {activeTab === 'note' ? (
+                                <>
+                                  {/* 知識筆記分頁：只有直接插入 ＋ 複製按鈕 */}
+                                  {onApplyContent && (
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={() => applyToNote(msg.id, note)}
+                                      style={{
+                                        flex: 1,
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px',
+                                        backgroundColor: '#22c55e',
+                                        color: '#000000',
+                                        border: 'none',
+                                      }}
+                                      title="在編輯器中生成可拖動的綠色插入區塊"
+                                    >
+                                      {appliedId === msg.id ? <Check size={14} color="#000000" /> : <Plus size={14} />}
+                                      <span>{appliedId === msg.id ? '已送至編輯器！' : '➕ 直接插入'}</span>
+                                    </button>
+                                  )}
 
-                              {/* 按鈕 2: 直接插入新段落 (單純插入模式) */}
-                              {onApplyContent && (
-                                <button
-                                  className="btn"
-                                  onClick={() => applyToNote(msg.id, note)}
-                                  style={{
-                                    padding: '6px 10px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 600,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-                                    borderColor: 'rgba(34, 197, 94, 0.35)',
-                                    color: '#22c55e',
-                                  }}
-                                  title="以可拖動的綠色膠囊直接插入筆記某一處"
-                                >
-                                  <Plus size={13} />
-                                  <span>➕ 直接插入</span>
-                                </button>
+                                  <button
+                                    className="btn"
+                                    title="複製純淨筆記"
+                                    onClick={() => copyToClipboard(msg.id, note)}
+                                    style={{ padding: '6px 12px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                  >
+                                    {copiedId === msg.id ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
+                                    <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {/* 知識修整分頁：只有套用修整按鈕 */}
+                                  {onApplyDiff && (
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={() => applyDiffToNote(msg.id, note, diff)}
+                                      style={{
+                                        flex: 1,
+                                        padding: '6px 12px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px',
+                                        backgroundColor: '#2563eb',
+                                        borderColor: '#2563eb',
+                                        color: '#ffffff',
+                                      }}
+                                      title="在編輯器中呈現對稱的 Diff 審查區塊（綠色新增＋紅色刪除）"
+                                    >
+                                      {appliedId === msg.id ? <Check size={14} color="#ffffff" /> : <GitBranch size={14} />}
+                                      <span>{appliedId === msg.id ? '已送至編輯器！' : '🔀 套用修整 (Diff)'}</span>
+                                    </button>
+                                  )}
+                                </>
                               )}
-
-                              <button
-                                className="btn"
-                                title="複製純淨筆記"
-                                onClick={() => copyToClipboard(msg.id, note)}
-                                style={{ padding: '6px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                {copiedId === msg.id ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
-                                <span>{copiedId === msg.id ? '已複製' : '複製'}</span>
-                              </button>
                             </div>
                           </div>
                         </div>

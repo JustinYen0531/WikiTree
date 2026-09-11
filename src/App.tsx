@@ -9,7 +9,8 @@ import {
   Moon,
   FolderPlus,
   Sparkles,
-  X
+  X,
+  Edit2
 } from 'lucide-react';
 
 import { supabase, isSupabaseConfigured } from './utils/supabase';
@@ -85,7 +86,9 @@ function App() {
   const [pendingInsertNote, setPendingInsertNote] = useState<string | null>(null);
   const [pendingDiff, setPendingDiff] = useState<PendingDiffInfo | null>(null);
   
-  // CLI States
+  // Top Navbar Inline Rename States
+  const [isEditingFileName, setIsEditingFileName] = useState(false);
+  const [fileNameInput, setFileNameInput] = useState('');
   const [cliConnected, setCliConnected] = useState(false);
   const [cliPathInput, setCliPathInput] = useState('');
 
@@ -480,15 +483,20 @@ function App() {
   };
 
   // Save current note content
-  const handleSaveFile = async () => {
+  const handleSaveFile = async (overrideContent?: string) => {
     if (!rootHandle || !activeFile) return;
+    const targetContent = overrideContent !== undefined ? overrideContent : content;
 
     try {
-      await writeFileContent(activeFile.handle as FileSystemFileHandle, content);
-      setOriginalContent(content);
+      await writeFileContent(activeFile.handle as FileSystemFileHandle, targetContent);
+      setContent(targetContent);
+      setOriginalContent(targetContent);
       // Reload workspace files to ensure state matches
       const fileList = await getFilesRecursively(rootHandle);
       setFiles(fileList);
+      if (overrideContent !== undefined) {
+        showToast('💾 已自動保存至本地！', 'success');
+      }
     } catch (e) {
       console.error('Save failed', e);
       alert('儲存檔案失敗，請檢查資料夾的讀寫權限。');
@@ -675,6 +683,32 @@ function App() {
       console.error('Rename failed', e);
       alert(`重命名失敗: ${e.message || '未知錯誤'}`);
     }
+  };
+
+  // Top Navbar Inline Rename Handlers
+  const startEditingFileName = () => {
+    if (!activeFile) return;
+    setFileNameInput(activeFile.name);
+    setIsEditingFileName(true);
+  };
+
+  const commitFileNameChange = async () => {
+    if (!isEditingFileName || !activeFile) return;
+    const trimmed = fileNameInput.trim();
+    if (!trimmed) {
+      setIsEditingFileName(false);
+      return;
+    }
+    const finalName = trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
+    if (finalName === activeFile.name) {
+      setIsEditingFileName(false);
+      return;
+    }
+    setIsEditingFileName(false);
+    await runFileOperation(async () => {
+      await handleRename(activeFile, finalName);
+      showToast(`✨ 已將筆記更名為：${finalName}`);
+    });
   };
 
   // Delete file/folder
@@ -978,10 +1012,63 @@ function App() {
           <>
             {/* Top Navigation Control Bar */}
             <div className="top-navbar">
-              <div className="navbar-left">
-                <span style={{ fontWeight: '500' }}>
-                  {activeFile ? activeFile.path.split('/').join(' / ') : '選擇一片葉'}
-                </span>
+              <div className="navbar-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {activeFile && isEditingFileName ? (
+                  <input
+                    type="text"
+                    value={fileNameInput}
+                    onChange={(e) => setFileNameInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        void commitFileNameChange();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setIsEditingFileName(false);
+                      }
+                    }}
+                    onBlur={() => void commitFileNameChange()}
+                    autoFocus
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      height: '28px',
+                      minWidth: '180px',
+                      maxWidth: '320px',
+                      borderRadius: '4px',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--accent, #2563eb)',
+                      outline: 'none',
+                    }}
+                  />
+                ) : (
+                  <span
+                    onClick={startEditingFileName}
+                    title={activeFile ? "點擊修改檔案名稱" : ""}
+                    style={{
+                      fontWeight: '500',
+                      cursor: activeFile ? 'pointer' : 'default',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.15s ease',
+                      userSelect: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (activeFile) (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)');
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget.style.backgroundColor = 'transparent');
+                    }}
+                  >
+                    <span>{activeFile ? activeFile.path.split('/').join(' / ') : '選擇一片葉'}</span>
+                    {activeFile && <Edit2 size={12} style={{ opacity: 0.6 }} />}
+                  </span>
+                )}
                 {!isSaved && (
                   <span style={{ 
                     fontSize: '11px', 
@@ -989,7 +1076,6 @@ function App() {
                     borderRadius: '4px', 
                     backgroundColor: 'var(--warning-bg)', 
                     color: 'var(--warning)', 
-                    marginLeft: '8px',
                     fontWeight: '600'
                   }}>
                     EVOLVING
@@ -1004,7 +1090,7 @@ function App() {
                 </button>
 
                 {activeFile && (
-                  <button className="btn" onClick={() => void runFileOperation(handleSaveFile)} disabled={isSaved}>
+                  <button className="btn" onClick={() => void runFileOperation(() => handleSaveFile())} disabled={isSaved}>
                     <Save size={14} />
                     固定葉片
                   </button>
@@ -1038,7 +1124,7 @@ function App() {
                 key={`${activeWorkspaceId}:${activeFile.path}`}
                 content={content}
                 onChange={setContent}
-                onSave={() => void runFileOperation(handleSaveFile)}
+                onSave={(overrideContent) => void runFileOperation(() => handleSaveFile(overrideContent))}
                 isSaved={isSaved}
                 viewMode={viewMode}
                 setViewMode={setViewMode}

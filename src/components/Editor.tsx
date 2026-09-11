@@ -23,7 +23,7 @@ import { PendingDiffInfo } from '../utils/diffUtils';
 interface EditorProps {
   content: string;
   onChange: (value: string) => void;
-  onSave: () => void;
+  onSave: (overrideContent?: string) => void;
   isSaved: boolean;
   viewMode: 'wysiwyg' | 'source' | 'split';
   setViewMode: (mode: 'wysiwyg' | 'source' | 'split') => void;
@@ -330,8 +330,11 @@ export const Editor: React.FC<EditorProps> = ({
       ...newBlocks,
       ...blocks.slice(targetIdx)
     ];
+    const newMd = blocksToMarkdown(nextBlocks);
     updateContentFromBlocks(nextBlocks);
     if (onClearPendingInsert) onClearPendingInsert();
+    // 自動保存至本地
+    if (onSave) onSave(newMd);
   };
 
   // 當從側邊欄點擊「套用修整 (Diff)」送入時，初始化位置與狀態
@@ -361,14 +364,20 @@ export const Editor: React.FC<EditorProps> = ({
         ...newBlocks,
         ...blocks.slice(targetIdx)
       ];
+      const newMd = blocksToMarkdown(nextBlocks);
       updateContentFromBlocks(nextBlocks);
       if (onClearPendingDiff) onClearPendingDiff();
+      // 自動保存至本地
+      if (onSave) onSave(newMd);
       return;
     }
 
     const nextBlocks = parseMarkdownToBlocks(nextContent);
+    const newMd = blocksToMarkdown(nextBlocks);
     updateContentFromBlocks(nextBlocks);
     if (onClearPendingDiff) onClearPendingDiff();
+    // 自動保存至本地
+    if (onSave) onSave(newMd);
   };
 
   // 渲染可上下移動、預設 20% 縮略預覽的綠色膠囊區塊
