@@ -28,6 +28,7 @@ import {
   X,
   Image as ImageIcon,
   Paperclip,
+  Zap,
 } from 'lucide-react';
 import { renderMarkdownSync } from '../utils/markdownRenderer';
 import { preprocessCallouts } from '../utils/callouts';
@@ -67,6 +68,15 @@ export interface AttachmentFile {
   isImage?: boolean;
 }
 
+export interface WikiSkill {
+  id: string;
+  name: string;
+  title: string;
+  badge?: string;
+  description: string;
+  content?: string;
+}
+
 interface ChatMessage {
   delivery?: 'streaming' | 'incomplete';
   id: string;
@@ -74,6 +84,7 @@ interface ChatMessage {
   content: string;
   timestamp: string;
   attachments?: AttachmentFile[];
+  skills?: string[];
 }
 
 export interface ChatSession {
@@ -569,6 +580,94 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
   };
 
+  // 專業技能 (Skills) 狀態與配置
+  const DEFAULT_SKILLS: WikiSkill[] = [
+    {
+      id: 'humanized-learning-notes',
+      name: 'humanized-learning-notes',
+      title: '終身學習思維筆記',
+      badge: '終身學習',
+      description: '將教材轉化為建立直覺與決策力的終身思維工具書，嚴禁應試死背字眼。',
+    },
+    {
+      id: 'cornell-adaptive-learning',
+      name: 'cornell-adaptive-learning',
+      title: '康奈爾自適應筆記',
+      badge: 'Cornell',
+      description: '結合高密度知識矩陣、因果認知鏈、主動檢索問題（Cue）與掌握度標記。',
+    },
+    {
+      id: 'feynman-technique',
+      name: 'feynman-technique',
+      title: '費曼極簡白話轉譯',
+      badge: '費曼轉譯',
+      description: '以國小生能懂的生動比喻解構複雜事物，徹底粉碎術語障礙，檢驗直覺理解。',
+    },
+    {
+      id: 'first-principles',
+      name: 'first-principles',
+      title: '第一性原理拆解',
+      badge: '第一性',
+      description: '剝除表面所有既成前提與經驗盲區，回歸最本質的物理真理重新向下推演。',
+    },
+    {
+      id: 'branch-evolution',
+      name: 'branch-evolution',
+      title: '知識森林枝幹演化',
+      badge: '生態演化',
+      description: '探詢知識樹的上下層概念脈絡，推導潛在子節點與跨學科學術交叉授粉。',
+    },
+  ];
+
+  const [availableSkills, setAvailableSkills] = useState<WikiSkill[]>(DEFAULT_SKILLS);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('wikitree_active_skills');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showSkillsPopover, setShowSkillsPopover] = useState(false);
+  const skillsPopoverRef = useRef<HTMLDivElement>(null);
+
+  // 獲取後端 Skills 清單
+  useEffect(() => {
+    fetch('/api/skills', { headers: cliWorkspaceHeaders(workspacePath) })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.skills) && data.skills.length > 0) {
+          setAvailableSkills(data.skills);
+        }
+      })
+      .catch(() => {});
+  }, [workspacePath]);
+
+  // 點擊外部關閉技能浮層
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (skillsPopoverRef.current && !skillsPopoverRef.current.contains(e.target as Node)) {
+        setShowSkillsPopover(false);
+      }
+    };
+    if (showSkillsPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSkillsPopover]);
+
+  const toggleSkill = (skillId: string) => {
+    setSelectedSkillIds((prev) => {
+      const next = prev.includes(skillId) ? prev.filter((id) => id !== skillId) : [...prev, skillId];
+      try {
+        localStorage.setItem('wikitree_active_skills', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const switchMode = (nextMode: EnvironmentMode) => {
     setMode(nextMode);
     localStorage.setItem('wikitree_env_mode', nextMode);
@@ -627,6 +726,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   const handleSendMessage = async (customPrompt?: string, skillLabel?: string) => {
     const currentAttachments = [...pendingAttachments];
+    const currentSkills = [...selectedSkillIds];
     const text = (customPrompt || inputMessage).trim() || (currentAttachments.length > 0 ? '請參考附帶的圖片/檔案，為我提煉並製作詳細的知識筆記。' : '');
     if (!text) return;
     setPendingAttachments([]);
@@ -703,6 +803,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       content: text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      skills: currentSkills.length > 0 ? currentSkills : undefined,
     };
 
     const botId = 'bot-' + crypto.randomUUID();
@@ -747,6 +848,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           message: text,
           stream: true,
           attachments: currentAttachments,
+          skills: currentSkills,
           context: {
             path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
@@ -1833,6 +1935,35 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                         </div>
                       )}
 
+                      {/* 渲染啟用的專業技能標籤 */}
+                      {msg.skills && msg.skills.length > 0 && (
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '90%' }}>
+                          {msg.skills.map((skillId) => {
+                            const skill = availableSkills.find((s) => s.id === skillId);
+                            return (
+                              <span
+                                key={skillId}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  fontSize: '10px',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                  border: '1px solid rgba(245, 158, 11, 0.5)',
+                                  color: '#f59e0b',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <Zap size={10} fill="#f59e0b" />
+                                {skill?.title || skillId}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <div
                         style={{
                           maxWidth: '90%',
@@ -2365,6 +2496,46 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </div>
             )}
 
+            {/* 啟用的技能標籤列 */}
+            {selectedSkillIds.length > 0 && (
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', alignItems: 'center', padding: '2px 0' }}>
+                <span style={{ fontSize: '10.5px', color: '#f59e0b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Zap size={11} fill="#f59e0b" />
+                  已啟用技能：
+                </span>
+                {selectedSkillIds.map((id) => {
+                  const skill = availableSkills.find((s) => s.id === id);
+                  return (
+                    <span
+                      key={id}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        borderRadius: '4px',
+                        padding: '1px 6px',
+                        fontSize: '10.5px',
+                        color: '#f59e0b',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {skill?.title || id}
+                      <button
+                        type="button"
+                        onClick={() => toggleSkill(id)}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#f59e0b', display: 'flex' }}
+                        title="取消此技能"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 隱藏的檔案選取器 */}
             <input
               ref={fileInputRef}
@@ -2394,6 +2565,170 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               >
                 <Plus size={15} />
               </button>
+
+              {/* 閃電按鈕：選擇技能 (Skill) */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowSkillsPopover((v) => !v)}
+                  disabled={loading || (!!generatingSessionId && generatingSessionId !== activeSessionId)}
+                  title={`選擇專業技能 (${selectedSkillIds.length} 個已啟用)`}
+                  style={{
+                    padding: '7px 9px',
+                    height: '34px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: selectedSkillIds.length > 0 ? '#f59e0b' : 'var(--text-secondary)',
+                    backgroundColor: selectedSkillIds.length > 0 ? 'rgba(245, 158, 11, 0.12)' : undefined,
+                    borderColor: selectedSkillIds.length > 0 ? '#f59e0b' : undefined,
+                    position: 'relative',
+                  }}
+                >
+                  <Zap size={15} fill={selectedSkillIds.length > 0 ? '#f59e0b' : 'none'} />
+                  {selectedSkillIds.length > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '-4px',
+                        right: '-4px',
+                        backgroundColor: '#f59e0b',
+                        color: '#000000',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        width: '14px',
+                        height: '14px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {selectedSkillIds.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* 技能選擇浮層 Popover */}
+                {showSkillsPopover && (
+                  <div
+                    ref={skillsPopoverRef}
+                    style={{
+                      position: 'absolute',
+                      bottom: '42px',
+                      left: '0',
+                      width: '320px',
+                      maxHeight: '390px',
+                      backgroundColor: 'var(--bg-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      zIndex: 100,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '10px 12px',
+                        borderBottom: '1px solid var(--border-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        backgroundColor: 'var(--bg-secondary)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '12px' }}>
+                        <Zap size={14} color="#f59e0b" fill="#f59e0b" />
+                        <span>選擇 WikiTree 技能 (可多選)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowSkillsPopover(false)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: 'var(--text-secondary)' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div style={{ padding: '8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px' }}>
+                      {availableSkills.map((skill) => {
+                        const isSelected = selectedSkillIds.includes(skill.id);
+                        return (
+                          <div
+                            key={skill.id}
+                            onClick={() => toggleSkill(skill.id)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              borderRadius: '6px',
+                              border: `1px solid ${isSelected ? '#f59e0b' : 'var(--border-color)'}`,
+                              backgroundColor: isSelected ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-secondary)',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              style={{ marginTop: '2px', cursor: 'pointer', accentColor: '#f59e0b' }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '12px', color: isSelected ? '#f59e0b' : 'var(--text-primary)' }}>
+                                  {skill.title}
+                                </span>
+                                {skill.badge && (
+                                  <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '4px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                                    {skill.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                                {skill.description}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderTop: '1px solid var(--border-color)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: 'var(--bg-secondary)',
+                        fontSize: '11px',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setSelectedSkillIds([])}
+                        style={{ padding: '4px 8px', fontSize: '11px' }}
+                      >
+                        清除全部
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setShowSkillsPopover(false)}
+                        style={{ padding: '4px 12px', fontSize: '11px' }}
+                      >
+                        完成 ({selectedSkillIds.length})
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <input
                 type="text"

@@ -95,6 +95,133 @@ const PORT = 18080;
 
 let defaultWorkspace = process.cwd();
 
+function parseSkillMd(folderName, rawContent) {
+  let name = folderName;
+  let description = '';
+  let body = rawContent;
+
+  if (rawContent.startsWith('---')) {
+    const endIdx = rawContent.indexOf('---', 3);
+    if (endIdx !== -1) {
+      const frontmatter = rawContent.slice(3, endIdx);
+      body = rawContent.slice(endIdx + 3).trim();
+      const nameMatch = frontmatter.match(/name:\s*([^\r\n]+)/);
+      if (nameMatch) name = nameMatch[1].trim();
+      const descMatch = frontmatter.match(/description:\s*(?:>-\s*)?([\s\S]+?)(?=\n[a-zA-Z0-9_-]+:|$)/);
+      if (descMatch) description = descMatch[1].replace(/\r?\n\s*/g, ' ').trim();
+    }
+  }
+
+  let title = name;
+  let badge = '技能';
+  if (name === 'humanized-learning-notes') {
+    title = '終身學習思維筆記';
+    badge = '終身學習';
+  } else if (name === 'cornell-adaptive-learning') {
+    title = '康奈爾自適應筆記';
+    badge = 'Cornell';
+  } else if (name === 'feynman-technique') {
+    title = '費曼極簡白話轉譯';
+    badge = '費曼轉譯';
+  } else if (name === 'first-principles') {
+    title = '第一性原理拆解';
+    badge = '第一性';
+  } else if (name === 'branch-evolution') {
+    title = '知識森林枝幹演化';
+    badge = '生態演化';
+  }
+
+  return {
+    id: name,
+    name,
+    title,
+    badge,
+    description: description || '專業 WikiTree 筆記技能規範',
+    content: body,
+  };
+}
+
+function loadAllSkills(workspacePath) {
+  const skillsMap = new Map();
+
+  const defaults = [
+    {
+      id: 'humanized-learning-notes',
+      name: 'humanized-learning-notes',
+      title: '終身學習思維筆記',
+      badge: '終身學習',
+      description: '將教材轉化為建立直覺與決策力的終身思維工具書，嚴禁應試死背字眼。',
+      content: `# Humanized Lifelong Learning Notes Protocol\n目標：將教材轉化為建立直覺與決策力的「終身思維工具書」，非應考清單。\n\n## 1. 寫作原則\n- 語調：真誠對話、富作者感，兼顧學術嚴謹與現實溫度；嚴禁應試字眼（必考/背誦/考點）與空泛心靈雞湯。\n- 素人白話起手建立生活直覺，禁首句塞定義。\n- 闡述公式本質在衡量或平衡什麼。\n- 提供 2~4 個日常微觀、職涯決策或商業生活映射。\n- 總結「三年後只記三件事」與「留給未來的自己」的人生意涵問題。`,
+    },
+    {
+      id: 'cornell-adaptive-learning',
+      name: 'cornell-adaptive-learning',
+      title: '康奈爾自適應筆記',
+      badge: 'Cornell',
+      description: '結合高密度知識矩陣、因果認知鏈、主動檢索問題（Cue）與掌握度標記。',
+      content: `# Cornell Adaptive Learning Protocol\n最高原則：人類負責學習反饋，AI 負責重構出認知因果鏈、題型生成與精華提煉。\n\n## 結構規範\n1. Main Notes：核心概念、因果邏輯、公式推演，拒絕教科書純摘要。\n2. Cue / Question：將重點轉化為發人深省的主動檢索問題。\n3. Summary：2~3 句核心直覺提煉。\n4. State Tag：概念掌握度標記（🟢 熟悉 / 🟡 模糊 / 🔴 不熟 / 🔵 新知）。`,
+    },
+    {
+      id: 'feynman-technique',
+      name: 'feynman-technique',
+      title: '費曼極簡白話轉譯',
+      badge: '費曼轉譯',
+      description: '以國小生能懂的生動比喻解構複雜事物，徹底粉碎術語障礙，檢驗直覺理解。',
+      content: `# Feynman Technique Protocol\n原則：如果你無法簡單解釋，就代表你還不夠理解。\n\n## 執行規範\n- 禁用無解釋的高深行話與術語，全部轉譯為生活常見情境比喻。\n- 透過反向提問或假想對話檢驗理解漏洞。\n- 聚焦「它在日常中就像什麼」的直觀體會。`,
+    },
+    {
+      id: 'first-principles',
+      name: 'first-principles',
+      title: '第一性原理拆解',
+      badge: '第一性',
+      description: '剝除表面所有既成前提與經驗盲區，回歸最本質的物理真理重新向下推演。',
+      content: `# First Principles Thinking Protocol\n原則：不以類比或既有做法為前提，打破砂鍋問到底。\n\n## 執行規範\n1. 列出目前領域被視為理所當然的預設立場與假設。\n2. 逐一質疑並剔除不可靠的前提，直到觸及不可分割的基礎事實。\n3. 從這些最根本的真理出發，重新建構解決方案與邏輯鏈條。`,
+    },
+    {
+      id: 'branch-evolution',
+      name: 'branch-evolution',
+      title: '知識森林枝幹演化',
+      badge: '生態演化',
+      description: '探詢知識樹的上下層概念脈絡，推導潛在子節點與跨學科學術交叉授粉。',
+      content: `# WikiTree Arborist Evolution Protocol\n原則：Knowledge grows like forests, not folders.\n\n## 執行規範\n- 主動定位父概念（Parent Concept）與所屬領域枝幹。\n- 推導出 2~3 個值得獨立生長的概念子節點（Child Leaves）。\n- 尋找與其他學科領域的跨界授粉（Cross-links）。`,
+    },
+  ];
+
+  for (const item of defaults) {
+    skillsMap.set(item.id, item);
+  }
+
+  // Scan disk for user and workspace skills
+  const searchDirs = [
+    path.join(os.homedir(), '.gemini', 'config', 'skills'),
+    workspacePath ? path.join(workspacePath, '.wikitree', 'skills') : null,
+  ].filter(Boolean);
+
+  for (const baseDir of searchDirs) {
+    try {
+      if (fs.existsSync(baseDir)) {
+        const subdirs = fs.readdirSync(baseDir, { withFileTypes: true });
+        for (const dirent of subdirs) {
+          if (dirent.isDirectory()) {
+            const skillFile = path.join(baseDir, dirent.name, 'SKILL.md');
+            if (fs.existsSync(skillFile)) {
+              const raw = fs.readFileSync(skillFile, 'utf8');
+              const parsed = parseSkillMd(dirent.name, raw);
+              if (parsed) {
+                skillsMap.set(parsed.id, parsed);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error scanning skills dir:', baseDir, err);
+    }
+  }
+
+  return Array.from(skillsMap.values());
+}
+
 // Simple HTTP server to act as the Antigravity CLI daemon
 const server = http.createServer((req, res) => {
   // Set CORS headers
@@ -153,6 +280,14 @@ const server = http.createServer((req, res) => {
       platform: process.platform,
       nodeVersion: process.version
     }));
+    return;
+  }
+
+  // Route: GET /api/skills
+  if (req.url === '/api/skills' && req.method === 'GET') {
+    const skills = loadAllSkills(currentWorkspace);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ skills }));
     return;
   }
 
@@ -286,10 +421,31 @@ const server = http.createServer((req, res) => {
           `\n請深入檢視並參考上述圖片/檔案內容（包含圖表架構、關鍵字、視覺邏輯或資料），將其融入筆記的推導與正式內容中。\n\n`;
       }
 
+      // Process active skills if any (e.g. humanized-learning-notes, cornell, etc.)
+      const requestedSkillIds = Array.isArray(payload.skills) ? payload.skills : [];
+      let skillsPromptSection = '';
+      if (requestedSkillIds.length > 0) {
+        const allSkills = loadAllSkills(currentWorkspace);
+        const activeSkills = allSkills.filter(s => requestedSkillIds.includes(s.id));
+        if (activeSkills.length > 0) {
+          skillsPromptSection =
+            `\n【特別啟用之專業技能規範 (Active Skills - 必須嚴格遵循)】\n` +
+            `使用者為本次筆記任務特別啟用了以下 ${activeSkills.length} 項專業技能規範，你必須深度閱讀並嚴格遵循各技能的原則、語氣與結構約束：\n\n` +
+            activeSkills.map((s, idx) =>
+              `==================== 技能 ${idx + 1}：【${s.title}】(${s.id}) ====================\n` +
+              `【技能核心要求】：${s.description}\n\n` +
+              `【技能完整規範內容】：\n${s.content}\n` +
+              `========================================================================`
+            ).join('\n\n') +
+            `\n\n【技能執行要求】：\n` +
+            `請務必在回答的上半段思考步驟（以『第一步：...』、『第二步：...』呈現）中具體說明你如何將上述技能（例如：若啟用了終身學習筆記，嚴禁任何應試死背字眼，而是著眼於直覺建立與人生決策洞察；若啟用了康奈爾筆記，嚴格依據 Cue、因果鏈與 Summary 等格式）切實落實到本次筆記成果中！\n\n`;
+        }
+      }
+
       const formatRequirement =
         `\n【重要結構規範】\n` +
         `請在回答時明確分成兩段：\n` +
-        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現，若有參考附件圖片請在步驟中明確說明參考了哪些視覺或概念要素）。\n` +
+        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現，若有參考附件圖片或啟用專業技能請在步驟中明確說明參考了哪些要素與如何依循技能規範）。\n` +
         `2. 分隔線：請單獨換行輸出一條 '---' 分隔線。\n` +
         `3. 下半段：分隔線下方請直接輸出純淨、可直接存檔的正式 WikiTree 知識筆記本體（不要夾帶前言寒暄與多餘思考）。`;
 
@@ -299,6 +455,7 @@ const server = http.createServer((req, res) => {
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。請遵循「Knowledge grows like forests, not folders」原則。\n` +
           (notePath ? `使用者當前檢視的知識葉片為：「${notePath}」\n` : '') +
           `葉片內容如下：\n"""\n${noteContent}\n"""\n\n` +
+          skillsPromptSection +
           attachmentPromptSection +
           `使用者任務：${message}\n` +
           formatRequirement;
@@ -306,6 +463,7 @@ const server = http.createServer((req, res) => {
         prompt =
           `【WikiTree 知識生態系統指令】\n` +
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
+          skillsPromptSection +
           attachmentPromptSection +
           `使用者任務：${message}\n` +
           formatRequirement;
