@@ -53,6 +53,7 @@ export async function getFilesRecursively(
       });
       if (response.ok) {
         const data = await response.json();
+        if (!data.scopedWorkspaces) throw new Error('請關閉並重新啟動 WikiTree 桌面版，以啟用多資料夾功能。');
         
         // Enrich the files recursively to make sure they all have isCli handles
         const enrichFiles = (nodes: any[]): FileNode[] => {

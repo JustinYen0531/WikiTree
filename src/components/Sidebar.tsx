@@ -341,7 +341,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {(activeTab === 'files' || activeTab === 'antigravity') && (
+      {isWorkshopTab && (
         <>
           <button className="btn" disabled={workspaceBusy} onClick={onAddWorkspace} style={{ margin: '10px 8px 0', fontSize: '12px' }}>
             <FolderPlus size={14} /> 加入資料夾
@@ -405,7 +405,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </button>
                         <button className="workspace-folder-label" disabled={workspaceBusy} onClick={() => {
                           if (!expanded) toggleRoot(folder);
-                          onActivateWorkspace(folder);
+                          if (!selected) onActivateWorkspace(folder);
                         }}>
                           {expanded ? <FolderOpen size={15} /> : <Folder size={15} />}
                           <span className="node-label">{folder.name}</span>

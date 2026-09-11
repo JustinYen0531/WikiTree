@@ -18,9 +18,11 @@ const targetKey = (target: Pick<NoteTarget, 'type' | 'id'>) => `${target.type}:$
 
 export const getNoteTargetKey = targetKey;
 
-export function loadNoteAssignments(): NoteAssignment[] {
+export function loadNoteAssignments(workspace?: string): NoteAssignment[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const scopedKey = workspace ? `${STORAGE_KEY}:${workspace}` : STORAGE_KEY;
+    const legacyOwner = localStorage.getItem(`${STORAGE_KEY}:legacy-owner`);
+    const raw = localStorage.getItem(scopedKey) || (workspace && (!legacyOwner || legacyOwner === workspace) ? localStorage.getItem(STORAGE_KEY) : null);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -29,8 +31,11 @@ export function loadNoteAssignments(): NoteAssignment[] {
   }
 }
 
-export function saveNoteAssignments(assignments: NoteAssignment[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(assignments));
+export function saveNoteAssignments(assignments: NoteAssignment[], workspace?: string) {
+  if (workspace && !localStorage.getItem(`${STORAGE_KEY}:legacy-owner`)) {
+    localStorage.setItem(`${STORAGE_KEY}:legacy-owner`, workspace);
+  }
+  localStorage.setItem(workspace ? `${STORAGE_KEY}:${workspace}` : STORAGE_KEY, JSON.stringify(assignments));
 }
 
 export function assignNoteToTarget(

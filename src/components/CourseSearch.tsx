@@ -70,6 +70,7 @@ type Course = {
 };
 
 interface CourseSearchProps {
+  workspaceKey?: string;
   files: FileNode[];
   activeFile: FileNode | null;
   onOpenNote: (file: FileNode) => void;
@@ -261,7 +262,7 @@ const flattenMarkdownFiles = (nodes: FileNode[]) => {
   return result;
 };
 
-export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, onOpenNote }) => {
+export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, onOpenNote, workspaceKey }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -274,7 +275,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   const [visibleCount, setVisibleCount] = useState(RESULT_PAGE_SIZE);
   const [categoryType, setCategoryType] = useState<NoteCategoryType>('course');
   const [selectedTarget, setSelectedTarget] = useState<NoteTarget | null>(null);
-  const [assignments, setAssignments] = useState(() => loadNoteAssignments());
+  const [assignments, setAssignments] = useState(() => loadNoteAssignments(workspaceKey));
   const [selectedNotePath, setSelectedNotePath] = useState('');
   const [idSearchMode, setIdSearchMode] = useState(false);
   const [idQuery, setIdQuery] = useState('');
@@ -314,8 +315,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ files, activeFile, o
   }, []);
 
   useEffect(() => {
-    saveNoteAssignments(assignments);
-  }, [assignments]);
+    saveNoteAssignments(assignments, workspaceKey);
+  }, [assignments, workspaceKey]);
 
   useEffect(() => {
     if (!exploreMode) return;

@@ -121,6 +121,7 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       status: 'connected',
       version: '1.2.4',
+      scopedWorkspaces: true,
       workspace: currentWorkspace,
       platform: process.platform,
       nodeVersion: process.version
@@ -391,7 +392,8 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({
         workspace: currentWorkspace,
         name: path.basename(currentWorkspace),
-        files: filesList
+        files: filesList,
+        scopedWorkspaces: true
       }));
     } catch(e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });

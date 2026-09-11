@@ -186,6 +186,14 @@ function App() {
     });
   };
 
+  const runFileOperation = async (operation: () => Promise<void>) => {
+    if (workspaceLock.current) return;
+    workspaceLock.current = true;
+    setWorkspaceBusy(true);
+    try { await operation(); }
+    finally { workspaceLock.current = false; setWorkspaceBusy(false); }
+  };
+
   const activateFolder = async (folder: WorkspaceFolder, selectedFile?: FileNode, approved = false): Promise<boolean> => {
     if (workspaceLock.current) return false;
     if (!approved && !isSaved && !confirm('筆記還沒儲存。要捨棄修改並切換資料夾嗎？')) return false;
@@ -213,7 +221,7 @@ function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : '資料夾暫時無法開啟';
       setWorkspaceFolders(current => current.map(item => item.id === folder.id ? { ...item, error: message } : item));
-      showToast('資料夾無法開啟；若已移動，請重新加入。', 'error');
+      showToast(message, 'error');
       return false;
     } finally {
       workspaceLock.current = false;
@@ -224,6 +232,8 @@ function App() {
   const connectCliFolder = async (folderPath: string, create = false) => {
     if (!folderPath.trim() || workspaceLock.current) return;
     if (!isSaved && !confirm('筆記還沒儲存。要捨棄修改並切換資料夾嗎？')) return;
+    workspaceLock.current = true;
+    setWorkspaceBusy(true);
     const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
     try {
       const response = await fetch(`${cliUrl}/api/workspace/open`, {
@@ -232,11 +242,12 @@ function App() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '無法開啟資料夾');
+      workspaceLock.current = false;
       await activateFolder({ id: workspaceId(data.workspace), name: data.name, handle: data.workspace }, undefined, true);
       setSidebarTab('files');
     } catch (error) {
       showToast(error instanceof Error ? error.message : '無法開啟資料夾', 'error');
-    }
+    } finally { workspaceLock.current = false; setWorkspaceBusy(false); }
   };
 
   const handleOpenOrCreateCliWorkspace = () => connectCliFolder(cliPathInput, true);
@@ -722,18 +733,18 @@ function App() {
         onActivateWorkspace={folder => { void activateFolder(folder); }}
         onRemoveWorkspace={removeFolder}
         onSelectWorkspaceFile={(folder, file) => {
-          if (folder.id === activeWorkspaceId && rootHandle) void openFile(file);
+          if (folder.id === activeWorkspaceId && rootHandle) void runFileOperation(() => openFile(file));
           else void activateFolder(folder, file);
         }}
         rootHandle={rootHandle}
         workspaceName={workspaceName}
         files={files}
         activeFile={activeFile}
-        onSelectFile={openFile}
-        onCreateFile={handleCreateFile}
-        onCreateFolder={handleCreateFolder}
-        onRename={handleRename}
-        onDelete={handleDelete}
+        onSelectFile={file => void runFileOperation(() => openFile(file))}
+        onCreateFile={path => void runFileOperation(() => handleCreateFile(path))}
+        onCreateFolder={path => void runFileOperation(() => handleCreateFolder(path))}
+        onRename={(node, name) => void runFileOperation(() => handleRename(node, name))}
+        onDelete={node => void runFileOperation(() => handleDelete(node))}
         activeTab={sidebarTab}
         setActiveTab={setSidebarTab}
         user={user}
@@ -741,12 +752,12 @@ function App() {
         onTriggerLogin={() => setShowLoginModal(true)}
       />
 
-      {workspaceBusy && <div role="status" style={{ position: 'fixed', inset: 0, zIndex: 12000, background: 'rgba(0,0,0,.35)', display: 'grid', placeItems: 'center' }}>正在開啟資料夾…</div>}
+      {workspaceBusy && <div role="status" style={{ position: 'fixed', inset: 0, zIndex: 12000, background: 'rgba(0,0,0,.35)', display: 'grid', placeItems: 'center' }}>正在處理資料夾…</div>}
 
       {/* Main Panel View */}
       <div className="main-view-container">
         {sidebarTab === 'courses' ? (
-          <CourseSearch files={files} activeFile={activeFile} onOpenNote={openFile} />
+          <CourseSearch key={rootHandle ? activeWorkspaceId : 'no-folder'} workspaceKey={rootHandle ? activeWorkspaceId || undefined : undefined} files={files} activeFile={activeFile} onOpenNote={file => void runFileOperation(() => openFile(file))} />
         ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
@@ -852,7 +863,7 @@ function App() {
           <VersionHistory 
             rootHandle={rootHandle}
             snapshots={snapshots}
-            onRestoreSnapshot={handleRestoreSnapshot}
+            onRestoreSnapshot={id => runFileOperation(() => handleRestoreSnapshot(id))}
             onClose={() => setShowHistoryPanel(false)}
             currentFilesPaths={getFlatPathsList()}
           />
@@ -882,13 +893,13 @@ function App() {
 
               <div className="navbar-right">
                 {activeFile && (
-                  <button className="btn" onClick={handleSaveFile} disabled={isSaved}>
+                  <button className="btn" onClick={() => void runFileOperation(handleSaveFile)} disabled={isSaved}>
                     <Save size={14} />
                     固定葉片
                   </button>
                 )}
                 
-                <button className="btn" onClick={handleCreateSnapshot}>
+                <button className="btn" onClick={() => void runFileOperation(handleCreateSnapshot)}>
                   <History size={14} />
                   記錄演化
                 </button>
@@ -913,10 +924,10 @@ function App() {
             {/* Note Editor View */}
             {activeFile ? (
               <Editor
-                key={activeFile.path}
+                key={`${activeWorkspaceId}:${activeFile.path}`}
                 content={content}
                 onChange={setContent}
-                onSave={handleSaveFile}
+                onSave={() => void runFileOperation(handleSaveFile)}
                 isSaved={isSaved}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
@@ -925,10 +936,10 @@ function App() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', gap: '16px' }}>
                 <p>尚未選擇任何知識葉片。</p>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn" onClick={() => handleCreateFile('')}>
+                  <button className="btn" onClick={() => void runFileOperation(() => handleCreateFile(''))}>
                     <Plus size={14} /> 生成葉片
                   </button>
-                  <button className="btn" onClick={() => handleCreateFolder('')}>
+                  <button className="btn" onClick={() => void runFileOperation(() => handleCreateFolder(''))}>
                     <FolderPlus size={14} /> 生成分枝
                   </button>
                 </div>
