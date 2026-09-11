@@ -8,8 +8,8 @@ interface ProviderState {
   models: { id: string; name: string; isDefault?: boolean }[];
 }
 const providers = [
-  ['agy', 'Antigravity（原有服務）'], ['google', 'Google · Gemini'],
-  ['openai', 'OpenAI · Codex'], ['claude', 'Anthropic · Claude'],
+  ['agy', 'Google Gemini'],
+  ['openai', 'OpenAI · Codex'],
 ];
 const headers = { 'X-WikiTree-AI': '1' };
 
@@ -71,7 +71,7 @@ export function AiProviderPicker({ url, selection, onChange, onReadyChange, disa
   } catch { /* No login URL while disconnected. */ }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '8px', marginTop: '2px', borderTop: '1px solid var(--border-color)' }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
         AI 廠商
         <select className="form-input" value={selection.provider} disabled={disabled || working}
@@ -91,7 +91,7 @@ export function AiProviderPicker({ url, selection, onChange, onReadyChange, disa
         {error || state?.message || '確認連線中…'}
       </div>
       {authUrl && state?.status === 'pending' && <a href={authUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">開啟官方登入頁面</a>}
-      {selection.provider !== 'agy' && state?.status !== 'unsupported' && selection.provider !== 'claude' && (
+      {selection.provider !== 'agy' && state?.status !== 'unsupported' && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {state?.status !== 'pending' && <button type="button" className="btn" disabled={disabled || working} onClick={() => void action('login')}>
             {working ? '連線中…' : state?.status === 'connected' ? '重新登入' : '登入／重新連線'}

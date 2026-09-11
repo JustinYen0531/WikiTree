@@ -118,7 +118,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [aiSelection, setAiSelection] = useState<AiSelection>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('wikitree_ai_selection') || 'null');
-      if (saved && ['agy', 'google', 'openai', 'claude'].includes(saved.provider) && typeof saved.model === 'string') return saved;
+      if (saved && typeof saved.model === 'string') {
+        // Google Gemini is the user-facing name of the existing Anti-Gravity service.
+        const provider = saved.provider === 'google' ? 'agy' : saved.provider;
+        if (['agy', 'openai'].includes(provider)) return { ...saved, provider };
+      }
     } catch {}
     return { provider: 'agy', model: 'default' };
   });
@@ -550,6 +554,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             placeholder={DEFAULT_CLI_URL}
             style={{ fontSize: '11.5px', padding: '4px 8px' }}
           />
+          {mode === 'app' && (
+            <AiProviderPicker
+              url={cliUrl}
+              selection={aiSelection}
+              onChange={setAiSelection}
+              onReadyChange={setAiReady}
+              disabled={loading}
+            />
+          )}
           <div style={{ display: 'flex', gap: '6px' }}>
             <button
               className="btn btn-primary"
@@ -1133,7 +1146,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <span>按 Enter 送出 • 自動分離思維與筆記</span>
               <span>支援 20% 預覽確認</span>
             </div>
-            <AiProviderPicker url={cliUrl} selection={aiSelection} onChange={setAiSelection} onReadyChange={setAiReady} disabled={loading} />
           </div>
         </>
       ) : (

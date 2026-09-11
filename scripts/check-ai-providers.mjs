@@ -4,10 +4,19 @@ import { EventEmitter } from 'node:events';
 import { mkdtempSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { AiRpc } = require('../ai-rpc.cjs');
-const { AiProviders, subscriptionEnv } = require('../ai-providers.cjs');
+const { AiProviders, PROVIDERS, subscriptionEnv } = require('../ai-providers.cjs');
 const { trustedAiRequest } = require('../ai-security.cjs');
+const pickerSource = readFileSync(new URL('../src/components/AiProviderPicker.tsx', import.meta.url), 'utf8');
+const pluginSource = readFileSync(new URL('../src/components/AntigravityPlugin.tsx', import.meta.url), 'utf8');
+assert.match(pickerSource, /\['agy', 'Google Gemini'\]/);
+assert.doesNotMatch(pickerSource, /Google.*Gemini.*google|\['google'/i);
+assert.equal(pluginSource.split('<AiProviderPicker').length - 1, 1);
+assert.ok(pluginSource.indexOf('<AiProviderPicker') > pluginSource.indexOf('設定面板'));
+assert.equal(pluginSource.indexOf('<AiProviderPicker'), pluginSource.lastIndexOf('<AiProviderPicker'));
+console.log('PASS provider picker is unique, named Google Gemini, and rendered inside the settings panel');
 
 const request = (origin, remote = '127.0.0.1', host = 'localhost:18080', header = '1') => ({
   socket: { remoteAddress: remote }, headers: { origin, host, 'x-wikitree-ai': header },
@@ -67,6 +76,14 @@ class FakeRpc extends EventEmitter {
 }
 const manager = new AiProviders({ root, rpcFactory: () => { const client = new FakeRpc(); clients.push(client); return client; } });
 try {
+  assert.deepEqual(PROVIDERS.map(provider => provider.id), ['agy', 'openai']);
+  assert.equal(PROVIDERS.find(provider => provider.id === 'agy').name, 'Google Gemini');
+  assert.equal(PROVIDERS.some(provider => provider.id === 'google'), false);
+  const legacyGoogle = await manager.state('agy');
+  assert.equal(legacyGoogle.status, 'connected');
+  assert.equal(legacyGoogle.models[0].id, 'default');
+  await assert.rejects(manager.state('google'), /有效/);
+  console.log('PASS Anti-Gravity is exposed once as Google Gemini; duplicate Gemini provider is unavailable');
   assert.equal((await manager.state('openai')).status, 'disconnected');
   await assert.rejects(manager.run('openai', 'test-model', 'private note', () => {}, new AbortController().signal), /先登入/);
   assert.equal((await manager.login('openai')).status, 'pending');
@@ -94,22 +111,13 @@ try {
   assert.equal((await manager.state('openai')).status, 'disconnected');
   console.log('PASS Codex login gating, real model selection, privacy, streaming, concurrency and Stop');
 
-  await manager.login('google');
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal((await manager.state('google')).status, 'connected');
-  const google = clients.at(-1);
-  assert.equal(await manager.run('google', 'test-model', 'note', () => {}, new AbortController().signal), 'Google 文字');
-  assert.equal(google.calls.find(call => call.method === 'session/set_model').params.modelId, 'test-model');
-  assert.equal((await manager.state('claude')).status, 'unsupported');
-  await assert.rejects(manager.login('claude'), /訂閱/);
   await assert.rejects(manager.run('unknown', 'test-model', 'note', () => {}, new AbortController().signal), /有效/);
-  console.log('PASS Google authentication, model choice and streaming; unsupported providers never fall back');
-  for (const provider of ['google', 'openai']) {
+  console.log('PASS only Google Gemini and OpenAI Codex remain; unknown providers never fall back');
+  for (const provider of ['openai']) {
     const env = subscriptionEnv(provider, root);
     assert.equal(env.OPENAI_API_KEY, undefined);
     assert.equal(env.GEMINI_API_KEY, undefined);
-    assert.equal(env.ANTHROPIC_API_KEY, undefined);
-    assert.equal(provider === 'openai' ? env.CODEX_HOME : env.GEMINI_CLI_HOME, root);
+    assert.equal(env.CODEX_HOME, root);
   }
   console.log('PASS isolated subscription credentials and no implicit API billing fallback');
 } finally { manager.close(); }

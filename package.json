@@ -13,7 +13,6 @@
     "cli": "node cli-server.cjs"
   },
   "dependencies": {
-    "@google/gemini-cli": "0.59.0",
     "@supabase/supabase-js": "^2.108.2",
     "dompurify": "^3.4.15",
     "katex": "^0.17.0",

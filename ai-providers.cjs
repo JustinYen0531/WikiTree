@@ -4,24 +4,17 @@ const os = require('node:os');
 const { AiRpc } = require('./ai-rpc.cjs');
 
 const PROVIDERS = [
-  { id: 'agy', name: 'Antigravity（原有服務）' },
-  { id: 'google', name: 'Google · Gemini' },
+  { id: 'agy', name: 'Google Gemini' },
   { id: 'openai', name: 'OpenAI · Codex' },
-  { id: 'claude', name: 'Anthropic · Claude' },
 ];
-const CLAUDE_NOTICE = 'Claude 訂閱目前不開放第三方應用程式登入；此入口尚不能生成，也不會改用另外計費的 API。';
 
 function subscriptionEnv(provider, home) {
   const env = { ...process.env };
   // Never silently fall back to separately billed API credentials or a proxy.
   for (const key of Object.keys(env)) {
-    if (/^(OPENAI_|CODEX_|GEMINI_|GOOGLE_|ANTHROPIC_|CLAUDE_)/i.test(key)) delete env[key];
+    if (/^(OPENAI_|CODEX_|GEMINI_|GOOGLE_)/i.test(key)) delete env[key];
   }
   if (provider === 'openai') env.CODEX_HOME = home;
-  else {
-    env.GEMINI_CLI_HOME = home;
-    env.GEMINI_FORCE_FILE_STORAGE = 'true';
-  }
   return env;
 }
 
@@ -43,11 +36,11 @@ class AiProviders {
 
   validate(provider) {
     if (!PROVIDERS.some(item => item.id === provider)) throw new Error('請選擇有效的 AI 廠商。');
-    if (provider === 'claude') throw new Error(CLAUDE_NOTICE);
   }
 
   async client(provider) {
     this.validate(provider);
+    if (provider === 'agy') throw new Error('Google Gemini（Anti-Gravity）沿用目前的本機服務。');
     if (this.clients.has(provider)) return this.clients.get(provider);
     const pending = this.startClient(provider);
     this.clients.set(provider, pending);
@@ -64,21 +57,6 @@ class AiProviders {
     if (provider === 'openai') {
       command = codexBinary();
       args = ['app-server', '--listen', 'stdio://', '-c', 'features.shell_tool=false', '-c', 'web_search="disabled"'];
-    } else {
-      command = process.execPath;
-      const pkg = require.resolve('@google/gemini-cli/package.json');
-      args = [path.join(path.dirname(pkg), 'bundle', 'gemini.js'), '--acp'];
-      const settingsDir = path.join(home, '.gemini');
-      fs.mkdirSync(settingsDir, { recursive: true, mode: 0o700 });
-      const settingsPath = path.join(settingsDir, 'settings.json');
-      let settings = {};
-      try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch {}
-      // An explicit non-matching allowlist disables built-in tools. Only the
-      // note text supplied in the request is needed for generation.
-      settings.tools = { core: ['__wikitree_text_only__'] };
-      settings.mcpServers = {};
-      settings.hooks = {};
-      fs.writeFileSync(settingsPath, JSON.stringify(settings), { mode: 0o600 });
     }
     const rpc = this.rpcFactory(command, args, { cwd, env });
     rpc.cwd = cwd;
@@ -98,18 +76,14 @@ class AiProviders {
       if (provider === 'openai') {
         await rpc.request('initialize', { clientInfo: { name: 'wikitree', title: 'WikiTree', version: '1.0.0' } });
         rpc.send({ method: 'initialized', params: {} });
-      } else {
-        const init = await rpc.request('initialize', { protocolVersion: 1, clientInfo: { name: 'wikitree', version: '1.0.0' }, clientCapabilities: { fs: { readTextFile: false, writeTextFile: false }, terminal: false } });
-        if (!init.authMethods?.some(method => method.id === 'oauth-personal')) throw new Error('此版本未提供 Google 帳號登入。');
       }
       return rpc;
     } catch (error) { rpc.close(); throw error; }
   }
 
   async state(provider) {
-    if (provider === 'claude') return { status: 'unsupported', message: CLAUDE_NOTICE, models: [] };
     this.validate(provider);
-    if (provider === 'agy') return { status: 'connected', message: '沿用原有 Antigravity 登入與模型設定。', models: [{ id: 'default', name: '目前預設模型' }] };
+    if (provider === 'agy') return { status: 'connected', message: '目前使用 Google Gemini（Anti-Gravity）服務。', models: [{ id: 'default', name: '目前預設模型' }] };
     let state = this.states.get(provider) || { status: 'disconnected', message: '首次使用請登入並授權。' };
     if (provider === 'openai' && state.status !== 'pending' && !state.manualDisconnect) {
       try {
@@ -137,10 +111,6 @@ class AiProviders {
         cursor = result.nextCursor;
       } while (cursor);
       this.models.set(provider, models);
-    } else {
-      const session = await rpc.request('session/new', { cwd: rpc.cwd, mcpServers: [] }, 60000);
-      rpc.preparedSession = session;
-      this.models.set(provider, (session.models?.availableModels || []).map(model => ({ id: model.modelId, name: model.name || model.modelId, isDefault: model.modelId === session.models.currentModelId })));
     }
   }
 
@@ -165,18 +135,6 @@ class AiProviders {
         clearTimeout(rpc.loginTimer);
         this.states.set(provider, { status: 'error', message: '無法開始登入，請取消後重試。' });
       }
-    } else {
-      // Gemini opens its own official browser login; WikiTree never handles the token.
-      void rpc.request('authenticate', { methodId: 'oauth-personal' }, 300000).then(async () => {
-        await this.loadModels(provider);
-        clearTimeout(rpc.loginTimer);
-        if (rpc.closed) return;
-        this.states.set(provider, { status: 'connected', message: 'Google 帳號已連線。' });
-      }).catch(() => {
-        clearTimeout(rpc.loginTimer);
-        if (rpc.closed) return;
-        this.states.set(provider, { status: 'error', message: 'Google 登入或模型讀取未完成，請重新連線。' });
-      });
     }
     return this.state(provider);
   }
@@ -221,10 +179,6 @@ class AiProviders {
         if (event.method === 'item/agentMessage/delta') { text += params.delta; emit({ type: 'delta', text: params.delta }); }
         if (event.method === 'turn/completed') finish(params.turn.status === 'completed' ? null : new Error('廠商未完成回覆，請確認額度或稍後重試。'));
       }
-      if (provider === 'google' && params.sessionId === sessionId && params.update?.sessionUpdate === 'agent_message_chunk' && params.update.content?.type === 'text') {
-        const delta = params.update.content.text;
-        text += delta; emit({ type: 'delta', text: delta });
-      }
     };
     rpc.on('notification', notification);
     rpc.on('closed', closed);
@@ -235,13 +189,6 @@ class AiProviders {
         const session = await rpc.request('thread/start', { model, cwd: rpc.cwd, sandbox: 'read-only', approvalPolicy: 'never', ephemeral: true, developerInstructions: 'You generate WikiTree note text only. Do not execute commands, use tools, read files, or write files. Use only the context in the user message.' });
         sessionId = session.thread.id;
         await rpc.request('turn/start', { threadId: sessionId, input: [{ type: 'text', text: prompt, text_elements: [] }] });
-      } else {
-        const session = rpc.preparedSession || await rpc.request('session/new', { cwd: rpc.cwd, mcpServers: [] }, 60000);
-        rpc.preparedSession = null;
-        sessionId = session.sessionId;
-        await rpc.request('session/set_model', { sessionId, modelId: model });
-        void rpc.request('session/prompt', { sessionId, prompt: [{ type: 'text', text: prompt }] }, 180000)
-          .then(value => finish(value.stopReason === 'end_turn' ? null : new Error('回覆尚未完成，請重試。'))).catch(finish);
       }
       const reply = await result;
       if (!reply.trim()) throw new Error('廠商未回傳文字。');
