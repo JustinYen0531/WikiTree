@@ -25,6 +25,9 @@ import {
   MessageSquare,
   Clock,
   Edit2,
+  X,
+  Image as ImageIcon,
+  Paperclip,
 } from 'lucide-react';
 import { renderMarkdownSync } from '../utils/markdownRenderer';
 import { preprocessCallouts } from '../utils/callouts';
@@ -51,12 +54,23 @@ interface Notice {
   text: string;
 }
 
+export interface AttachmentFile {
+  id: string;
+  name: string;
+  type: string;
+  size?: number;
+  dataUrl?: string;
+  path?: string;
+  isImage?: boolean;
+}
+
 interface ChatMessage {
   delivery?: 'streaming' | 'incomplete';
   id: string;
   role: 'user' | 'arborist';
   content: string;
   timestamp: string;
+  attachments?: AttachmentFile[];
 }
 
 export interface ChatSession {
@@ -231,9 +245,61 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   // 跨 Session 單一任務鎖定：紀錄當前正在運算生成的 Session ID
   const [generatingSessionId, setGeneratingSessionId] = useState<string | null>(null);
 
-  // 對話標題即時編輯狀態
+  // 對話標題即時編輯狀態（在對話內）
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState('');
+
+  // 對話標題即時編輯狀態（在列表清單中）
+  const [listEditingSessionId, setListEditingSessionId] = useState<string | null>(null);
+  const [listEditingTitle, setListEditingTitle] = useState('');
+
+  // 依照隸屬文件對對話進行分組索引
+  const groupedSessions = React.useMemo(() => {
+    const map = new Map<string, { noteName: string; notePath: string; sessions: ChatSession[]; latestUpdatedAt: number }>();
+
+    sessions.forEach((s) => {
+      const key = s.notePath || s.noteName || '__global__';
+      const name = s.noteName || (s.notePath ? getNoteName(s.notePath) : '全域對話');
+      const existing = map.get(key);
+      if (existing) {
+        existing.sessions.push(s);
+        if (s.updatedAt > existing.latestUpdatedAt) {
+          existing.latestUpdatedAt = s.updatedAt;
+        }
+      } else {
+        map.set(key, {
+          noteName: name,
+          notePath: s.notePath || '',
+          sessions: [s],
+          latestUpdatedAt: s.updatedAt,
+        });
+      }
+    });
+
+    const groups = Array.from(map.entries()).map(([key, value]) => ({
+      groupKey: key,
+      ...value,
+      sessions: [...value.sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+    }));
+
+    return groups.sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
+  }, [sessions]);
+
+  const startListTitleEdit = (session: ChatSession, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setListEditingSessionId(session.id);
+    setListEditingTitle(session.title);
+  };
+
+  const commitListTitleEdit = (sessionId: string) => {
+    const trimmed = listEditingTitle.trim();
+    if (trimmed) {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, title: trimmed, updatedAt: Date.now() } : s))
+      );
+    }
+    setListEditingSessionId(null);
+  };
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
   const messages = activeSession ? activeSession.messages : [];
@@ -998,133 +1064,244 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   </button>
                 </div>
               ) : (
-                sessions.map((session) => {
-                  const isSelected = activeSessionId === session.id;
-                  const isGenerating = generatingSessionId === session.id;
-                  const noteTitle = session.noteName || '全域對話';
-
-                  return (
+                groupedSessions.map((group) => (
+                  <div
+                    key={group.groupKey}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    {/* 文件索引分組標頭 */}
                     <div
-                      key={session.id}
-                      onClick={() => handleSelectSession(session.id)}
                       style={{
-                        border: isSelected ? '1px solid var(--primary-color, #2563eb)' : '1px solid var(--border-color)',
-                        borderRadius: '6px',
-                        padding: '10px 12px',
-                        backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                        cursor: 'pointer',
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.04))';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                        border: '1px solid rgba(34, 197, 94, 0.2)',
                       }}
                     >
-                      {/* 第一列：標題 ＋ 狀態/操作 */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: '12.5px',
-                            color: 'var(--text-primary)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                          }}
-                          title={session.title}
-                        >
-                          {session.title}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                          {isGenerating && (
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                                color: '#2563eb',
-                                fontWeight: 600,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                              }}
-                            >
-                              <Loader2 size={10} className="spin" />
-                              運算中
-                            </span>
-                          )}
-                          <button
-                            className="theme-toggle-btn"
-                            title="刪除此對話欄"
-                            onClick={(e) => handleDeleteSession(session.id, e)}
-                            style={{ padding: '3px', opacity: 0.6 }}
-                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 第二列：文件索引（顯式標註隸屬於哪一個文件） */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span
-                          style={{
-                            fontSize: '10.5px',
-                            padding: '2px 7px',
-                            borderRadius: '10px',
-                            backgroundColor: 'rgba(34, 197, 94, 0.12)',
-                            color: '#22c55e',
-                            border: '1px solid rgba(34, 197, 94, 0.25)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            maxWidth: '100%',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontWeight: 500,
-                          }}
-                          title={`隸屬於文件：${noteTitle}`}
-                        >
-                          <FileText size={10.5} />
-                          <span>隸屬文件：{noteTitle}</span>
-                        </span>
-                      </div>
-
-                      {/* 第三列：訊息統計與時間 */}
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'space-between',
+                          gap: '6px',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          minWidth: 0,
+                        }}
+                      >
+                        <FileText size={12} color="#22c55e" style={{ flexShrink: 0 }} />
+                        <span
+                          style={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title={group.noteName}
+                        >
+                          隸屬文件：{group.noteName}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: 'var(--text-secondary)',
+                            fontWeight: 400,
+                            flexShrink: 0,
+                          }}
+                        >
+                          ({group.sessions.length})
+                        </span>
+                      </div>
+
+                      <button
+                        className="theme-toggle-btn"
+                        title={`在「${group.noteName}」下新增對話`}
+                        onClick={() => handleCreateNewSession(group.notePath)}
+                        style={{
+                          padding: '2px 6px',
                           fontSize: '10.5px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
                           color: 'var(--text-secondary)',
                         }}
                       >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <MessageSquare size={10} />
-                          <span>{session.messages.length} 則訊息</span>
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Clock size={10} />
-                          <span>
-                            {new Date(session.updatedAt).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}{' '}
-                            {new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </span>
-                      </div>
+                        <Plus size={11} />
+                        <span>新增</span>
+                      </button>
                     </div>
-                  );
-                })
+
+                    {/* 該文件索引底下的所有對話欄卡片 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {group.sessions.map((session) => {
+                        const isSelected = activeSessionId === session.id;
+                        const isGenerating = generatingSessionId === session.id;
+                        const isEditingThisTitle = listEditingSessionId === session.id;
+
+                        return (
+                          <div
+                            key={session.id}
+                            onClick={() => handleSelectSession(session.id)}
+                            style={{
+                              border: isSelected ? '1px solid var(--primary-color, #2563eb)' : '1px solid var(--border-color)',
+                              borderRadius: '6px',
+                              padding: '9px 11px',
+                              backgroundColor: isSelected ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.04))';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                            }}
+                          >
+                            {/* 第一列：標題（可編輯） ＋ 操作（運算中 / 刪除） */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              {isEditingThisTitle ? (
+                                <input
+                                  type="text"
+                                  value={listEditingTitle}
+                                  onChange={(e) => setListEditingTitle(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => {
+                                    e.stopPropagation();
+                                    if (e.key === 'Enter') commitListTitleEdit(session.id);
+                                    if (e.key === 'Escape') setListEditingSessionId(null);
+                                  }}
+                                  onBlur={() => commitListTitleEdit(session.id)}
+                                  autoFocus
+                                  style={{
+                                    flex: 1,
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: '1px solid var(--primary-color, #2563eb)',
+                                    backgroundColor: 'var(--bg-primary)',
+                                    color: 'var(--text-primary)',
+                                    outline: 'none',
+                                    minWidth: 0,
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    flex: 1,
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  <span
+                                    onClick={(e) => {
+                                      startListTitleEdit(session, e);
+                                    }}
+                                    title="點擊或點筆圖示修改名稱"
+                                    style={{
+                                      fontWeight: 700,
+                                      fontSize: '12.5px',
+                                      color: 'var(--text-primary)',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {session.title}
+                                  </span>
+                                  <button
+                                    className="theme-toggle-btn"
+                                    title="修改對話名稱"
+                                    onClick={(e) => startListTitleEdit(session, e)}
+                                    style={{
+                                      padding: '2px',
+                                      opacity: 0.5,
+                                      flexShrink: 0,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.5')}
+                                  >
+                                    <Edit2 size={11} />
+                                  </button>
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                {isGenerating && (
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                                      color: '#2563eb',
+                                      fontWeight: 600,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                    }}
+                                  >
+                                    <Loader2 size={10} className="spin" />
+                                    運算中
+                                  </span>
+                                )}
+                                <button
+                                  className="theme-toggle-btn"
+                                  title="刪除此對話欄"
+                                  onClick={(e) => handleDeleteSession(session.id, e)}
+                                  style={{ padding: '3px', opacity: 0.6 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* 第二列：訊息統計與時間 */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '10.5px',
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <MessageSquare size={10} />
+                                <span>{session.messages.length} 則訊息</span>
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <Clock size={10} />
+                                <span>
+                                  {new Date(session.updatedAt).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}{' '}
+                                  {new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>

@@ -178,6 +178,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`tree-node-item ${isActive ? 'active' : ''}`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
           onClick={() => !isDirectory && !workspaceBusy && onSelectWorkspaceFile(folder, node)}
+          draggable={!isDirectory}
+          onDragStart={(e) => {
+            if (!isDirectory) {
+              const fileData = {
+                name: node.name,
+                path: node.path,
+                kind: node.kind,
+              };
+              e.dataTransfer.setData('application/json', JSON.stringify(fileData));
+              e.dataTransfer.setData('text/plain', node.path);
+            }
+          }}
         >
           {isDirectory ? (
             <button 

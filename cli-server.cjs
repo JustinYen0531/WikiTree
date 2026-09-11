@@ -247,10 +247,49 @@ const server = http.createServer((req, res) => {
         } catch (e) {}
       }
 
+      // Process attachments if any (images, reference documents, etc.)
+      const attachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+      let attachmentPromptSection = '';
+      if (attachments.length > 0) {
+        const attachDir = path.join(currentWorkspace, '.wikitree_attachments');
+        try {
+          if (!fs.existsSync(attachDir)) fs.mkdirSync(attachDir, { recursive: true });
+        } catch (e) {}
+
+        const itemsDesc = [];
+        for (const att of attachments) {
+          let resolvedPath = att.path ? path.resolve(currentWorkspace, att.path) : '';
+          // If base64 dataUrl is provided, save it to disk so AI tools/models can inspect it
+          if (att.dataUrl && att.dataUrl.includes(';base64,')) {
+            try {
+              const base64Data = att.dataUrl.split(';base64,').pop();
+              const safeName = Date.now() + '_' + (att.name || 'attachment.png').replace(/[^a-zA-Z0-9._-]/g, '_');
+              const targetFile = path.join(attachDir, safeName);
+              fs.writeFileSync(targetFile, Buffer.from(base64Data, 'base64'));
+              resolvedPath = targetFile;
+            } catch (err) {
+              console.error('Failed to write attachment to disk', err);
+            }
+          }
+
+          itemsDesc.push(
+            `- 附件檔案：${att.name || '未命名附件'}\n` +
+            `  類型：${att.type || '未知'}\n` +
+            (resolvedPath ? `  本機檔案路徑：${resolvedPath}\n` : '')
+          );
+        }
+
+        attachmentPromptSection =
+          `\n【使用者附帶的參考圖片/檔案】\n` +
+          `使用者附帶了以下檔案作為製作筆記時的視覺或數據參考依據：\n` +
+          itemsDesc.join('\n') +
+          `\n請深入檢視並參考上述圖片/檔案內容（包含圖表架構、關鍵字、視覺邏輯或資料），將其融入筆記的推導與正式內容中。\n\n`;
+      }
+
       const formatRequirement =
         `\n【重要結構規範】\n` +
         `請在回答時明確分成兩段：\n` +
-        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現）。\n` +
+        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現，若有參考附件圖片請在步驟中明確說明參考了哪些視覺或概念要素）。\n` +
         `2. 分隔線：請單獨換行輸出一條 '---' 分隔線。\n` +
         `3. 下半段：分隔線下方請直接輸出純淨、可直接存檔的正式 WikiTree 知識筆記本體（不要夾帶前言寒暄與多餘思考）。`;
 
@@ -260,12 +299,14 @@ const server = http.createServer((req, res) => {
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。請遵循「Knowledge grows like forests, not folders」原則。\n` +
           (notePath ? `使用者當前檢視的知識葉片為：「${notePath}」\n` : '') +
           `葉片內容如下：\n"""\n${noteContent}\n"""\n\n` +
+          attachmentPromptSection +
           `使用者任務：${message}\n` +
           formatRequirement;
       } else {
         prompt =
           `【WikiTree 知識生態系統指令】\n` +
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
+          attachmentPromptSection +
           `使用者任務：${message}\n` +
           formatRequirement;
       }
