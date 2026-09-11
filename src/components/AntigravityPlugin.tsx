@@ -25,6 +25,7 @@ import {
 import { renderMarkdownSync } from '../utils/markdownRenderer';
 import { preprocessCallouts } from '../utils/callouts';
 import DOMPurify from 'dompurify';
+import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
@@ -114,6 +115,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [cliUrl, setCliUrl] = useState(() => localStorage.getItem('antigravity_cli_url') || DEFAULT_CLI_URL);
   const [status, setStatus] = useState<CliStatus>('disconnected');
   const [workspace, setWorkspace] = useState('');
+  const [aiSelection, setAiSelection] = useState<AiSelection>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('wikitree_ai_selection') || 'null');
+      if (saved && ['agy', 'google', 'openai', 'claude'].includes(saved.provider) && typeof saved.model === 'string') return saved;
+    } catch {}
+    return { provider: 'agy', model: 'default' };
+  });
+  const [aiReady, setAiReady] = useState(false);
+  useEffect(() => {
+    localStorage.setItem('wikitree_ai_selection', JSON.stringify(aiSelection));
+  }, [aiSelection]);
   const [showSettings, setShowSettings] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -218,6 +230,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const handleSendMessage = async (customPrompt?: string) => {
     const text = (customPrompt || inputMessage).trim();
     if (!text || loading || requestRef.current) return;
+    if (!aiReady) {
+      flash({ kind: 'info', text: '請先在輸入區下方選擇廠商、完成登入並選擇模型。' });
+      return;
+    }
     const controller = new AbortController();
     requestRef.current = controller;
 
@@ -252,8 +268,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       const response = await fetch(`${cliUrl}/api/chat`, {
         method: 'POST',
         signal: controller.signal,
-        headers: cliWorkspaceHeaders(workspacePath),
+        headers: { ...cliWorkspaceHeaders(workspacePath), 'X-WikiTree-AI': '1' },
         body: JSON.stringify({
+          provider: aiSelection.provider,
+          model: aiSelection.model,
           message: text,
           stream: true,
           context: {
@@ -1104,7 +1122,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <button
                 className="btn btn-primary"
                 onClick={() => handleSendMessage()}
-                disabled={!inputMessage.trim() || loading}
+                disabled={!inputMessage.trim() || loading || !aiReady}
                 title="送出 (Enter)"
                 style={{ padding: '7px 12px', height: '34px' }}
               >
@@ -1115,6 +1133,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               <span>按 Enter 送出 • 自動分離思維與筆記</span>
               <span>支援 20% 預覽確認</span>
             </div>
+            <AiProviderPicker url={cliUrl} selection={aiSelection} onChange={setAiSelection} onReadyChange={setAiReady} disabled={loading} />
           </div>
         </>
       ) : (

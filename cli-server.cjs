@@ -4,6 +4,10 @@ const path = require('path');
 const os = require('os');
 const { exec, spawn } = require('child_process');
 const { runAgyStream } = require('./agy-stream.cjs');
+const { AiProviders, PROVIDERS } = require('./ai-providers.cjs');
+const aiProviders = new AiProviders();
+
+const { trustedAiRequest } = require('./ai-security.cjs');
 
 const isWin = process.platform === 'win32';
 const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
@@ -96,12 +100,25 @@ const server = http.createServer((req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-WikiTree-Workspace');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-WikiTree-Workspace, X-WikiTree-AI');
 
   // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  if (req.url.startsWith('/api/ai/')) {
+    const json = (status, value) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(value)); };
+    if (!trustedAiRequest(req)) { json(403, { error: 'AI 登入僅限本機 WikiTree 操作。' }); return; }
+    const url = new URL(req.url, 'http://localhost');
+    const provider = url.searchParams.get('provider');
+    if (url.pathname === '/api/ai/providers' && req.method === 'GET') { json(200, { providers: PROVIDERS }); return; }
+    const action = url.pathname.slice('/api/ai/'.length);
+    const allowed = (action === 'state' && req.method === 'GET') || (['login', 'disconnect'].includes(action) && req.method === 'POST');
+    if (!allowed) { json(404, { error: '找不到 AI 操作。' }); return; }
+    void aiProviders[action](provider).then(state => json(200, state)).catch(error => json(400, { error: error.message }));
     return;
   }
 
@@ -130,6 +147,7 @@ const server = http.createServer((req, res) => {
       version: '1.2.4',
       scopedWorkspaces: true,
       streamingChat: true,
+      aiProviders: true,
       workspace: currentWorkspace,
       defaultNotesPath: defaultNotesDir,
       platform: process.platform,
@@ -200,6 +218,18 @@ const server = http.createServer((req, res) => {
       }
 
       const { message, context } = payload;
+      const provider = payload.provider || 'agy';
+      if (provider !== 'agy' && !trustedAiRequest(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: '請從本機 WikiTree 使用 AI。' }));
+        return;
+      }
+      try { aiProviders.validate(provider); }
+      catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: error.message }));
+        return;
+      }
       if (!message || typeof message !== 'string') {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'message is required.' }));
@@ -249,7 +279,9 @@ const server = http.createServer((req, res) => {
         const emit = event => { if (!res.destroyed && !res.writableEnded) res.write(JSON.stringify(event) + '\n'); };
         emit({ type: 'status', text: '請求已送出，正在啟動 AI…' });
         try {
-          const reply = await runAgyStream(AGY_PATH, prompt, currentWorkspace, emit, controller.signal);
+          const reply = provider === 'agy'
+            ? await runAgyStream(AGY_PATH, prompt, currentWorkspace, emit, controller.signal)
+            : await aiProviders.run(provider, payload.model, prompt, emit, controller.signal);
           emit({ type: 'done', text: reply });
         } catch (error) { emit({ type: 'error', text: error.message }); }
         finally { res.removeListener('close', disconnect); res.end(); }
@@ -257,7 +289,9 @@ const server = http.createServer((req, res) => {
       }
 
       try {
-        const reply = await runAgy(prompt, 120000, currentWorkspace);
+        const reply = provider === 'agy'
+          ? await runAgy(prompt, 120000, currentWorkspace)
+          : await aiProviders.run(provider, payload.model, prompt, () => {}, new AbortController().signal);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply }));
       } catch (e) {
