@@ -56,7 +56,10 @@ class AiProviders {
     let command, args;
     if (provider === 'openai') {
       command = codexBinary();
-      args = ['app-server', '--listen', 'stdio://', '-c', 'features.shell_tool=false', '-c', 'web_search="disabled"'];
+      // Keep shell access disabled for every WikiTree request. Web search is
+      // enabled at the host level, then permitted only by the exploration
+      // thread instructions below; ordinary note chat remains message-only.
+      args = ['app-server', '--listen', 'stdio://', '-c', 'features.shell_tool=false', '-c', 'web_search="live"'];
     }
     const rpc = this.rpcFactory(command, args, { cwd, env });
     rpc.cwd = cwd;
@@ -148,7 +151,7 @@ class AiProviders {
     return { ...this.states.get(provider), models: [] };
   }
 
-  async run(provider, model, prompt, emit, signal) {
+  async run(provider, model, prompt, emit, signal, options = {}) {
     this.validate(provider);
     if (this.busy.has(provider)) throw new Error('這個廠商已有一則回覆進行中，請稍後再試。');
     this.busy.add(provider);
@@ -156,14 +159,19 @@ class AiProviders {
     try {
       const state = await this.state(provider);
       if (state.status !== 'connected') throw new Error('請先登入所選廠商。');
+      if (model === 'default') model = state.models.find(item => item.isDefault)?.id || state.models[0]?.id;
       if (!state.models.some(item => item.id === model)) throw new Error('所選模型已不可用，請重新選擇。');
       if (signal.aborted) throw new Error('回覆已停止。');
       rpc = await this.client(provider);
-      return await this.generate(provider, rpc, model, prompt, emit, signal);
+      return await this.generate(provider, rpc, model, prompt, emit, signal, options);
     } finally { this.busy.delete(provider); }
   }
 
-  async generate(provider, rpc, model, prompt, emit, signal) {
+  async runExploration(provider, model, prompt, emit, signal) {
+    return this.run(provider, model, prompt, emit, signal, { mode: 'exploration' });
+  }
+
+  async generate(provider, rpc, model, prompt, emit, signal, options = {}) {
     let text = '';
     let sessionId;
     let finish;
@@ -177,6 +185,9 @@ class AiProviders {
       const params = event.params || {};
       if (provider === 'openai' && params.threadId === sessionId) {
         if (event.method === 'item/agentMessage/delta') { text += params.delta; emit({ type: 'delta', text: params.delta }); }
+        if ((event.method === 'item/started' || event.method === 'item/completed') && params.item?.type === 'webSearch') {
+          emit({ type: 'search', status: event.method === 'item/completed' ? 'completed' : 'running', query: String(params.item.query || '').slice(0, 300) });
+        }
         if (event.method === 'turn/completed') finish(params.turn.status === 'completed' ? null : new Error('廠商未完成回覆，請確認額度或稍後重試。'));
       }
     };
@@ -186,7 +197,11 @@ class AiProviders {
     try {
       if (signal.aborted) throw new Error('回覆已停止。');
       if (provider === 'openai') {
-        const session = await rpc.request('thread/start', { model, cwd: rpc.cwd, sandbox: 'read-only', approvalPolicy: 'never', ephemeral: true, developerInstructions: 'You generate WikiTree note text only. Do not execute commands, use tools, read files, or write files. Use only the context in the user message.' });
+        const exploration = options.mode === 'exploration';
+        const developerInstructions = exploration
+          ? 'You are WikiTree scheduled exploration. You may use web search only. Never run shell commands, use MCP tools, read local files, or write files. Treat every source as fallible. Return only the requested JSON and never invent a URL, author, date, or quotation.'
+          : 'You generate WikiTree note text only. Do not execute commands, use tools, read files, browse the web, or write files. Use only the context in the user message.';
+        const session = await rpc.request('thread/start', { model, cwd: rpc.cwd, sandbox: 'read-only', approvalPolicy: 'never', ephemeral: true, developerInstructions });
         sessionId = session.thread.id;
         await rpc.request('turn/start', { threadId: sessionId, input: [{ type: 'text', text: prompt, text_elements: [] }] });
       }

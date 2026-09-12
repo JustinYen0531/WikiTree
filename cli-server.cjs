@@ -2,12 +2,21 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { exec, spawn } = require('child_process');
 const { runAgyStream } = require('./agy-stream.cjs');
 const { AiProviders, PROVIDERS } = require('./ai-providers.cjs');
 const aiProviders = new AiProviders();
 
 const { trustedAiRequest } = require('./ai-security.cjs');
+const { ExplorationStore } = require('./exploration-store.cjs');
+const { importLegacyBrew } = require('./exploration-import.cjs');
+const { createExplorationExecutor } = require('./exploration-runtime.cjs');
+const { nextRunAt } = require('./exploration-scheduler.cjs');
+const { installScheduler, schedulerStatus, uninstallScheduler } = require('./exploration-scheduler-admin.cjs');
+
+const explorationStore = new ExplorationStore();
+const executeExploration = createExplorationExecutor({ store: explorationStore, aiProviders });
 
 const isWin = process.platform === 'win32';
 const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
@@ -268,7 +277,7 @@ function loadAllSkills(workspacePath) {
 const server = http.createServer((req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, X-WikiTree-Workspace, X-WikiTree-AI');
 
   // Handle CORS preflight request
@@ -303,6 +312,93 @@ const server = http.createServer((req, res) => {
       return;
     }
   }
+  const requestUrl = new URL(req.url, 'http://localhost');
+  const json = (status, value) => {
+    res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(value));
+  };
+
+  if (requestUrl.pathname.startsWith('/api/exploration/')) {
+    explorationStore.registerWorkspace(currentWorkspace);
+    const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    if (mutation && !trustedAiRequest(req)) { json(403, { error: '探索苗圃的變更僅限本機 WikiTree 操作。' }); return; }
+
+    if (requestUrl.pathname === '/api/exploration/tasks' && req.method === 'GET') {
+      const includeArchived = requestUrl.searchParams.get('includeArchived') === 'true';
+      const tasks = explorationStore.listTasks(currentWorkspace, { includeArchived }).map(task => ({ ...task, nextRunAt: nextRunAt(task) }));
+      json(200, { tasks });
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/tasks' && ['POST', 'PATCH'].includes(req.method)) {
+      void readJsonBody(req).then(payload => json(req.method === 'POST' ? 201 : 200, { task: explorationStore.saveTask(currentWorkspace, payload) }))
+        .catch(error => json(400, { error: error.message }));
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/tasks' && req.method === 'DELETE') {
+      void readJsonBody(req).then(payload => json(200, { task: explorationStore.archiveTask(currentWorkspace, payload?.id) }))
+        .catch(error => json(400, { error: error.message }));
+      return;
+    }
+
+    const runMatch = requestUrl.pathname.match(/^\/api\/exploration\/tasks\/([^/]+)\/run$/);
+    if (runMatch && req.method === 'POST') {
+      const task = explorationStore.getTask(currentWorkspace, decodeURIComponent(runMatch[1]));
+      if (!task || task.status === 'archived') { json(404, { error: '找不到可執行的探索任務。' }); return; }
+      const runId = crypto.randomUUID();
+      explorationStore.writeRun(currentWorkspace, { id: runId, taskId: task.id, origin: 'manual_ai_exploration', status: 'pending', taskSnapshot: task, requestedCount: task.itemCount });
+      void executeExploration({ workspace: currentWorkspace, task, origin: 'manual_ai_exploration', runId }).catch(error => console.error('Exploration run failed:', error.message));
+      json(202, { runId, status: 'pending' });
+      return;
+    }
+
+    if (requestUrl.pathname === '/api/exploration/runs' && req.method === 'GET') {
+      json(200, { runs: explorationStore.listRuns(currentWorkspace, { taskId: requestUrl.searchParams.get('taskId') || '', limit: requestUrl.searchParams.get('limit') || 100 }) });
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/items' && req.method === 'GET') {
+      const boolean = key => requestUrl.searchParams.get(key) === 'true' ? true : undefined;
+      json(200, { items: explorationStore.listItems(currentWorkspace, {
+        taskId: requestUrl.searchParams.get('taskId') || '',
+        runId: requestUrl.searchParams.get('runId') || '',
+        unread: boolean('unread'), saved: boolean('saved'), archived: boolean('archived'),
+        limit: requestUrl.searchParams.get('limit') || 300,
+      }) });
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/items' && req.method === 'PATCH') {
+      void readJsonBody(req).then(payload => json(200, { item: explorationStore.applyFeedback(currentWorkspace, payload?.id, payload?.action) }))
+        .catch(error => json(400, { error: error.message }));
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/basket' && req.method === 'GET') {
+      json(200, { items: explorationStore.getBasket(currentWorkspace) });
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/basket' && req.method === 'PUT') {
+      void readJsonBody(req).then(payload => json(200, { items: explorationStore.setBasket(currentWorkspace, payload?.ids) }))
+        .catch(error => json(400, { error: error.message }));
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/scheduler' && req.method === 'GET') {
+      void schedulerStatus().then(status => json(200, status)).catch(error => json(500, { error: error.message }));
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/scheduler' && req.method === 'POST') {
+      void readJsonBody(req).then(payload => {
+        if (payload?.action === 'install') return installScheduler();
+        if (payload?.action === 'remove') return uninstallScheduler();
+        throw new Error('請選擇安裝或移除排程。');
+      }).then(status => json(200, status)).catch(error => json(400, { error: error.message }));
+      return;
+    }
+    if (requestUrl.pathname === '/api/exploration/import' && req.method === 'POST') {
+      void readJsonBody(req).then(payload => json(200, importLegacyBrew(explorationStore, currentWorkspace, payload?.brewRoot)))
+        .catch(error => json(400, { error: error.message }));
+      return;
+    }
+    json(404, { error: '找不到探索苗圃操作。' });
+    return;
+  }
   if (req.url === '/api/status' && req.method === 'GET') {
     const defaultNotesDir = path.join(process.cwd(), 'notes');
     try {
@@ -317,6 +413,9 @@ const server = http.createServer((req, res) => {
       scopedWorkspaces: true,
       streamingChat: true,
       aiProviders: true,
+      scheduledExploration: true,
+      explorationScheduler: true,
+      sourceBasket: true,
       workspace: currentWorkspace,
       defaultNotesPath: defaultNotesDir,
       platform: process.platform,

@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "cli": "node cli-server.cjs",
-    "check:exploration:core": "node scripts/check-exploration-core.mjs"
+    "check:exploration:core": "node scripts/check-exploration-core.mjs",
+    "check:exploration:scheduler": "node scripts/check-exploration-scheduler.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
