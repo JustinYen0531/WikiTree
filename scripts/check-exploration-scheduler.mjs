@@ -14,6 +14,7 @@ const workspace = path.join(root, 'workspace');
 fs.mkdirSync(workspace);
 const fixed = new Date(2026, 8, 14, 9, 0, 0);
 const store = new ExplorationStore({ root: path.join(root, 'data'), now: () => fixed });
+const fixture = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'fixtures', 'exploration', 'mock-run.json'), 'utf8'));
 
 function task(name, schedule) {
   return store.saveTask(workspace, { name, topic: `${name} topic`, itemCount: 1, schedule, provider: 'agy' });
@@ -63,14 +64,7 @@ try {
     generate: async () => {
       attempts += 1;
       if (attempts === 1) return 'not-json';
-      return JSON.stringify({ items: [{
-        title: 'Verified lesson',
-        summary: 'A cautious AI summary.',
-        sourceSupported: 'The source directly supports this point.',
-        editorialSynthesis: 'This may be useful in a broader workflow.',
-        source: { url: 'https://example.com/lesson', platform: 'Example', author: '', publishedAt: '2026-09-12', evidenceExcerpt: 'Evidence' },
-        scores: { relevance: 5, importance: 4, freshness: 4, confidence: 0.7 },
-      }] });
+      return JSON.stringify(fixture.aiReply);
     },
     verify: async items => ({ items: items.map(item => ({ ...item, urlCheck: { accessible: true, status: 200 } })), checks: items.map(item => ({ url: item.source.url, accessible: true, status: 200 })) }),
   });

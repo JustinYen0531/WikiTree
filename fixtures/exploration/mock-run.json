@@ -1,0 +1,36 @@
+{
+  "task": {
+    "name": "介面之外的新學習方法",
+    "topic": "尋找近一年能改善自主學習、但不是傳統課程整理的新方法",
+    "itemCount": 1,
+    "provider": "agy",
+    "model": "default"
+  },
+  "sourceCollection": {
+    "connectors": [],
+    "candidateCount": 0
+  },
+  "aiReply": {
+    "items": [
+      {
+        "title": "Verified lesson",
+        "summary": "A cautious AI summary.",
+        "sourceSupported": "The source directly supports this point.",
+        "editorialSynthesis": "This may be useful in a broader workflow.",
+        "source": {
+          "url": "https://example.com/lesson",
+          "platform": "Example",
+          "author": "",
+          "publishedAt": "2026-09-12",
+          "evidenceExcerpt": "Evidence"
+        },
+        "scores": {
+          "relevance": 5,
+          "importance": 4,
+          "freshness": 4,
+          "confidence": 0.7
+        }
+      }
+    ]
+  }
+}

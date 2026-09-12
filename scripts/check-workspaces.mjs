@@ -82,7 +82,7 @@ const fakeFs = {
 let handler;
 vm.runInNewContext(readFileSync(new URL('../cli-server.cjs', import.meta.url), 'utf8'), {
   require: name => name === 'fs' ? fakeFs : name === 'http' ? { createServer: fn => { handler = fn; return { on() {}, listen() {} }; } } : require(name),
-  process, TextDecoder, Buffer, console, setTimeout, clearTimeout,
+  process, TextDecoder, Buffer, URL, console, setTimeout, clearTimeout,
 });
 const request = (url, body, root) => new Promise(resolve => {
   const req = new EventEmitter();

@@ -70,7 +70,10 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
     finally { if (!quiet) setLoading(false); }
   }, [workspace]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
   useEffect(() => {
     if (!runs.some(run => run.status === 'running' || run.status === 'pending')) return;
     const timer = window.setInterval(() => void load(true), 5000);

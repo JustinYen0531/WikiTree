@@ -13,7 +13,8 @@
     "cli": "node cli-server.cjs",
     "check:exploration:core": "node scripts/check-exploration-core.mjs",
     "check:exploration:scheduler": "node scripts/check-exploration-scheduler.mjs",
-    "check:exploration:ui": "node scripts/check-exploration-ui.mjs"
+    "check:exploration:ui": "node scripts/check-exploration-ui.mjs",
+    "check:exploration": "npm run check:exploration:core && npm run check:exploration:scheduler && npm run check:exploration:ui"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
