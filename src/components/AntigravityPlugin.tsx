@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Brain,
+  BookOpen,
   Check,
   ChevronDown,
   ChevronUp,
@@ -47,8 +48,11 @@ export interface AntigravityPluginProps {
   currentNoteContent: string;
   availableFiles?: FileNode[];
   onApplyContent?: (content: string) => void;
+  onCreateContent?: (content: string) => void;
   onAppendContent?: (content: string) => void;
   onApplyDiff?: (diffInfo: PendingDiffInfo) => void;
+  referenceHandoff?: { key: string; sourceIds: string[]; titles: string[] } | null;
+  onReferenceHandoffConsumed?: () => void;
 }
 
 type CliStatus = 'connected' | 'disconnected' | 'testing';
@@ -77,6 +81,7 @@ interface ChatMessage {
   timestamp: string;
   attachments?: AttachmentFile[];
   skills?: string[];
+  referenceLabels?: string[];
 }
 
 export interface ChatSession {
@@ -139,8 +144,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   currentNoteContent,
   availableFiles,
   onApplyContent,
+  onCreateContent,
   onAppendContent,
   onApplyDiff,
+  referenceHandoff,
+  onReferenceHandoffConsumed,
 }) => {
   const [mode, setMode] = useState<EnvironmentMode>(() => {
     try {
@@ -177,6 +185,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   // App 模式狀態
   const [inputMessage, setInputMessage] = useState('');
+  const [pendingReferenceIds, setPendingReferenceIds] = useState<string[]>([]);
+  const [pendingReferenceLabels, setPendingReferenceLabels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [streamStatus, setStreamStatus] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -264,6 +274,29 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   // 視圖切換：預設一開始進入 AI 功能時顯示對話欄清單（'list'），點擊對話後進入聊天（'chat'）
   const [sessionView, setSessionView] = useState<'list' | 'chat'>('list');
+
+  useEffect(() => {
+    if (!referenceHandoff?.sourceIds.length) return;
+    const id = `session-exploration-${Date.now()}`;
+    const noteName = currentNotePath ? getNoteName(currentNotePath) : '探索來源草稿';
+    const session: ChatSession = {
+      id,
+      title: `探索苗圃 · ${referenceHandoff.titles[0]?.slice(0, 16) || '來源草稿'}`,
+      notePath: currentNotePath || '',
+      noteName,
+      isFloating: !currentNotePath,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setSessions(current => [session, ...current]);
+    setActiveSessionId(id);
+    setSessionView('chat');
+    setPendingReferenceIds(referenceHandoff.sourceIds);
+    setPendingReferenceLabels(referenceHandoff.titles);
+    setInputMessage('請比較來源籃中的素材，釐清來源直接支持的內容與 AI 推論，整理成一份可長期翻閱的 WikiTree 正式筆記草稿。若來源互相矛盾或證據不足，請明確標示不確定性。');
+    onReferenceHandoffConsumed?.();
+  }, [referenceHandoff?.key]);
   // 跨 Session 單一任務鎖定：紀錄當前正在運算生成的 Session ID
   const [generatingSessionId, setGeneratingSessionId] = useState<string | null>(null);
 
@@ -744,6 +777,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const handleSendMessage = async (customPrompt?: string, skillLabel?: string) => {
     const currentAttachments = [...pendingAttachments];
     const currentSkills = [...selectedSkillIds];
+    const currentReferenceIds = [...pendingReferenceIds];
+    const currentReferenceLabels = [...pendingReferenceLabels];
     const text = (customPrompt || inputMessage).trim() || (currentAttachments.length > 0 ? '請參考附帶的圖片/檔案，為我提煉並製作詳細的知識筆記。' : '');
     if (!text) return;
     setPendingAttachments([]);
@@ -821,7 +856,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
       skills: currentSkills.length > 0 ? currentSkills : undefined,
+      referenceLabels: currentReferenceLabels.length > 0 ? currentReferenceLabels : undefined,
     };
+    setPendingReferenceIds([]);
+    setPendingReferenceLabels([]);
 
     const botId = 'bot-' + crypto.randomUUID();
     const currentTargetId = targetId;
@@ -866,6 +904,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           stream: true,
           attachments: currentAttachments,
           skills: currentSkills,
+          referenceSourceIds: currentReferenceIds,
           context: {
             path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
@@ -1998,6 +2037,16 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                         </div>
                       )}
 
+                      {msg.referenceLabels && msg.referenceLabels.length > 0 && (
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '90%' }}>
+                          {msg.referenceLabels.map((label, index) => (
+                            <span key={`${label}-${index}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', border: '1px solid var(--border-color)', fontSize: '10px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                              <BookOpen size={10} />來源 {index + 1} · {label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       {/* 渲染啟用的專業技能標籤 */}
                       {msg.skills && msg.skills.length > 0 && (
                         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '90%' }}>
@@ -2360,7 +2409,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               {activeTab === 'note' ? (
                                 <>
                                   {/* 知識筆記分頁：只有直接插入 ＋ 複製按鈕 */}
-                                  {onApplyContent && (
+                                  {onApplyContent && currentNotePath && (
                                     <button
                                       className="btn btn-primary"
                                       onClick={() => applyToNote(msg.id, note)}
@@ -2380,7 +2429,18 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                       title="在編輯器中生成可拖動的綠色插入區塊"
                                     >
                                       {appliedId === msg.id ? <Check size={14} color="#000000" /> : <Plus size={14} />}
-                                      <span>{appliedId === msg.id ? '已送至編輯器！' : '➕ 直接插入'}</span>
+                                      <span>{appliedId === msg.id ? '已送至編輯器！' : '插入現有筆記'}</span>
+                                    </button>
+                                  )}
+
+                                  {onCreateContent && (
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={() => onCreateContent(note)}
+                                      style={{ flex: 1, padding: '6px 12px', fontSize: '12px', fontWeight: 600 }}
+                                      title="預覽完成後建立一片新筆記"
+                                    >
+                                      <Plus size={14} />建立新葉片
                                     </button>
                                   )}
 
@@ -2486,6 +2546,19 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               >
                 <ImageIcon size={18} />
                 <span>放開滑鼠以附加參考圖片或檔案</span>
+              </div>
+            )}
+
+            {pendingReferenceLabels.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '7px 8px', border: '1px solid var(--border-color)', background: 'var(--accent-bg)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>探索苗圃來源 · {pendingReferenceLabels.length} 筆</strong>
+                  <button className="theme-toggle-btn" onClick={() => { setPendingReferenceIds([]); setPendingReferenceLabels([]); }} title="移除全部來源"><X size={12} /></button>
+                </div>
+                <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
+                  {pendingReferenceLabels.map((label, index) => <span key={`${label}-${index}`} style={{ flexShrink: 0, padding: '2px 6px', border: '1px solid var(--border-color)', fontSize: '9.5px', fontFamily: 'var(--font-mono)' }}>{index + 1}. {label}</span>)}
+                </div>
+                <small style={{ color: 'var(--text-muted)', lineHeight: 1.4 }}>來源僅供參考，AI 必須自行判斷；送出不會直接寫入正式筆記。</small>
               </div>
             )}
 

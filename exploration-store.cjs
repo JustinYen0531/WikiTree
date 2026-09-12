@@ -9,6 +9,7 @@ const SCHEDULE_KINDS = new Set(['manual', 'daily', 'weekdays', 'weekly', 'monthl
 const FEEDBACK_ACTIONS = new Set([
   'read', 'unread', 'saved', 'priority_saved', 'unsaved', 'want_more',
   'want_to_build', 'not_interested', 'exclude_source', 'archive', 'converted',
+  'unarchive',
 ]);
 const SECRET_KEY = /(api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|password|secret|bearer)/i;
 const SECRET_VALUES = [
@@ -73,6 +74,11 @@ function text(value, max = 1000) {
 function clampInteger(value, min, max, fallback) {
   const number = Number(value);
   return Number.isInteger(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
+
+function recordId(value) {
+  const id = String(value || '');
+  return /^[A-Za-z0-9_-]{1,80}$/.test(id) ? id : '';
 }
 
 function normalizeTime(value) {
@@ -191,7 +197,7 @@ class ExplorationStore {
     const current = input.id ? this.getRun(workspace, input.id) : null;
     const run = {
       schemaVersion: STORE_VERSION,
-      id: current?.id || input.id || crypto.randomUUID(),
+      id: current?.id || recordId(input.id) || crypto.randomUUID(),
       taskId: text(input.taskId ?? current?.taskId, 80),
       origin: text(input.origin ?? current?.origin, 80) || 'scheduled_ai_exploration',
       status: text(input.status ?? current?.status, 80) || 'pending',
@@ -213,7 +219,8 @@ class ExplorationStore {
   }
 
   getRun(workspace, id) {
-    return readJson(path.join(this.runsDir(workspace), `${id}.json`), null);
+    const safeId = recordId(id);
+    return safeId ? readJson(path.join(this.runsDir(workspace), `${safeId}.json`), null) : null;
   }
 
   listRuns(workspace, { taskId = '', limit = 100 } = {}) {
@@ -227,7 +234,7 @@ class ExplorationStore {
 
   writeItem(workspace, input) {
     this.registerWorkspace(workspace);
-    const id = input.id || crypto.randomUUID();
+    const id = recordId(input.id) || crypto.randomUUID();
     const current = this.getItem(workspace, id);
     const item = {
       schemaVersion: STORE_VERSION,
@@ -255,7 +262,8 @@ class ExplorationStore {
   }
 
   getItem(workspace, id) {
-    return readJson(path.join(this.itemsDir(workspace), `${id}.json`), null);
+    const safeId = recordId(id);
+    return safeId ? readJson(path.join(this.itemsDir(workspace), `${safeId}.json`), null) : null;
   }
 
   listItems(workspace, filters = {}) {
@@ -295,6 +303,7 @@ class ExplorationStore {
     if (action === 'priority_saved') patch.favoriteLevel = 2;
     if (action === 'unsaved' || action === 'not_interested') patch.favoriteLevel = 0;
     if (action === 'archive' || action === 'not_interested') patch.archived = true;
+    if (action === 'unarchive') patch.archived = false;
     if (action === 'converted') patch.converted = true;
     const updated = this.updateItem(workspace, id, patch);
     const feedback = readJson(this.feedbackFile(workspace), []);
@@ -314,6 +323,19 @@ class ExplorationStore {
   listFeedback(workspace) { return readJson(this.feedbackFile(workspace), []); }
   listReviews(workspace) { return readJson(this.reviewsFile(workspace), []); }
 
+  deleteItem(workspace, id) {
+    if (!this.getItem(workspace, id)) throw new Error('找不到這筆探索素材。');
+    const file = path.resolve(this.itemsDir(workspace), `${id}.json`);
+    const root = path.resolve(this.itemsDir(workspace));
+    if (!file.startsWith(`${root}${path.sep}`)) throw new Error('探索素材位置無法確認。');
+    fs.unlinkSync(file);
+    const basket = readJson(this.basketFile(workspace), []).filter(itemId => itemId !== id);
+    atomicWrite(this.basketFile(workspace), basket);
+    const reviews = readJson(this.reviewsFile(workspace), []).filter(review => review.itemId !== id);
+    atomicWrite(this.reviewsFile(workspace), reviews);
+    return true;
+  }
+
   getBasket(workspace) {
     const ids = readJson(this.basketFile(workspace), []);
     return (Array.isArray(ids) ? ids : []).map(id => this.getItem(workspace, id)).filter(Boolean);
@@ -330,7 +352,9 @@ class ExplorationStore {
   referenceSources(workspace, ids) {
     const unique = [...new Set((Array.isArray(ids) ? ids : []).map(String))];
     if (unique.length > 10) throw new Error('一次最多提供 10 筆參考來源。');
-    return unique.map(id => this.getItem(workspace, id)).filter(Boolean).map(item => ({
+    const items = unique.map(id => this.getItem(workspace, id));
+    if (items.some(item => !item)) throw new Error('參考來源包含不屬於目前工作區的素材。');
+    return items.map(item => ({
       id: item.id,
       taskId: item.taskId,
       runId: item.runId,

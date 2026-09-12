@@ -45,6 +45,7 @@ import { LoginModal } from './components/LoginModal';
 import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { SkillLibrary } from './components/SkillLibrary';
+import { ExplorationNursery } from './components/ExplorationNursery';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
 import { SplashScreen } from './components/SplashScreen';
@@ -86,6 +87,7 @@ function App() {
   const [originalContent, setOriginalContent] = useState('');
   const [pendingInsertNote, setPendingInsertNote] = useState<string | null>(null);
   const [pendingDiff, setPendingDiff] = useState<PendingDiffInfo | null>(null);
+  const [explorationHandoff, setExplorationHandoff] = useState<{ key: string; sourceIds: string[]; titles: string[] } | null>(null);
   
   // Top Navbar Inline Rename States
   const [isEditingFileName, setIsEditingFileName] = useState(false);
@@ -381,7 +383,7 @@ function App() {
   };
 
   // App views and panels
-  const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
+  const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'exploration' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
@@ -568,6 +570,37 @@ function App() {
     } catch (e) {
       console.error('Create quick note failed', e);
       showToast('建立新文件失敗', 'error');
+    }
+  };
+
+  const handleCreateGeneratedNote = async (markdown: string) => {
+    const activeRoot = await ensureWorkspace();
+    if (!activeRoot) return;
+    const requested = prompt('這份草稿已預覽完成。請輸入新葉片名稱（可包含資料夾路徑）：');
+    if (!requested?.trim()) return;
+    const parts = requested.split('/').map(part => part.trim()).filter(Boolean);
+    if (!parts.length) return;
+    const rawName = parts.pop()!.replace(/[<>:"\\|?*]/g, '_').replace(/[. ]+$/, '');
+    if (!rawName) { showToast('葉片名稱無法使用。', 'error'); return; }
+    const fileName = rawName.endsWith('.md') ? rawName : `${rawName}.md`;
+    const parentPath = parts.join('/');
+    const relativePath = parentPath ? `${parentPath}/${fileName}` : fileName;
+    const allPaths = new Set<string>();
+    const collectPaths = (nodes: FileNode[]) => nodes.forEach(node => { allPaths.add(node.path.toLowerCase()); if (node.children) collectPaths(node.children); });
+    collectPaths(await getFilesRecursively(activeRoot));
+    if (allPaths.has(relativePath.toLowerCase())) { showToast('同名葉片已存在，請換一個名稱。', 'error'); return; }
+    try {
+      const parent = await getDirectoryHandleByPath(activeRoot, parentPath, { create: true });
+      const handle = await createFile(parent, fileName);
+      await writeFileContent(handle, markdown.trimEnd() + '\n');
+      const updated = await getFilesRecursively(activeRoot);
+      setFiles(updated);
+      await openFile({ name: fileName, path: relativePath, kind: 'file', handle }, activeRoot, true);
+      setSidebarTab('files');
+      showToast(`🌱 正式葉片已建立：${relativePath}`);
+    } catch (error) {
+      console.error('Create generated note failed', error);
+      showToast('建立正式葉片失敗。', 'error');
     }
   };
 
@@ -901,6 +934,11 @@ function App() {
           <CourseSearch key={rootHandle ? activeWorkspaceId : 'no-folder'} workspaceKey={rootHandle ? activeWorkspaceId || undefined : undefined} files={files} activeFile={activeFile} onOpenNote={file => void runFileOperation(() => openFile(file))} />
         ) : sidebarTab === 'skills' ? (
           <SkillLibrary workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined} />
+        ) : sidebarTab === 'exploration' ? (
+          <ExplorationNursery
+            workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined}
+            onHandoff={handoff => { setExplorationHandoff(handoff); setSidebarTab('antigravity'); }}
+          />
         ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
@@ -1189,6 +1227,9 @@ function App() {
               setPendingInsertNote(newContent);
               showToast('🌱 已在編輯器生成待插入綠色區塊，可移動選擇位置！', 'success');
             }}
+            onCreateContent={(newContent) => void runFileOperation(() => handleCreateGeneratedNote(newContent))}
+            referenceHandoff={explorationHandoff}
+            onReferenceHandoffConsumed={() => setExplorationHandoff(null)}
             onAppendContent={(added) => {
               setContent((prev) => (prev ? `${prev}\n\n${added}` : added));
               showToast('🌱 已將內容附加至筆記末尾，請記得儲存！', 'success');

@@ -50,8 +50,10 @@ function normalizeAiItem(input) {
 function feedbackGuidance(feedback, existingItems) {
   const byId = new Map(existingItems.map(item => [item.id, item]));
   const wanted = feedback.filter(row => row.action === 'want_more').slice(0, 8).map(row => byId.get(row.itemId)?.title).filter(Boolean);
+  const buildNext = feedback.filter(row => row.action === 'want_to_build').slice(0, 8).map(row => byId.get(row.itemId)?.title).filter(Boolean);
+  const avoided = feedback.filter(row => row.action === 'not_interested').slice(0, 12).map(row => byId.get(row.itemId)?.title).filter(Boolean);
   const excludedDomains = [...new Set(feedback.filter(row => row.action === 'exclude_source').map(row => row.sourceDomain).filter(Boolean))];
-  return { wanted, excludedDomains };
+  return { wanted, buildNext, avoided, excludedDomains };
 }
 
 function buildExplorationPrompt(task, candidates, asOfDate, guidance = {}) {
@@ -70,6 +72,8 @@ function buildExplorationPrompt(task, candidates, asOfDate, guidance = {}) {
     task.instructions ? `補充要求：${task.instructions}` : '',
     `資料截止日期：${asOfDate}。最多輸出 ${task.itemCount} 筆，不足時就少輸出，不可硬湊。`,
     guidance.wanted?.length ? `使用者想延伸的方向：${guidance.wanted.join('；')}` : '',
+    guidance.buildNext?.length ? `使用者想實作的方向：${guidance.buildNext.join('；')}` : '',
+    guidance.avoided?.length ? `使用者不感興趣的方向，請降低相似內容：${guidance.avoided.join('；')}` : '',
     guidance.excludedDomains?.length ? `不可使用的網域：${guidance.excludedDomains.join(', ')}` : '',
     '你可以從下列已收集候選中選擇，也可在具備即時網路搜尋能力時補充公開來源。',
     JSON.stringify(safeCandidates),

@@ -1,7 +1,7 @@
 export type ExplorationProvider = 'agy' | 'openai';
 export type ExplorationTaskStatus = 'active' | 'paused' | 'archived';
 export type ExplorationScheduleKind = 'manual' | 'daily' | 'weekdays' | 'weekly' | 'monthly';
-export type ExplorationRunStatus = 'pending' | 'running' | 'complete' | 'complete_with_shortfall' | 'failed' | 'skipped';
+export type ExplorationRunStatus = 'pending' | 'running' | 'complete' | 'completed' | 'complete_with_shortfall' | 'failed' | 'skipped';
 
 export interface ExplorationSchedule {
   kind: ExplorationScheduleKind;
@@ -26,6 +26,7 @@ export interface ExplorationTask {
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
+  nextRunAt?: string | null;
 }
 
 export interface ExplorationRun {
@@ -53,6 +54,7 @@ export interface ExplorationSource {
   author: string;
   publishedAt: string;
   evidenceExcerpt: string;
+  provenance?: { generatedBy?: string; model?: string; asOfDate?: string };
 }
 
 export interface ExplorationItem {
