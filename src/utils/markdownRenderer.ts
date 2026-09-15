@@ -104,7 +104,7 @@ function renderFrontmatter(fields: FrontmatterField[]): string {
     const value = field.key === 'tags'
       ? `<span class="note-frontmatter-tags">${field.values.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</span>`
       : escapeHtml(field.values.join('、'));
-    return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon note-frontmatter-icon--${icon}" aria-hidden="true"></span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
+    return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon-frame" aria-hidden="true"><span class="note-frontmatter-icon note-frontmatter-icon--${icon}"></span></span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
   }).join('');
   return `<section class="note-frontmatter" aria-label="筆記資訊"><dl>${rows}</dl></section>`;
 }

@@ -21,6 +21,7 @@ try {
       for (const field of ['title', 'domain', 'branch', 'parent', 'tags', 'summary']) {
         assert.match(html, new RegExp(`note-frontmatter-icon--${field}`));
       }
+      assert.equal(html.match(/note-frontmatter-icon-frame/g)?.length, 6);
       assert.match(html, /note-frontmatter-separator[^>]*>:</);
       assert.match(html, /note-frontmatter-tags/);
       assert.match(html, />開始<\/span>/);
@@ -43,6 +44,9 @@ try {
       }
       const iconCss = appCss.slice(appCss.indexOf('.note-frontmatter-icon'), appCss.indexOf('@media (max-width: 640px)'));
       assert.doesNotMatch(iconCss, /url\(|data:image|[\u{1F300}-\u{1FAFF}]/u);
+      assert.match(appCss, /\.note-frontmatter-icon-frame[\s\S]*width: 28px;[\s\S]*border-radius: 7px;/);
+      assert.match(appCss, /\.note-frontmatter-row--summary[\s\S]*border-top: 1px solid var\(--border-color\)/);
+      assert.match(publisher, /\.note-frontmatter-icon-frame/);
     }],
     ['agent emphasis with padding and CJK punctuation', () => {
       for (const [source, expected] of [
