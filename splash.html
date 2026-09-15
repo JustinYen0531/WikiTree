@@ -222,6 +222,7 @@
     let currentProgress = 5;
     let targetProgress = 15;
     let isServerReady = false;
+    let failedChecks = 0;
 
     const stages = [
       { at: 15, text: '正在喚醒知識生態...' },
@@ -269,23 +270,31 @@
 
     async function checkServer() {
       try {
-        await fetch('http://localhost:5173/favicon.svg?t=' + Date.now(), {
-          mode: 'no-cors',
-          cache: 'no-cache'
-        });
+        const [webResponse, cliResponse] = await Promise.all([
+          fetch('http://localhost:5173/favicon.svg?t=' + Date.now(), {
+            mode: 'no-cors',
+            cache: 'no-cache'
+          }),
+          fetch('http://127.0.0.1:18080/api/status?t=' + Date.now(), {
+            cache: 'no-store'
+          })
+        ]);
+        const cliStatus = await cliResponse.json();
+        if (!webResponse || !cliResponse.ok || !cliStatus.managedLibrary || !cliStatus.libraryImport) {
+          throw new Error('WikiTree 核心尚未就緒');
+        }
         isServerReady = true;
       } catch (err) {
+        failedChecks += 1;
+        if (failedChecks >= 75) {
+          statusText.textContent = '啟動未完成，請關閉 WikiTree 後重試';
+          return;
+        }
         setTimeout(checkServer, 400);
       }
     }
 
     setTimeout(checkServer, 500);
-
-    setTimeout(() => {
-      if (!isServerReady) {
-        isServerReady = true;
-      }
-    }, 15000);
   </script>
 </body>
 </html>
