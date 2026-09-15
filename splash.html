@@ -287,7 +287,8 @@
       } catch (err) {
         failedChecks += 1;
         if (failedChecks >= 75) {
-          statusText.textContent = '啟動未完成，請關閉 WikiTree 後重試';
+          statusText.textContent = '仍在等待本機服務，WikiTree 會自動重試';
+          setTimeout(checkServer, 1000);
           return;
         }
         setTimeout(checkServer, 400);

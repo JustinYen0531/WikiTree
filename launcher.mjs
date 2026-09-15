@@ -25,7 +25,9 @@ function launchSplashWindow() {
   });
 }
 
-launchSplashWindow();
+if (process.env.WIKITREE_SKIP_SPLASH !== '1') {
+  launchSplashWindow();
+}
 
 // 第二步：檢查並在背景同步 Git 最新版本
 try {
@@ -37,7 +39,7 @@ try {
 // 第三步：同時確認畫面與筆記核心都是目前版本
 function checkPort(port) {
   return new Promise((resolve) => {
-    const socket = createConnection({ port, host: '127.0.0.1' }, () => {
+    const socket = createConnection({ port, host: 'localhost' }, () => {
       socket.destroy();
       resolve(true);
     });
@@ -62,14 +64,17 @@ function stopStaleCli() {
   });
 }
 
-function spawnBackground(script) {
+const managedProcesses = new Set();
+
+function spawnManaged(script) {
   const child = spawn(process.execPath, [script], {
     cwd: __dirname,
-    detached: true,
     stdio: 'ignore',
     windowsHide: true,
   });
-  child.unref();
+  managedProcesses.add(child);
+  child.once('exit', () => managedProcesses.delete(child));
+  return child;
 }
 
 async function ensureServerRunning() {
@@ -90,9 +95,9 @@ async function ensureServerRunning() {
   }
 
   if (webRunning) {
-    spawnBackground('cli-server.cjs');
+    spawnManaged('cli-server.cjs');
   } else {
-    spawnBackground('dev-all.mjs');
+    spawnManaged('dev-all.mjs');
   }
 
   // 等待畫面與目前版本的筆記核心就緒（最多等候 30 秒）
@@ -108,3 +113,15 @@ async function ensureServerRunning() {
 }
 
 await ensureServerRunning();
+
+function shutdown() {
+  for (const child of managedProcesses) {
+    if (!child.killed) {
+      try { child.kill(); } catch {}
+    }
+  }
+  process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

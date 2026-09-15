@@ -463,7 +463,7 @@ const server = http.createServer((req, res) => {
     json(404, { error: '找不到探索苗圃操作。' });
     return;
   }
-  if (req.url === '/api/status' && req.method === 'GET') {
+  if (requestUrl.pathname === '/api/status' && req.method === 'GET') {
     let library = null;
     try {
       library = ensureLibrary();
