@@ -256,6 +256,17 @@ function loadAllSkills(workspacePath) {
     defaults.push({ ...guidedKnowledgeSkill, category: 'WikiTree 內建' });
   }
 
+  const additionalBundledSkills = [
+    'humanized-learning-notes',
+    'cornell-adaptive-learning',
+  ];
+  for (const skillName of additionalBundledSkills) {
+    const bundled = loadBundledSkill(skillName);
+    if (bundled) {
+      defaults.push({ ...bundled, category: 'WikiTree 內建' });
+    }
+  }
+
   for (const item of defaults) {
     skillsMap.set(item.id, item);
   }

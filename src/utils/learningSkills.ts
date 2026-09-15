@@ -1,3 +1,5 @@
+import humanizedLearningNotesRaw from '../../skills/humanized-learning-notes/SKILL.md?raw';
+import cornellAdaptiveLearningRaw from '../../skills/cornell-adaptive-learning/SKILL.md?raw';
 import guidedKnowledgeConstructionRaw from '../../skills/guided-knowledge-construction/SKILL.md?raw';
 
 export interface WikiSkill {
@@ -26,6 +28,12 @@ export const DEFAULT_SKILLS: WikiSkill[] = [
     title: '終身學習思維筆記',
     badge: '終身學習',
     description: '將教材轉化為建立直覺與決策力的終身思維工具書，嚴禁應試死背字眼。',
+    overview: [
+      '目標在於把生硬的教材或技術內容，轉化為具人情味與人生決策洞察的精品思維筆記。採用 8 步輸出法：從白話直覺起手、探尋存在理由、剖析公式與現實邊界，並映射到職涯與日常生活。',
+      '強調「三年後只記三件事」與「留給未來的自己」，抽離公式後心智模型依然留在腦中。嚴禁應試死背字眼與空泛心靈雞湯，是一本為自己量身打造的終身思維工具書。',
+    ],
+    content: humanizedLearningNotesRaw,
+    rawContent: humanizedLearningNotesRaw,
     category: 'WikiTree 內建',
   },
   {
@@ -34,6 +42,12 @@ export const DEFAULT_SKILLS: WikiSkill[] = [
     title: '康奈爾自適應筆記',
     badge: 'Cornell',
     description: '結合高密度知識矩陣、因果認知鏈、主動檢索問題（Cue）與掌握度標記。',
+    overview: [
+      '結合 Cornell 筆記四層架構（核心筆記、提示檢索問題 Cue、精煉總結、掌握度標記）與自適應間隔提取（Spaced Repetition），讓人負責學習與主觀反饋，AI 負責題型生成與動態排程。',
+      '具備零欠債負擔原則（重啟優先於補債），並根據掌握度雙訊號評估動態出題（包含直接定義、情境辨析、反向找錯與生活應用），幫助建立抗遺忘的長期記憶網絡。',
+    ],
+    content: cornellAdaptiveLearningRaw,
+    rawContent: cornellAdaptiveLearningRaw,
     category: 'WikiTree 內建',
   },
   {
