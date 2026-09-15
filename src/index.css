@@ -1061,6 +1061,192 @@ body {
   color: var(--text-primary);
 }
 
+/* Frontmatter becomes a compact icon:value index while the Markdown source stays unchanged. */
+.note-frontmatter {
+  margin: 0 0 28px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.note-frontmatter dl {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+}
+
+.note-frontmatter-row {
+  display: grid;
+  grid-template-columns: 31px minmax(0, 1fr);
+  align-items: start;
+  min-width: 0;
+}
+
+.note-frontmatter-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.note-frontmatter-row dd {
+  min-width: 0;
+  margin: 0;
+  padding-top: 1px;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.note-frontmatter-row--title dd { font-weight: 650; }
+.note-frontmatter-row--summary dd { color: var(--text-secondary); }
+.note-frontmatter-separator { font-family: var(--font-mono); opacity: .7; }
+.note-frontmatter-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.note-frontmatter-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.note-frontmatter-tags > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--tag-bg);
+  color: var(--text-primary);
+  font-size: .84em;
+  line-height: 1.4;
+}
+
+.note-frontmatter-icon {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: currentColor;
+}
+
+.note-frontmatter-icon--title::before {
+  content: "";
+  position: absolute;
+  inset: 1px 2px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+.note-frontmatter-icon--title::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 6px;
+  height: 1px;
+  background: currentColor;
+  box-shadow: 0 3px 0 currentColor;
+}
+
+.note-frontmatter-icon--domain {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background:
+    linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent 44%, currentColor 45% 55%, transparent 56%) center / 7px 100% no-repeat;
+}
+.note-frontmatter-icon--domain::after {
+  content: "";
+  position: absolute;
+  inset: 3px -1px;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.note-frontmatter-icon--branch {
+  background:
+    radial-gradient(circle at 4px 3px, currentColor 0 1.5px, transparent 1.7px),
+    radial-gradient(circle at 12px 8px, currentColor 0 1.5px, transparent 1.7px),
+    radial-gradient(circle at 4px 13px, currentColor 0 1.5px, transparent 1.7px),
+    linear-gradient(currentColor, currentColor) 4px 3px / 1px 10px no-repeat,
+    linear-gradient(currentColor, currentColor) 4px 8px / 8px 1px no-repeat;
+}
+
+.note-frontmatter-icon--parent::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 7px;
+  height: 7px;
+  border-top: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+.note-frontmatter-icon--parent::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 1px;
+  height: 11px;
+  background: currentColor;
+}
+
+.note-frontmatter-icon--tags::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid currentColor;
+  border-radius: 2px 4px 2px 2px;
+  transform: rotate(45deg);
+}
+.note-frontmatter-icon--tags::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.note-frontmatter-icon--summary::before,
+.note-frontmatter-icon--generic::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 12px;
+  height: 1px;
+  background: currentColor;
+  box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor;
+}
+
+@media (max-width: 640px) {
+  .note-frontmatter { padding: 13px 0; }
+  .note-frontmatter-row { grid-template-columns: 29px minmax(0, 1fr); }
+}
+
 .rendered-markdown h1 {
   font-size: 34px;
   font-weight: 700;

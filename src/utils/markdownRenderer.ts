@@ -15,6 +15,100 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+type FrontmatterField = {
+  key: string;
+  values: string[];
+};
+
+const frontmatterLabels: Record<string, string> = {
+  title: '標題',
+  domain: '領域',
+  branch: '分支',
+  parent: '父節點',
+  tags: '標籤',
+  summary: '摘要',
+};
+
+const frontmatterIcons = new Set(['title', 'domain', 'branch', 'parent', 'tags', 'summary']);
+
+function parseFrontmatterScalar(rawValue: string): string {
+  const value = rawValue.trim();
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+  }
+  if (value.length >= 2 && value.startsWith("'") && value.endsWith("'")) {
+    return value.slice(1, -1).replace(/''/g, "'");
+  }
+  return value;
+}
+
+function parseFrontmatterValues(rawValue: string): string[] {
+  const value = rawValue.trim();
+  if (!value.startsWith('[') || !value.endsWith(']')) {
+    const scalar = parseFrontmatterScalar(value);
+    return scalar ? [scalar] : [];
+  }
+
+  const values: string[] = [];
+  const source = value.slice(1, -1);
+  const itemPattern = /"(?:\\.|[^"\\])*"|'(?:''|[^'])*'|[^,]+/g;
+  for (const match of source.matchAll(itemPattern)) {
+    const item = parseFrontmatterScalar(match[0]);
+    if (item) values.push(item);
+  }
+  return values;
+}
+
+export function extractFrontmatter(markdown: string): { fields: FrontmatterField[]; body: string } {
+  const normalized = markdown.replace(/^\uFEFF/, '');
+  const match = /^---[\t ]*\r?\n([\s\S]*?)\r?\n---[\t ]*(?:\r?\n|$)/.exec(normalized);
+  if (!match) return { fields: [], body: markdown };
+
+  const fields: FrontmatterField[] = [];
+  let current: FrontmatterField | null = null;
+
+  for (const line of match[1].split(/\r?\n/)) {
+    if (!line.trim() || /^\s*#/.test(line)) continue;
+    const pair = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+    if (pair) {
+      current = { key: pair[1].toLowerCase(), values: parseFrontmatterValues(pair[2]) };
+      fields.push(current);
+      continue;
+    }
+
+    const listItem = /^\s+-\s+(.+)$/.exec(line);
+    if (listItem && current) {
+      const item = parseFrontmatterScalar(listItem[1]);
+      if (item) current.values.push(item);
+      continue;
+    }
+
+    if (/^\s+/.test(line) && current && line.trim()) {
+      const continuation = parseFrontmatterScalar(line);
+      if (continuation) {
+        const lastIndex = current.values.length - 1;
+        if (lastIndex >= 0) current.values[lastIndex] += ` ${continuation}`;
+        else current.values.push(continuation);
+      }
+    }
+  }
+
+  return { fields: fields.filter(field => field.values.length), body: normalized.slice(match[0].length) };
+}
+
+function renderFrontmatter(fields: FrontmatterField[]): string {
+  if (!fields.length) return '';
+  const rows = fields.map(field => {
+    const icon = frontmatterIcons.has(field.key) ? field.key : 'generic';
+    const label = frontmatterLabels[field.key] || field.key;
+    const value = field.key === 'tags'
+      ? `<span class="note-frontmatter-tags">${field.values.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</span>`
+      : escapeHtml(field.values.join('、'));
+    return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon note-frontmatter-icon--${icon}" aria-hidden="true"></span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
+  }).join('');
+  return `<section class="note-frontmatter" aria-label="筆記資訊"><dl>${rows}</dl></section>`;
+}
+
 function renderMath(value: string, displayMode: boolean): string {
   try {
     return katex.renderToString(value.trim(), {
@@ -135,7 +229,8 @@ const noteMarkdown = new Marked({
 });
 
 export function renderMarkdownSync(markdown: string): string {
-  return noteMarkdown.parse(preprocessMath(markdown), { async: false });
+  const { fields, body } = extractFrontmatter(markdown);
+  return renderFrontmatter(fields) + noteMarkdown.parse(preprocessMath(body), { async: false });
 }
 
 export async function renderMarkdown(markdown: string): Promise<string> {

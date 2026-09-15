@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true, include: [] } });
 try {
-  const { renderMarkdown, renderMarkdownSync, renderInlineMarkdown, preprocessMath, createMarkdownRenderer } = await server.ssrLoadModule('/src/utils/markdownRenderer.ts');
+  const { renderMarkdown, renderMarkdownSync, renderInlineMarkdown, preprocessMath, createMarkdownRenderer, extractFrontmatter } = await server.ssrLoadModule('/src/utils/markdownRenderer.ts');
   const { preprocessCallouts } = await server.ssrLoadModule('/src/utils/callouts.ts');
   const cases = [
     ['headings and emphasis', async () => assert.match(await renderMarkdown('# 標題\n\n**重點**'), /<strong>重點<\/strong>/)],
@@ -15,6 +15,35 @@ try {
     ['code fences stay literal', () => { for (const fence of ['```', '~~~', '````']) { const code = `${fence}text\n$x$\n> [!TIP]\n${fence}`; assert.equal(preprocessMath(code), code); assert.equal(preprocessCallouts(code), code); } }],
     ['callout emphasis', () => assert.match(preprocessCallouts('> [!TIP]\n> **重點**'), /<strong>重點<\/strong>/)],
     ['table rendering', async () => assert.match(await renderMarkdown('| A | B |\n|---|---|\n| 1 | 2 |'), /<table>/)],
+    ['frontmatter renders as CSS icon:value metadata instead of raw YAML', () => {
+      const source = `---\ntitle: "歡迎來到 WikiTree"\ndomain: "WikiTree"\nbranch: "起點"\nparent: "root"\ntags: ["開始", "WikiTree"]\nsummary: "這裡是由 WikiTree 管理、屬於你的知識天地。"\n---\n\n# 第一片葉`;
+      const html = renderMarkdownSync(source);
+      for (const field of ['title', 'domain', 'branch', 'parent', 'tags', 'summary']) {
+        assert.match(html, new RegExp(`note-frontmatter-icon--${field}`));
+      }
+      assert.match(html, /note-frontmatter-separator[^>]*>:</);
+      assert.match(html, /note-frontmatter-tags/);
+      assert.match(html, />開始<\/span>/);
+      assert.match(html, /<h1>第一片葉<\/h1>/);
+      assert.doesNotMatch(html, /title:|domain:|tags: \[/);
+    }],
+    ['frontmatter supports block tag lists, preserves colons, and ignores absent fences', () => {
+      const parsed = extractFrontmatter(`---\ntags:\n  - 研究\n  - 方法\nsummary: "問題：答案"\n---\n本文`);
+      assert.deepEqual(parsed.fields.find(field => field.key === 'tags')?.values, ['研究', '方法']);
+      assert.equal(parsed.fields.find(field => field.key === 'summary')?.values[0], '問題：答案');
+      assert.equal(parsed.body, '本文');
+      assert.deepEqual(extractFrontmatter('title: 普通段落').fields, []);
+    }],
+    ['frontmatter icons are CSS-only in the app and published reader', async () => {
+      const appCss = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+      const publisher = await readFile(new URL('../src/utils/publisher.ts', import.meta.url), 'utf8');
+      for (const icon of ['title', 'domain', 'branch', 'parent', 'tags', 'summary']) {
+        assert.match(appCss, new RegExp(`note-frontmatter-icon--${icon}`));
+        assert.match(publisher, new RegExp(`note-frontmatter-icon--${icon}`));
+      }
+      const iconCss = appCss.slice(appCss.indexOf('.note-frontmatter-icon'), appCss.indexOf('@media (max-width: 640px)'));
+      assert.doesNotMatch(iconCss, /url\(|data:image|[\u{1F300}-\u{1FAFF}]/u);
+    }],
     ['agent emphasis with padding and CJK punctuation', () => {
       for (const [source, expected] of [
         ['**一句話定義**：不是工程師手寫規則', '<strong>一句話定義</strong>：'],
