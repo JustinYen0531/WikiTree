@@ -1,3 +1,5 @@
+import guidedKnowledgeConstructionRaw from '../../skills/guided-knowledge-construction/SKILL.md?raw';
+
 export interface WikiSkill {
   id: string;
   name: string;
@@ -14,6 +16,8 @@ export interface WikiSkill {
   importable?: boolean;
   referenceOnly?: boolean;
 }
+
+export const GUIDED_KNOWLEDGE_CONSTRUCTION_SKILL_ID = 'guided-knowledge-construction';
 
 export const DEFAULT_SKILLS: WikiSkill[] = [
   {
@@ -54,6 +58,20 @@ export const DEFAULT_SKILLS: WikiSkill[] = [
     title: '知識森林枝幹演化',
     badge: '生態演化',
     description: '定位父概念、子概念與跨領域連結，讓每篇筆記能繼續長出新的枝葉。',
+    category: 'WikiTree 內建',
+  },
+  {
+    id: GUIDED_KNOWLEDGE_CONSTRUCTION_SKILL_ID,
+    name: GUIDED_KNOWLEDGE_CONSTRUCTION_SKILL_ID,
+    title: '引導式知識建構',
+    badge: '對話建構',
+    description: 'AI 掌握隱藏知識地圖，透過逐輪提問讓理解、例子與正式概念從對話中長成個人化筆記。',
+    overview: [
+      '這不是請 AI 一次替你寫完整筆記，而是先由 AI 掌握主題的知識地圖，每次只選一個最值得前進的節點提問。你的回答會決定下一步，也會被忠實整理成「我的理解」與「我的例子」。',
+      '當回答不完整或有誤解時，AI 會保留你的思路，再用反例、追問與正式概念補正。每輪都更新同一份筆記與學習進度，直到真正形成能說明、能連結、也能應用的個人知識體系。',
+    ],
+    content: guidedKnowledgeConstructionRaw,
+    rawContent: guidedKnowledgeConstructionRaw,
     category: 'WikiTree 內建',
   },
 ];

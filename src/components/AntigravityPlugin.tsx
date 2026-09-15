@@ -38,7 +38,11 @@ import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
-import { DEFAULT_SKILLS, type WikiSkill } from '../utils/learningSkills';
+import {
+  DEFAULT_SKILLS,
+  GUIDED_KNOWLEDGE_CONSTRUCTION_SKILL_ID,
+  type WikiSkill,
+} from '../utils/learningSkills';
 
 import { FileNode } from '../utils/fileSystem';
 
@@ -893,6 +897,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     setGeneratingSessionId(currentTargetId);
 
     try {
+      const guidedHistory = currentSkills.includes(GUIDED_KNOWLEDGE_CONSTRUCTION_SKILL_ID)
+        ? targetSession.messages
+          .filter((message) => !message.delivery && message.content.trim())
+          .slice(-8)
+          .map((message) => ({
+            role: message.role === 'user' ? 'user' : 'assistant',
+            content: message.content.slice(-6000),
+          }))
+        : undefined;
       const response = await fetch(`${cliUrl}/api/chat`, {
         method: 'POST',
         signal: controller.signal,
@@ -904,6 +917,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           stream: true,
           attachments: currentAttachments,
           skills: currentSkills,
+          history: guidedHistory,
           referenceSourceIds: currentReferenceIds,
           context: {
             path: targetSession.notePath || currentNotePath,

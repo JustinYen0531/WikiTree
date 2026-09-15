@@ -179,6 +179,9 @@ function parseSkillMd(folderName, rawContent) {
   } else if (name === 'branch-evolution') {
     title = '知識森林枝幹演化';
     badge = '生態演化';
+  } else if (name === 'guided-knowledge-construction') {
+    title = '引導式知識建構';
+    badge = '對話建構';
   }
 
   return {
@@ -190,6 +193,16 @@ function parseSkillMd(folderName, rawContent) {
     content: body,
     rawContent,
   };
+}
+
+function loadBundledSkill(folderName) {
+  try {
+    const skillPath = path.join(__dirname, 'skills', folderName, 'SKILL.md');
+    return parseSkillMd(folderName, fs.readFileSync(skillPath, 'utf8'));
+  } catch (error) {
+    console.error(`Error loading bundled skill ${folderName}:`, error);
+    return null;
+  }
 }
 
 function loadAllSkills(workspacePath) {
@@ -237,6 +250,11 @@ function loadAllSkills(workspacePath) {
       content: `# WikiTree Arborist Evolution Protocol\n原則：Knowledge grows like forests, not folders.\n\n## 執行規範\n- 主動定位父概念（Parent Concept）與所屬領域枝幹。\n- 推導出 2~3 個值得獨立生長的概念子節點（Child Leaves）。\n- 尋找與其他學科領域的跨界授粉（Cross-links）。`,
     },
   ];
+
+  const guidedKnowledgeSkill = loadBundledSkill('guided-knowledge-construction');
+  if (guidedKnowledgeSkill) {
+    defaults.push({ ...guidedKnowledgeSkill, category: 'WikiTree 內建' });
+  }
 
   for (const item of defaults) {
     skillsMap.set(item.id, item);
@@ -615,6 +633,23 @@ const server = http.createServer((req, res) => {
         } catch (e) {}
       }
 
+      const requestedSkillIds = Array.isArray(payload.skills) ? payload.skills : [];
+      const guidedKnowledgeMode = requestedSkillIds.includes('guided-knowledge-construction');
+      const conversationHistory = guidedKnowledgeMode && Array.isArray(payload.history)
+        ? payload.history
+          .slice(-8)
+          .map(entry => {
+            const content = typeof entry?.content === 'string' ? entry.content.trim().slice(-6000) : '';
+            if (!content) return '';
+            const role = entry?.role === 'user' ? '使用者' : 'AI';
+            return `【${role}】\n${content}`;
+          })
+          .filter(Boolean)
+        : [];
+      const conversationHistorySection = conversationHistory.length > 0
+        ? `\n【引導式知識建構的先前對話】\n以下內容只用來延續使用者已建立的理解、先前問題與學習進度；不得把 AI 先前說過的內容冒充成使用者理解。\n${conversationHistory.join('\n\n')}\n\n`
+        : '';
+
       // Process attachments if any (images, reference documents, etc.)
       const attachments = Array.isArray(payload.attachments) ? payload.attachments : [];
       let attachmentPromptSection = '';
@@ -655,7 +690,6 @@ const server = http.createServer((req, res) => {
       }
 
       // Process active skills if any (e.g. humanized-learning-notes, cornell, etc.)
-      const requestedSkillIds = Array.isArray(payload.skills) ? payload.skills : [];
       let skillsPromptSection = '';
       if (requestedSkillIds.length > 0) {
         const allSkills = loadAllSkills(currentWorkspace);
@@ -670,17 +704,23 @@ const server = http.createServer((req, res) => {
               `【技能完整規範內容】：\n${s.content}\n` +
               `========================================================================`
             ).join('\n\n') +
-            `\n\n【技能執行要求】：\n` +
-            `請務必在回答的上半段思考步驟（以『第一步：...』、『第二步：...』呈現）中具體說明你如何將上述技能（例如：若啟用了終身學習筆記，嚴禁任何應試死背字眼，而是著眼於直覺建立與人生決策洞察；若啟用了康奈爾筆記，嚴格依據 Cue、因果鏈與 Summary 等格式）切實落實到本次筆記成果中！\n\n`;
+            (guidedKnowledgeMode
+              ? `\n\n【技能執行要求】：\n引導式知識建構優先採逐輪互動：不得傾倒完整課綱，不得假造使用者理解，每輪只處理一個知識節點並提出一個真正會影響筆記的問題。\n\n`
+              : `\n\n【技能執行要求】：\n請務必在回答的上半段思考步驟（以『第一步：...』、『第二步：...』呈現）中具體說明你如何將上述技能（例如：若啟用了終身學習筆記，嚴禁任何應試死背字眼，而是著眼於直覺建立與人生決策洞察；若啟用了康奈爾筆記，嚴格依據 Cue、因果鏈與 Summary 等格式）切實落實到本次筆記成果中！\n\n`);
         }
       }
 
-      const formatRequirement =
-        `\n【重要結構規範】\n` +
-        `請在回答時明確分成兩段：\n` +
-        `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現，若有參考附件圖片或啟用專業技能請在步驟中明確說明參考了哪些要素與如何依循技能規範）。\n` +
-        `2. 分隔線：請單獨換行輸出一條 '---' 分隔線。\n` +
-        `3. 下半段：分隔線下方請直接輸出純淨、可直接存檔的正式 WikiTree 知識筆記本體（不要夾帶前言寒暄與多餘思考）。`;
+      const formatRequirement = guidedKnowledgeMode
+        ? `\n【引導式知識建構回覆規範】\n` +
+          `1. 上半段只輸出簡短的「本輪整理」與一個「下一題」；不要公開私密思考過程或完整隱藏知識地圖。若使用者要求暫停、總結或結束，停止追問。\n` +
+          `2. 單獨輸出 '<!-- WIKITREE_NOTE_START -->' 作為筆記起點。\n` +
+          `3. 下半段輸出截至本輪的完整正式筆記，只整合使用者真正形成的理解、例子與必要補正，並在末尾維護 guided-knowledge-state 註解。\n` +
+          `4. 若這是使用者回答第一題前的起始輪，筆記只建立最小主題與狀態，不得預先填滿教材。`
+        : `\n【重要結構規範】\n` +
+          `請在回答時明確分成兩段：\n` +
+          `1. 上半段：先以輕鬆親切的語氣條列你的思考與梳理步驟（以『第一步：...』、『第二步：...』呈現，若有參考附件圖片或啟用專業技能請在步驟中明確說明參考了哪些要素與如何依循技能規範）。\n` +
+          `2. 分隔線：請單獨換行輸出一條 '---' 分隔線。\n` +
+          `3. 下半段：分隔線下方請直接輸出純淨、可直接存檔的正式 WikiTree 知識筆記本體（不要夾帶前言寒暄與多餘思考）。`;
 
       if (noteContent || notePath) {
         prompt =
@@ -688,6 +728,7 @@ const server = http.createServer((req, res) => {
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。請遵循「Knowledge grows like forests, not folders」原則。\n` +
           (notePath ? `使用者當前檢視的知識葉片為：「${notePath}」\n` : '') +
           `葉片內容如下：\n"""\n${noteContent}\n"""\n\n` +
+          conversationHistorySection +
           skillsPromptSection +
           attachmentPromptSection +
           referencePromptSection +
@@ -697,6 +738,7 @@ const server = http.createServer((req, res) => {
         prompt =
           `【WikiTree 知識生態系統指令】\n` +
           `你是 WikiTree 的「首席知識架構師（Chief Knowledge Arborist）」。\n` +
+          conversationHistorySection +
           skillsPromptSection +
           attachmentPromptSection +
           referencePromptSection +
