@@ -18,6 +18,7 @@
     "check:themes": "node scripts/check-themes.mjs",
     "check:library": "node scripts/check-library.mjs",
     "check:launcher": "node scripts/check-launcher.mjs",
+    "check:message-policy": "node scripts/check-message-policy.mjs",
     "check:guided-knowledge": "node scripts/check-guided-knowledge-skill.mjs"
   },
   "dependencies": {

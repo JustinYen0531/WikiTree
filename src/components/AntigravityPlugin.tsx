@@ -13,6 +13,7 @@ import {
   GitBranch,
   Globe,
   HelpCircle,
+  Info,
   Lightbulb,
   Loader2,
   Monitor,
@@ -37,6 +38,11 @@ import DOMPurify from 'dompurify';
 import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
+import {
+  canInsertKnowledgeNote,
+  isStatusMessage,
+  type ChatMessageKind,
+} from '../utils/chatMessagePolicy';
 import { computeLineDiff, PendingDiffInfo } from '../utils/diffUtils';
 import {
   DEFAULT_SKILLS,
@@ -79,6 +85,7 @@ export interface AttachmentFile {
 
 interface ChatMessage {
   delivery?: 'streaming' | 'incomplete';
+  kind?: ChatMessageKind;
   id: string;
   role: 'user' | 'arborist';
   content: string;
@@ -506,7 +513,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     const noticeMessage: ChatMessage = {
       id: 'sys-' + Date.now(),
       role: 'arborist',
-      content: `🔄 **【操作目標已切換】**\n當前對話的操作目標已切換至筆記：**「${newName}」**。\n後續的 AI 提問、生成與修整將針對此文件進行。`,
+      kind: 'status',
+      content: `**操作目標已切換**\n目前對話將針對筆記：**「${newName}」**。`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -881,6 +889,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             {
               id: botId,
               role: 'arborist',
+              kind: 'note',
               content: '',
               delivery: 'streaming',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -959,9 +968,16 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               if (s.id !== currentTargetId) return s;
               return {
                 ...s,
-                messages: s.messages.map((msg) =>
-                  msg.id === botId ? { ...msg, content: event.text || msg.content || '（AI 未回傳文字）', delivery: undefined } : msg
-                ),
+                messages: s.messages.map((msg) => {
+                  if (msg.id !== botId) return msg;
+                  const finalContent = (event.text || msg.content).trim();
+                  return {
+                    ...msg,
+                    content: finalContent || 'AI 未回傳可用內容。',
+                    delivery: undefined,
+                    kind: finalContent ? 'note' : 'status',
+                  };
+                }),
                 updatedAt: Date.now(),
               };
             })
@@ -2118,6 +2134,38 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     </div>
                   );
                 }
+
+                if (isStatusMessage(msg)) {
+                  return (
+                    <div
+                      key={msg.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '9px',
+                        padding: '9px 11px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '7px',
+                        background: 'rgba(96, 165, 250, 0.06)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      <Info size={14} style={{ color: '#60a5fa', flex: '0 0 auto', marginTop: '2px' }} />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          className="markdown-body"
+                          style={{ fontSize: '11.5px', lineHeight: 1.5, backgroundColor: 'transparent' }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(msg.content))) }}
+                        />
+                        <div style={{ marginTop: '3px', fontSize: '9.5px', color: 'var(--text-muted)' }}>
+                          系統提示 · {msg.timestamp}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (!canInsertKnowledgeNote(msg)) return null;
 
                 // Arborist 訊息：拆分為「推導思路泡泡」＋「正式筆記泡泡」
                 const { thought, note } = splitThoughtAndNote(msg.content);
