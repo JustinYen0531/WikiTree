@@ -5,8 +5,6 @@ import {
   History, 
   Globe, 
   Plus, 
-  Sun, 
-  Moon,
   FolderPlus,
   Sparkles,
   X,
@@ -46,6 +44,7 @@ import { LandingPage } from './components/LandingPage';
 import { CourseSearch } from './components/CourseSearch';
 import { SkillLibrary } from './components/SkillLibrary';
 import { ExplorationNursery } from './components/ExplorationNursery';
+import { StyleStudio } from './components/StyleStudio';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
 import { SplashScreen } from './components/SplashScreen';
@@ -53,6 +52,7 @@ import { notionHtmlToMarkdown } from './utils/notionImporter';
 
 import { readWorkspaceMemory, writeWorkspaceMemory, workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
 import { PendingDiffInfo } from './utils/diffUtils';
+import { getTheme, readSavedTheme, THEME_STORAGE_KEY, type ThemeId } from './utils/themes';
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -383,11 +383,11 @@ function App() {
   };
 
   // App views and panels
-  const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'exploration' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
+  const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<ThemeId>(readSavedTheme);
 
   // Snapshots (VCS) state
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -396,7 +396,15 @@ function App() {
 
   // Initialize theme
   useEffect(() => {
+    const selectedTheme = getTheme(theme);
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme-mode', selectedTheme.mode);
+    document.documentElement.style.colorScheme = selectedTheme.mode;
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // The theme still works for this session when storage is unavailable.
+    }
   }, [theme]);
 
   // Native picker folders remain available for this session; desktop paths persist.
@@ -871,8 +879,8 @@ function App() {
               position: 'fixed',
               bottom: '24px',
               right: '24px',
-              backgroundColor: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
-              color: '#ffffff',
+              backgroundColor: 'var(--bg-secondary)',
+              color: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
               padding: '12px 20px',
               borderRadius: '8px',
               boxShadow: 'var(--shadow-lg)',
@@ -882,7 +890,7 @@ function App() {
               gap: '8px',
               fontSize: '14px',
               fontWeight: '500',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: `1px solid ${toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)'}`,
             }}
           >
             {toast.message}
@@ -939,6 +947,8 @@ function App() {
             workspacePath={typeof rootHandle === 'string' ? rootHandle : undefined}
             onHandoff={handoff => { setExplorationHandoff(handoff); setSidebarTab('antigravity'); }}
           />
+        ) : sidebarTab === 'style' ? (
+          <StyleStudio theme={theme} onThemeChange={setTheme} />
         ) : !rootHandle ? (
           /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
@@ -971,7 +981,7 @@ function App() {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.82)' }}></div>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)' }}></div>
                     <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>FOREST LINK ONLINE</span>
                   </div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
@@ -1153,9 +1163,6 @@ function App() {
                   發送訊號
                 </button>
 
-                <button className="theme-toggle-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                  {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                </button>
               </div>
             </div>
 
@@ -1272,8 +1279,8 @@ function App() {
             position: 'fixed',
             bottom: '24px',
             right: '24px',
-            backgroundColor: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
-            color: '#ffffff',
+            backgroundColor: 'var(--bg-secondary)',
+            color: toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)',
             padding: '12px 20px',
             borderRadius: '8px',
             boxShadow: 'var(--shadow-lg)',
@@ -1283,7 +1290,7 @@ function App() {
             gap: '8px',
             fontSize: '14px',
             fontWeight: '500',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: `1px solid ${toast.type === 'error' ? 'var(--danger)' : toast.type === 'info' ? 'var(--accent)' : 'var(--success)'}`,
           }}
         >
           {toast.message}

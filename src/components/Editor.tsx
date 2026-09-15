@@ -809,7 +809,7 @@ export const Editor: React.FC<EditorProps> = ({
                 mermaid.initialize({
                   startOnLoad: false,
                   securityLevel: 'strict',
-                  theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+                  theme: document.documentElement.getAttribute('data-theme-mode') === 'light' ? 'default' : 'dark',
                 });
 
                 const { svg } = await mermaid.render(`mermaid-preview-${block.id}`, extractCodeFenceBody(block.raw));
@@ -842,7 +842,7 @@ export const Editor: React.FC<EditorProps> = ({
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
-      theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'default' : 'dark',
+      theme: document.documentElement.getAttribute('data-theme-mode') === 'light' ? 'default' : 'dark',
     });
     mermaid.run({ querySelector: '.rendered-markdown .mermaid, .block-render-preview .mermaid' }).catch((error) => {
       console.error('Mermaid rendering error', error);

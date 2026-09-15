@@ -17,7 +17,11 @@ export function MarkdownPreview({ content }: { content: string }) {
   useEffect(() => {
     const nodes = root.current?.querySelectorAll<HTMLElement>('.mermaid');
     if (!nodes?.length) return;
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: document.documentElement.getAttribute('data-theme-mode') === 'dark' ? 'dark' : 'default',
+    });
     void mermaid.run({ nodes }).catch(() => {
       // Keep the source visible when a diagram cannot be rendered.
     });

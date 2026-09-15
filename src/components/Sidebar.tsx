@@ -20,6 +20,7 @@ import {
   X,
   Sparkles,
   Sprout,
+  Palette,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import type { WorkspaceFolder } from '../utils/workspaceMemory';
@@ -43,8 +44,8 @@ interface SidebarProps {
   onCreateFolder: (parentPath: string) => void;
   onRename: (node: FileNode, newName: string) => void;
   onDelete: (node: FileNode) => void;
-  activeTab: 'explore' | 'skills' | 'exploration' | 'files' | 'history' | 'publish' | 'antigravity';
-  setActiveTab: (tab: 'explore' | 'skills' | 'exploration' | 'files' | 'history' | 'publish' | 'antigravity') => void;
+  activeTab: 'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity';
+  setActiveTab: (tab: 'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity') => void;
   onQuickNewFile?: () => void;
   user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
@@ -81,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
-  const isOrbitTab = activeTab === 'explore' || activeTab === 'skills' || activeTab === 'exploration';
+  const isOrbitTab = activeTab === 'explore' || activeTab === 'skills' || activeTab === 'exploration' || activeTab === 'style';
   const isWorkshopTab = !isOrbitTab;
 
   const handleCopyToken = (token: string, e: React.MouseEvent) => {
@@ -318,6 +319,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Sprout size={14} />
             <span><strong>探索苗圃</strong><small>排程探索與來源草稿</small></span>
+          </button>
+          <button
+            type="button"
+            className={`orbit-subnav-button ${activeTab === 'style' ? 'active' : ''}`}
+            onClick={() => setActiveTab('style')}
+          >
+            <Palette size={14} />
+            <span><strong>風格</strong><small>打造你的森林樣貌</small></span>
           </button>
         </div>
       )}
