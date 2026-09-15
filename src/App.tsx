@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  FolderOpen, 
   Save, 
   History, 
   Globe, 
@@ -45,14 +44,16 @@ import { CourseSearch } from './components/CourseSearch';
 import { SkillLibrary } from './components/SkillLibrary';
 import { ExplorationNursery } from './components/ExplorationNursery';
 import { StyleStudio } from './components/StyleStudio';
+import { ImportToWikiTreeModal } from './components/ImportToWikiTreeModal';
 import { AntigravityPlugin } from './components/AntigravityPlugin';
 import { CustomCursor } from './components/CustomCursor';
 import { SplashScreen } from './components/SplashScreen';
 import { notionHtmlToMarkdown } from './utils/notionImporter';
 
-import { readWorkspaceMemory, writeWorkspaceMemory, workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
+import { workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
 import { PendingDiffInfo } from './utils/diffUtils';
 import { getTheme, readSavedTheme, THEME_STORAGE_KEY, type ThemeId } from './utils/themes';
+import { getManagedLibrary, type LibraryImportResult, type LibraryInfo } from './utils/library';
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -73,9 +74,9 @@ function App() {
     setShowSplash(false);
   };
 
-  const [initialMemory] = useState(readWorkspaceMemory);
-  const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>(initialMemory.folders);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(initialMemory.activeId);
+  const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [managedLibrary, setManagedLibrary] = useState<LibraryInfo | null>(null);
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
   const workspaceLock = useRef(false);
   const restoreAttempted = useRef(false);
@@ -93,7 +94,6 @@ function App() {
   const [isEditingFileName, setIsEditingFileName] = useState(false);
   const [fileNameInput, setFileNameInput] = useState('');
   const [cliConnected, setCliConnected] = useState(false);
-  const [cliPathInput, setCliPathInput] = useState('');
 
   // Local Sign-In States
   const [user, setUser] = useState<any>(() => {
@@ -102,6 +102,7 @@ function App() {
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  const [showLibraryImport, setShowLibraryImport] = useState(false);
 
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -238,29 +239,6 @@ function App() {
     }
   };
 
-  const connectCliFolder = async (folderPath: string, create = false) => {
-    if (!folderPath.trim() || workspaceLock.current) return;
-    if (!isSaved && !confirm('筆記還沒儲存。要捨棄修改並切換資料夾嗎？')) return;
-    workspaceLock.current = true;
-    setWorkspaceBusy(true);
-    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-    try {
-      const response = await fetch(`${cliUrl}/api/workspace/open`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: folderPath.trim(), create }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '無法開啟資料夾');
-      workspaceLock.current = false;
-      await activateFolder({ id: workspaceId(data.workspace), name: data.name, handle: data.workspace }, undefined, true);
-      setSidebarTab('files');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : '無法開啟資料夾', 'error');
-    } finally { workspaceLock.current = false; setWorkspaceBusy(false); }
-  };
-
-  const handleOpenOrCreateCliWorkspace = () => connectCliFolder(cliPathInput, true);
-
   const loadFolderTree = async (folder: WorkspaceFolder) => {
     try {
       const fileList = await getFilesRecursively(folder.handle);
@@ -270,79 +248,27 @@ function App() {
     }
   };
 
-  const removeFolder = (id: string) => {
-    if (workspaceLock.current) return;
-    if (id === activeWorkspaceId) {
-      if (!isSaved && !confirm('筆記還沒儲存。要捨棄修改並關閉這個資料夾嗎？')) return;
-      setActiveWorkspaceId(null);
-      setRootHandle(null);
-      setWorkspaceName('');
-      setFiles([]);
-      setSnapshots([]);
-      setActiveFile(null);
-      setContent('');
-      setOriginalContent('');
-      setShowHistoryPanel(false);
-      setShowPublishModal(false);
-    }
-    setWorkspaceFolders(current => current.filter(folder => folder.id !== id));
-    showToast('已從清單移除，電腦裡的資料夾仍保留。', 'info');
-  };
-
-  useEffect(() => {
-    try { writeWorkspaceMemory(workspaceFolders, activeWorkspaceId); }
-    catch { showToast('無法儲存資料夾清單，請確認本機儲存空間。', 'error'); }
-  }, [workspaceFolders, activeWorkspaceId]);
-
   useEffect(() => {
     if (!cliConnected || restoreAttempted.current || rootHandle) return;
     restoreAttempted.current = true;
 
     const autoInit = async () => {
-      // 1. 若有既有工作區，優先恢復
-      const savedFolder = initialMemory.folders.find(item => item.id === initialMemory.activeId) || initialMemory.folders[0];
-      let activeTargetHandle: any = null;
-      if (savedFolder) {
-        const ok = await activateFolder(savedFolder, undefined, true);
-        if (ok) activeTargetHandle = savedFolder.handle;
-      }
+      try {
+        const library = await getManagedLibrary();
+        setManagedLibrary(library);
+        const folder = { id: library.id || workspaceId(library.path), name: library.name, handle: library.path };
+        const ok = await activateFolder(folder, undefined, true);
+        if (!ok) throw new Error('無法讀取 WikiTree 筆記天地。');
+        setSidebarTab('files');
 
-      // 2. 若無既有工作區，自動連接應用所在目錄下的預設 notes 資料夾
-      if (!activeTargetHandle) {
-        const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-        try {
-          const res = await fetch(`${cliUrl}/api/status`);
-          if (res.ok) {
-            const data = await res.json();
-            const targetDir = data.defaultNotesPath || data.workspace;
-            if (targetDir) {
-              await connectCliFolder(targetDir, true);
-              activeTargetHandle = targetDir;
-            }
-          }
-        } catch (err) {
-          console.error('Auto init workspace failed:', err);
-        }
-      }
-
-      // 3. 自動切換至筆記視圖，若無開啟中檔案則自動開啟最新筆記或建立空白新文件
-      setSidebarTab('files');
-      if (activeTargetHandle) {
-        try {
-          const currentFileList = await getFilesRecursively(activeTargetHandle);
-          if (currentFileList.length === 0) {
-            setTimeout(() => {
-              void handleQuickNewFile();
-            }, 250);
-          } else {
-            const firstFile = findFirstFile(currentFileList);
-            if (firstFile) {
-              void openFile(firstFile, activeTargetHandle, true);
-            } else {
-              void handleQuickNewFile();
-            }
-          }
-        } catch {}
+        const currentFileList = await getFilesRecursively(library.path);
+        setWorkspaceFolders([{ ...folder, files: currentFileList }]);
+        const firstFile = findFirstFile(currentFileList);
+        if (firstFile) void openFile(firstFile, library.path, true);
+      } catch (error) {
+        restoreAttempted.current = false;
+        console.error('Auto init WikiTree library failed:', error);
+        showToast(error instanceof Error ? error.message : '無法進入你的 WikiTree。', 'error');
       }
     };
 
@@ -353,34 +279,6 @@ function App() {
     if (!rootHandle || !activeWorkspaceId) return;
     setWorkspaceFolders(current => current.map(folder => folder.id === activeWorkspaceId ? { ...folder, files } : folder));
   }, [files, rootHandle, activeWorkspaceId]);
-
-  const [isBrowsing, setIsBrowsing] = useState(false);
-
-  const handleBrowseCliWorkspace = async () => {
-    if (isBrowsing) return;
-    setIsBrowsing(true);
-    const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-    try {
-      const response = await fetch(`${cliUrl}/api/workspace/browse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.path) {
-          setCliPathInput(data.path);
-        }
-      } else {
-        const err = await response.json();
-        alert(err.error || '瀏覽資料夾失敗');
-      }
-    } catch (e: any) {
-      console.error('Failed to browse workspace via CLI', e);
-      alert(`無法開啟本機瀏覽視窗：${e.message}`);
-    } finally {
-      setIsBrowsing(false);
-    }
-  };
 
   // App views and panels
   const [sidebarTab, setSidebarTab] = useState<'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity'>('explore');
@@ -406,37 +304,6 @@ function App() {
       // The theme still works for this session when storage is unavailable.
     }
   }, [theme]);
-
-  // Native picker folders remain available for this session; desktop paths persist.
-  const loadWorkspace = async (handle: FileSystemDirectoryHandle): Promise<FileSystemDirectoryHandle> => {
-    let id = '';
-    for (const folder of workspaceFolders) {
-      if (typeof folder.handle !== 'string' && await folder.handle.isSameEntry(handle)) id = folder.id;
-    }
-    const folder = { id: id || `browser:${crypto.randomUUID()}`, name: handle.name, handle };
-    if (!await activateFolder(folder)) throw new Error('Workspace not opened');
-    return handle;
-  };
-
-  const handleSelectDirectory = async () => {
-    if (workspaceLock.current) return;
-    try {
-      if (cliConnected) {
-        setIsBrowsing(true);
-        const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
-        const response = await fetch(`${cliUrl}/api/workspace/browse`, { method: 'POST' });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || '無法選擇資料夾');
-        if (data.path) await connectCliFolder(data.path);
-      } else {
-        const handle = await (window as any).showDirectoryPicker();
-        await loadWorkspace(handle);
-      }
-      setSidebarTab('files');
-    } catch (error: any) {
-      if (error.name !== 'AbortError') showToast('無法加入資料夾，請再試一次。', 'error');
-    } finally { setIsBrowsing(false); }
-  };
 
   // Helper to recursively find the first file node in the tree
   const findFirstFile = (nodes: FileNode[]): FileNode | null => {
@@ -514,31 +381,32 @@ function App() {
     }
   };
 
-  // Ensure workspace is loaded. If not, automatically connect default notes workspace.
+  // Ensure the WikiTree-owned library is loaded.
   const ensureWorkspace = async (): Promise<FileSystemDirectoryHandle | string | null> => {
     if (rootHandle) return rootHandle;
 
     if (cliConnected) {
-      const cliUrl = localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
       try {
-        const res = await fetch(`${cliUrl}/api/status`);
-        if (res.ok) {
-          const data = await res.json();
-          const targetDir = data.defaultNotesPath || data.workspace;
-          if (targetDir) {
-            await connectCliFolder(targetDir, true);
-            return targetDir;
-          }
-        }
-      } catch {}
+        const library = await getManagedLibrary();
+        setManagedLibrary(library);
+        await activateFolder({ id: library.id || workspaceId(library.path), name: library.name, handle: library.path }, undefined, true);
+        return library.path;
+      } catch {
+        showToast('無法進入你的 WikiTree，請重新啟動桌面服務。', 'error');
+      }
     }
+    return null;
+  };
 
-    try {
-      const handle = await (window as any).showDirectoryPicker();
-      return await loadWorkspace(handle);
-    } catch (e) {
-      return null;
-    }
+  const handleLibraryImported = (result: LibraryImportResult) => {
+    setShowLibraryImport(false);
+    void runFileOperation(async () => {
+      if (!rootHandle) return;
+      const updatedFiles = await getFilesRecursively(rootHandle);
+      setFiles(updatedFiles);
+      const skipped = result.skipped.length ? `，略過 ${result.skipped.length} 個非支援項目` : '';
+      showToast(`🌱 已收進 ${result.imported.length} 份筆記${skipped}`);
+    });
   };
 
   // 無痛建立並開啟空白新文件（零彈窗、免手動輸入檔名，直接開寫）
@@ -908,11 +776,11 @@ function App() {
       <Sidebar 
         workspaceFolders={workspaceFolders}
         activeWorkspaceId={activeWorkspaceId}
-        workspaceBusy={workspaceBusy || isBrowsing}
-        onAddWorkspace={handleSelectDirectory}
+        workspaceBusy={workspaceBusy}
+        onAddWorkspace={() => setShowLibraryImport(true)}
         onExpandWorkspace={loadFolderTree}
         onActivateWorkspace={folder => { void activateFolder(folder); }}
-        onRemoveWorkspace={removeFolder}
+        onRemoveWorkspace={() => undefined}
         onSelectWorkspaceFile={(folder, file) => {
           if (folder.id === activeWorkspaceId && rootHandle) void runFileOperation(() => openFile(file));
           else void activateFolder(folder, file);
@@ -932,7 +800,16 @@ function App() {
         user={user}
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
+        managedLibrary={!!managedLibrary}
       />
+
+      {showLibraryImport && typeof rootHandle === 'string' && (
+        <ImportToWikiTreeModal
+          files={files}
+          onClose={() => setShowLibraryImport(false)}
+          onImported={handleLibraryImported}
+        />
+      )}
 
       {workspaceBusy && <div role="status" style={{ position: 'fixed', inset: 0, zIndex: 12000, background: 'rgba(0,0,0,.35)', display: 'grid', placeItems: 'center' }}>正在處理資料夾…</div>}
 
@@ -950,103 +827,20 @@ function App() {
         ) : sidebarTab === 'style' ? (
           <StyleStudio theme={theme} onThemeChange={setTheme} />
         ) : !rootHandle ? (
-          /* Empty Workspace Selector UI */
           <div className="workspace-empty-state">
             <div className="empty-state-card" style={{ maxWidth: '600px', width: '90%', padding: '32px' }}>
-              <FolderOpen className="empty-state-icon" style={{ marginBottom: '16px' }} />
+              <Sparkles className="empty-state-icon" style={{ marginBottom: '16px' }} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>
-                  連接知識森林
+                  正在準備你的 WikiTree
                 </h2>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
-                  選擇一個本機根系作為森林入口。知識會在這裡生長、分枝、演化，線上探索不會碰到你的本機根系。
+                  {cliConnected
+                    ? 'WikiTree 正在打開「文件／WikiTree」。完成後即可建立第一片葉，不必另外選擇 Windows 資料夾。'
+                    : '尚未連接 WikiTree 桌面服務。請使用桌面啟動方式重新開啟，既有文件不會受到影響。'}
                 </p>
               </div>
-              <h2 style={{ display: 'none', fontSize: '22px', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                開啟或新建筆記工作區
-              </h2>
-              <p style={{ display: 'none', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '24px' }}>
-                您可以透過本機 CLI 伺服器直接輸入路徑「建立全新的資料夾」作為工作區，或是使用瀏覽器原生檔案選擇器開啟現有的資料夾。
-              </p>
-
-              {cliConnected ? (
-                <div style={{ 
-                  width: '100%', 
-                  padding: '18px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px solid var(--border-color)',
-                  marginBottom: '24px',
-                  textAlign: 'left',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)' }}></div>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>FOREST LINK ONLINE</span>
-                  </div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    輸入要連接或生成的森林根路徑：
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type="text" 
-                      placeholder="例如：C:\Users\user\Desktop\WikiTree-Forest"
-                      value={cliPathInput}
-                      onChange={(e) => setCliPathInput(e.target.value)}
-                      style={{ 
-                        flex: 1, 
-                        padding: '8px 12px', 
-                        borderRadius: '6px', 
-                        border: '1px solid var(--border-color)', 
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px' 
-                      }}
-                    />
-                    <button 
-                      className="btn" 
-                      onClick={handleBrowseCliWorkspace} 
-                      disabled={isBrowsing}
-                      style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      {isBrowsing ? 'SCANNING...' : 'BROWSE'}
-                    </button>
-                    <button className="btn btn-primary" onClick={handleOpenOrCreateCliWorkspace}>
-                      CONNECT
-                    </button>
-                  </div>
-                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: '1.4' }}>
-                    若路徑不存在，WikiTree 會生成新的森林根系。這只影響本機知識森林，不會修改線上探索資料。
-                  </span>
-                </div>
-              ) : (
-                <div style={{ 
-                  width: '100%', 
-                  padding: '16px', 
-                  borderRadius: '8px', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px dashed var(--border-color)',
-                  marginBottom: '24px',
-                  textAlign: 'center',
-                  fontSize: '13px',
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.5'
-                }}>
-                  未偵測到森林連接器。你仍可用瀏覽器 Picker 選擇既有根系；若要直接輸入路徑生成根系，請先啟動 CLI：<br/>
-                  <code style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'var(--bg-primary)', borderRadius: '4px', marginTop: '8px', fontFamily: 'monospace', fontSize: '12px' }}>
-                    node cli-server.cjs
-                  </code>
-                </div>
-              )}
-
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                  {cliConnected ? '也可以直接用下方 Picker 選擇既有森林根系。' : ''}
-                </span>
-                <button className="btn" onClick={handleSelectDirectory} style={{ padding: '10px 20px', fontSize: '14px' }}>
-                  選擇森林根系
-                </button>
-              </div>
+              <button className="btn" onClick={() => void checkCliStatus()}>重新連接</button>
             </div>
           </div>
         ) : showHistoryPanel ? (

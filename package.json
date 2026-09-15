@@ -16,6 +16,7 @@
     "check:exploration:ui": "node scripts/check-exploration-ui.mjs",
     "check:exploration": "npm run check:exploration:core && npm run check:exploration:scheduler && npm run check:exploration:ui",
     "check:themes": "node scripts/check-themes.mjs",
+    "check:library": "node scripts/check-library.mjs",
     "check:guided-knowledge": "node scripts/check-guided-knowledge-skill.mjs"
   },
   "dependencies": {

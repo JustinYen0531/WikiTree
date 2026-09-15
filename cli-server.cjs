@@ -14,6 +14,7 @@ const { importLegacyBrew } = require('./exploration-import.cjs');
 const { createExplorationExecutor } = require('./exploration-runtime.cjs');
 const { nextRunAt } = require('./exploration-scheduler.cjs');
 const { installScheduler, schedulerStatus, uninstallScheduler } = require('./exploration-scheduler-admin.cjs');
+const { ensureLibrary, importNotes } = require('./library-service.cjs');
 
 const explorationStore = new ExplorationStore();
 const executeExploration = createExplorationExecutor({ store: explorationStore, aiProviders });
@@ -124,12 +125,14 @@ const IMPORTABLE_SKILL_SOURCES = Object.freeze({
   'public-zk-network-maintenance': 'https://raw.githubusercontent.com/mikonos/zettelkasten-agent-skills/main/skills/network-maintenance/SKILL.md',
 });
 
-function readJsonBody(req) {
+function readJsonBody(req, maxBytes = 100_000) {
   return new Promise((resolve, reject) => {
     let body = '';
+    let size = 0;
     req.on('data', chunk => {
+      size += chunk.length;
       body += chunk.toString();
-      if (body.length > 100_000) {
+      if (size > maxBytes) {
         reject(new Error('請求內容過大。'));
         req.destroy();
       }
@@ -347,6 +350,26 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify(value));
   };
 
+  if (requestUrl.pathname === '/api/library' && req.method === 'GET') {
+    try {
+      json(200, { library: ensureLibrary() });
+    } catch (error) {
+      json(500, { error: `無法建立 WikiTree 筆記天地：${error.message}` });
+    }
+    return;
+  }
+
+  if (requestUrl.pathname === '/api/library/import' && req.method === 'POST') {
+    if (!trustedAiRequest(req)) {
+      json(403, { error: '只有本機 WikiTree 可以收進文件。' });
+      return;
+    }
+    void readJsonBody(req, 40_000_000)
+      .then(payload => json(200, importNotes(payload)))
+      .catch(error => json(400, { error: error.message }));
+    return;
+  }
+
   if (requestUrl.pathname.startsWith('/api/exploration/')) {
     explorationStore.registerWorkspace(currentWorkspace);
     const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
@@ -441,24 +464,27 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.url === '/api/status' && req.method === 'GET') {
-    const defaultNotesDir = path.join(process.cwd(), 'notes');
+    let library = null;
     try {
-      if (!fs.existsSync(defaultNotesDir)) {
-        fs.mkdirSync(defaultNotesDir, { recursive: true });
-      }
-    } catch {}
+      library = ensureLibrary();
+    } catch (error) {
+      console.error('Failed to initialize WikiTree library:', error.message);
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'connected',
-      version: '1.2.4',
+      version: '1.3.0',
       scopedWorkspaces: true,
+      managedLibrary: true,
+      libraryImport: true,
       streamingChat: true,
       aiProviders: true,
       scheduledExploration: true,
       explorationScheduler: true,
       sourceBasket: true,
       workspace: currentWorkspace,
-      defaultNotesPath: defaultNotesDir,
+      library,
+      defaultNotesPath: library?.path || null,
       platform: process.platform,
       nodeVersion: process.version
     }));

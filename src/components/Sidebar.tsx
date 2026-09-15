@@ -21,6 +21,7 @@ import {
   Sparkles,
   Sprout,
   Palette,
+  Import,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import type { WorkspaceFolder } from '../utils/workspaceMemory';
@@ -50,6 +51,7 @@ interface SidebarProps {
   user?: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean } | null;
   onLogout?: () => void;
   onTriggerLogin?: () => void;
+  managedLibrary?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -76,6 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   user,
   onLogout,
   onTriggerLogin,
+  managedLibrary = false,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set());
@@ -270,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="sidebar-header">
         <span className="workspace-title" title={workspaceName}>
           <BookOpen size={16} style={{ color: 'var(--accent)' }} />
-          {isWorkshopTab ? (workspaceName || 'FOREST NOT CONNECTED') : 'WIKITREE ORBIT'}
+          {isWorkshopTab ? (managedLibrary ? '我的 WIKITREE' : (workspaceName || 'WIKITREE 尚未就緒')) : 'WIKITREE ORBIT'}
         </span>
       </div>
 
@@ -290,7 +293,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => setActiveTab('files')}
         >
           <FileText size={14} />
-          FOREST
+          WIKITREE
         </button>
       </div>
 
@@ -398,8 +401,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {isWorkshopTab && (
         <>
-          <button className="btn" disabled={workspaceBusy} onClick={onAddWorkspace} style={{ margin: '10px 8px 0', fontSize: '12px' }}>
-            <FolderPlus size={14} /> 加入資料夾
+          <button className="btn library-import-trigger" disabled={!rootHandle || workspaceBusy} onClick={onAddWorkspace} style={{ margin: '10px 8px 0', fontSize: '12px' }}>
+            <Import size={14} /> 收進 WikiTree
           </button>
           {/* Prominent Quick Actions - Always rendered so they can click immediately */}
           <div style={{ display: 'flex', gap: '6px', padding: '10px 8px 4px 8px', flexShrink: 0 }}>
@@ -447,33 +450,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Root Level Actions Title */}
               <div className="sidebar-section-title" style={{ padding: '4px 12px 2px 12px' }}>
-                <span>我的資料夾 · {workspaceFolders.length}</span>
+                <span>我的 WikiTree</span>
               </div>
 
               {/* File Tree */}
               <div className="tree-container">
                 {workspaceFolders.map(folder => {
-                  const expanded = expandedRoots.has(folder.id);
+                  const expanded = managedLibrary || expandedRoots.has(folder.id);
                   const selected = activeWorkspaceId === folder.id && !!rootHandle;
                   const folderFiles = selected ? files : folder.files;
                   const filtered = filterNodes(folderFiles || [], searchQuery);
                   return (
                     <section key={folder.id} className="workspace-folder">
-                      <div className={`tree-node-item ${selected ? 'active' : ''}`} title={typeof folder.handle === 'string' ? folder.handle : folder.name}>
-                        <button className="theme-toggle-btn node-chevron-btn" aria-label={`${expanded ? '收合' : '展開'} ${folder.name}`} aria-expanded={expanded} disabled={workspaceBusy} onClick={() => toggleRoot(folder)}>
-                          <ChevronRight className={`node-chevron ${expanded ? 'expanded' : ''}`} />
-                        </button>
+                      <div className={`tree-node-item ${selected ? 'active' : ''}`} title={managedLibrary ? 'WikiTree 自動管理的筆記天地' : (typeof folder.handle === 'string' ? folder.handle : folder.name)}>
+                        {managedLibrary ? (
+                          <div style={{ width: '20px', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}><BookOpen size={14} /></div>
+                        ) : (
+                          <button className="theme-toggle-btn node-chevron-btn" aria-label={`${expanded ? '收合' : '展開'} ${folder.name}`} aria-expanded={expanded} disabled={workspaceBusy} onClick={() => toggleRoot(folder)}>
+                            <ChevronRight className={`node-chevron ${expanded ? 'expanded' : ''}`} />
+                          </button>
+                        )}
                         <button className="workspace-folder-label" disabled={workspaceBusy} onClick={() => {
-                          if (!expanded) toggleRoot(folder);
+                          if (!managedLibrary && !expanded) toggleRoot(folder);
                           if (!selected) onActivateWorkspace(folder);
                         }}>
                           {expanded ? <FolderOpen size={15} /> : <Folder size={15} />}
                           <span className="node-label">{folder.name}</span>
                           {selected && <small>目前</small>}
                         </button>
-                        <button className="sidebar-action-btn" disabled={workspaceBusy} title="從清單移除（不刪除檔案）" aria-label={`關閉 ${folder.name}，不刪除檔案`} onClick={() => onRemoveWorkspace(folder.id)}>
-                          <X size={14} />
-                        </button>
+                        {!managedLibrary && (
+                          <button className="sidebar-action-btn" disabled={workspaceBusy} title="從清單移除（不刪除檔案）" aria-label={`關閉 ${folder.name}，不刪除檔案`} onClick={() => onRemoveWorkspace(folder.id)}>
+                            <X size={14} />
+                          </button>
+                        )}
                       </div>
                       {expanded && (
                         <div style={{ paddingLeft: '8px' }}>
@@ -493,7 +502,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           ) : (
             <div style={{ padding: '20px 12px', fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', lineHeight: '1.5' }}>
-              請先連接一座森林，建立知識葉片，或開啟既有知識群落。
+              WikiTree 正在準備你的筆記天地，完成後就能直接建立第一片葉。
             </div>
           )}
         </>
