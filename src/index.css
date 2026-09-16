@@ -213,6 +213,20 @@ button.exploration-task-row { padding: 12px; display: flex; justify-content: spa
 .task-form-grid fieldset { padding: 10px; border: 1px solid var(--border-color); }
 .task-form-grid legend { padding: 0 5px; font: 500 9.5px var(--font-mono); }
 .task-form-grid textarea { resize: vertical; }
+.task-advanced-settings { border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.task-advanced-settings > summary { min-height: 58px; padding: 10px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; color: var(--text-primary); cursor: pointer; list-style: none; }
+.task-advanced-settings > summary::-webkit-details-marker { display: none; }
+.task-advanced-settings > summary:hover { background: var(--accent-bg); }
+.task-advanced-settings > summary span { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.task-advanced-settings > summary strong { font-size: 11px; font-weight: 600; }
+.task-advanced-settings > summary small { color: var(--text-muted); font-size: 9.5px; line-height: 1.4; }
+.task-advanced-settings > summary em { overflow: hidden; color: var(--text-secondary); font: normal 9px/1.4 var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.task-advanced-settings > summary svg { color: var(--text-muted); transition: transform .16s ease; }
+.task-advanced-settings[open] > summary { border-bottom: 1px solid var(--border-color); background: var(--accent-bg); }
+.task-advanced-settings[open] > summary svg { transform: rotate(90deg); }
+.advanced-settings-body { padding: 12px; display: flex; flex-direction: column; gap: 13px; }
+.advanced-settings-body > label, .advanced-settings-body fieldset { min-width: 0; display: flex; flex-direction: column; gap: 5px; color: var(--text-secondary); font-size: 10.5px; }
+.advanced-settings-body > div:first-child > div { margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }
 .connector-grid, .day-grid { display: flex; flex-wrap: wrap; gap: 7px 14px; }
 .connector-grid label, .day-grid label, .toggle-line { display: flex !important; flex-direction: row !important; align-items: center; gap: 5px !important; }
 
@@ -237,6 +251,8 @@ button.exploration-task-row { padding: 12px; display: flex; justify-content: spa
   .basket-items { max-height: 96px; }
   .task-form-grid { grid-template-columns: 1fr; }
   .task-form-grid .wide { grid-column: auto; }
+  .task-advanced-settings > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .task-advanced-settings > summary em { display: none; }
 }
 .spin { animation: spin 1s linear infinite; }
 

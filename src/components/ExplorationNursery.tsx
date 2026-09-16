@@ -52,6 +52,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'error' | 'success' | 'info'; text: string } | null>(null);
   const [editor, setEditor] = useState<TaskDraft | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [aiReady, setAiReady] = useState(false);
   const [scheduler, setScheduler] = useState<{ installed: boolean; status: string; error: string } | null>(null);
   const workspace = workspacePath || '';
@@ -105,6 +106,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
   );
   const editTask = (task?: ExplorationTask) => {
     setAiReady(false);
+    setAdvancedOpen(false);
     setEditor(task ? { ...task, schedule: { ...task.schedule }, sources: { ...task.sources } } : emptyDraft());
   };
   const saveTask = async () => {
@@ -229,11 +231,20 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
             <label>任務名稱<input className="form-input" value={editor.name || ''} onChange={event => setEditor({ ...editor, name: event.target.value })} placeholder="例如：AI 工具的人機協作新方法" /></label>
             <label className="wide">自由探索題目<textarea className="form-input" rows={3} value={editor.topic || ''} onChange={event => setEditor({ ...editor, topic: event.target.value })} placeholder="我想被帶進哪一扇陌生的門？" /></label>
             <label className="wide">補充要求<textarea className="form-input" rows={2} value={editor.instructions || ''} onChange={event => setEditor({ ...editor, instructions: event.target.value })} placeholder="語言、時間範圍、不要出現的內容……" /></label>
-            <div className="wide"><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: editor.provider || 'agy', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
-            <fieldset className="wide"><legend>來源範圍</legend><div className="connector-grid">{connectors.map(([id, name]) => <label key={id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), id] : (editor.sources.connectorIds || []).filter(value => value !== id) } })} />{name}</label>)}</div></fieldset>
-            <label className="wide">指定網站／RSS（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.customUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, customUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
-            <label className="wide">硬性網址（填寫後只看這些網址）<textarea className="form-input" rows={2} value={(editor.sources.directUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, directUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
-            <label className="wide">排除來源網域（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.excludedDomains || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, excludedDomains: event.target.value.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean) } })} placeholder="example.com" /></label>
+            <details className="task-advanced-settings wide" open={advancedOpen} onToggle={event => setAdvancedOpen(event.currentTarget.open)}>
+              <summary>
+                <span><strong>進階設定</strong><small>AI 模型、來源範圍與網址限制</small></span>
+                <em>{editor.provider === 'openai' ? 'OpenAI' : 'Google Gemini'} · {(editor.sources.connectorIds || []).length} 個一般來源</em>
+                <ChevronRight size={14} />
+              </summary>
+              <div className="advanced-settings-body">
+                <div><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: editor.provider || 'agy', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
+                <fieldset><legend>來源範圍</legend><div className="connector-grid">{connectors.map(([id, name]) => <label key={id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), id] : (editor.sources.connectorIds || []).filter(value => value !== id) } })} />{name}</label>)}</div></fieldset>
+                <label>指定網站／RSS（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.customUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, customUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
+                <label>硬性網址（填寫後只看這些網址）<textarea className="form-input" rows={2} value={(editor.sources.directUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, directUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
+                <label>排除來源網域（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.excludedDomains || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, excludedDomains: event.target.value.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean) } })} placeholder="example.com" /></label>
+              </div>
+            </details>
             <label>每次素材數<select className="form-input" value={editor.itemCount || 5} onChange={event => setEditor({ ...editor, itemCount: Number(event.target.value) })}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} 筆</option>)}</select></label>
             <label>節奏<select className="form-input" value={editor.schedule.kind || 'manual'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, kind: event.target.value as ExplorationScheduleKind } })}><option value="manual">只手動執行</option><option value="daily">每天</option><option value="weekdays">指定星期</option><option value="weekly">每週</option><option value="monthly">每月</option></select></label>
             {editor.schedule.kind !== 'manual' && <label>本地時間<input className="form-input" type="time" value={editor.schedule.localTime || '09:00'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, localTime: event.target.value } })} /></label>}

@@ -35,6 +35,19 @@ try {
   assert.match(css, /@media \(max-width: 820px\)[\s\S]*\.source-basket-pane[\s\S]*position: sticky/);
   console.log('PASS three-pane desktop layout, narrow-screen basket and claim separation');
 
+  const advancedStart = ui.indexOf('<details className="task-advanced-settings wide"');
+  const advancedEnd = ui.indexOf('</details>', advancedStart);
+  const basicCount = ui.indexOf('<label>每次素材數', advancedStart);
+  const basicRhythm = ui.indexOf('<label>節奏', advancedStart);
+  assert.ok(advancedStart > 0 && advancedEnd > advancedStart, 'advanced settings must use a collapsible details region');
+  for (const label of ['AiProviderPicker', '來源範圍', '指定網站／RSS', '硬性網址', '排除來源網域']) {
+    const position = ui.indexOf(label, advancedStart);
+    assert.ok(position > advancedStart && position < advancedEnd, `${label} must stay inside advanced settings`);
+  }
+  assert.ok(basicCount > advancedEnd && basicRhythm > advancedEnd, 'material count and rhythm must remain visible outside advanced settings');
+  assert.match(ui, /setAdvancedOpen\(false\)/);
+  console.log('PASS advanced AI/source controls start collapsed while core schedule stays visible');
+
   const app = fs.readFileSync(path.join(process.cwd(), 'src', 'App.tsx'), 'utf8');
   const chat = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'AntigravityPlugin.tsx'), 'utf8');
   const server = fs.readFileSync(path.join(process.cwd(), 'cli-server.cjs'), 'utf8');
