@@ -6,22 +6,20 @@ import {
 } from 'lucide-react';
 import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
 import explorationPresets from '../data/exploration-presets.json';
+import explorationSourceCatalog from '../data/exploration-source-catalog.json';
 import { explorationApi } from '../utils/explorationApi';
 import type { ExplorationItem, ExplorationRun, ExplorationScheduleKind, ExplorationTask } from '../types/exploration';
 
 type Filter = 'unread' | 'all' | 'saved' | 'review' | 'archived';
 type TaskDraft = Partial<ExplorationTask> & { schedule: NonNullable<Partial<ExplorationTask>['schedule']>; sources: NonNullable<Partial<ExplorationTask>['sources']> };
 
-const connectors = [
-  ['github', 'GitHub'], ['hacker-news', 'Hacker News'], ['reddit', 'Reddit'], ['devto', 'DEV.to'],
-  ['openai-community', 'OpenAI Community RSS'], ['indie-hackers', 'Indie Hackers RSS'],
-];
+const sourceCatalogById = new Map(explorationSourceCatalog.map(source => [source.id, source]));
 const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
 const emptyDraft = (): TaskDraft => ({
   name: '', topic: '', instructions: '', provider: 'agy', model: 'default', itemCount: 5,
   notificationEnabled: false, status: 'active',
   schedule: { kind: 'manual', localTime: '09:00', daysOfWeek: [1, 2, 3, 4, 5], dayOfMonth: 1 },
-  sources: { connectorIds: ['github', 'hacker-news', 'reddit', 'devto'], customUrls: [], directUrls: [], excludedDomains: [] },
+  sources: { connectorIds: [...explorationPresets[0].sourceIds], customUrls: [], directUrls: [], excludedDomains: [] },
 });
 
 function displayTime(value?: string | null) {
@@ -99,6 +97,9 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
   const nextTask = tasks.filter(task => task.nextRunAt).sort((a, b) => String(a.nextRunAt).localeCompare(String(b.nextRunAt)))[0];
   const basketIds = new Set(basket.map(item => item.id));
   const selectedPreset = explorationPresets.find(preset => preset.id === selectedPresetId) || explorationPresets[0];
+  const sourceOptions = [...new Set([...(selectedPreset.sourceIds || []), ...(editor?.sources.connectorIds || [])])]
+    .map(id => sourceCatalogById.get(id))
+    .filter((source): source is (typeof explorationSourceCatalog)[number] => Boolean(source));
 
   const act = async (action: () => Promise<unknown>, message: string) => {
     try { await action(); setNotice({ kind: 'success', text: message }); await load(true); }
@@ -121,10 +122,10 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
     const preset = explorationPresets.find(candidate => candidate.id === id);
     if (!preset) return;
     setSelectedPresetId(id);
-    setEditor(current => current ? { ...current, name: preset.label } : current);
+    setEditor(current => current ? { ...current, name: preset.label, sources: { ...current.sources, connectorIds: [...preset.sourceIds] } } : current);
   };
   const choosePresetTopic = (topic: string) => {
-    setEditor(current => current ? { ...current, name: selectedPreset.label, topic } : current);
+    setEditor(current => current ? { ...current, name: selectedPreset.label, topic, sources: { ...current.sources, connectorIds: [...selectedPreset.sourceIds] } } : current);
     setPresetPickerMode(null);
   };
   const saveTask = async () => {
@@ -288,7 +289,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
               </summary>
               <div className="advanced-settings-body">
                 <div><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: editor.provider || 'agy', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
-                <fieldset><legend>來源範圍</legend><div className="connector-grid">{connectors.map(([id, name]) => <label key={id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), id] : (editor.sources.connectorIds || []).filter(value => value !== id) } })} />{name}</label>)}</div></fieldset>
+                <fieldset><legend>{selectedPreset.label}的建議來源</legend><small className="source-scope-note">選擇興趣時會自動套用，你仍可個別取消。</small><div className="connector-grid">{sourceOptions.map(source => <label key={source.id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(source.id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), source.id] : (editor.sources.connectorIds || []).filter(value => value !== source.id) } })} />{source.label}</label>)}</div></fieldset>
                 <label>指定網站／RSS（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.customUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, customUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
                 <label>硬性網址（填寫後只看這些網址）<textarea className="form-input" rows={2} value={(editor.sources.directUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, directUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
                 <label>排除來源網域（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.excludedDomains || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, excludedDomains: event.target.value.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean) } })} placeholder="example.com" /></label>

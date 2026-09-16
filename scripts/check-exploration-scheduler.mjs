@@ -53,15 +53,17 @@ try {
   assert.equal(dueTasks(store, fixed).some(entry => entry.task.id === daily.id), false);
   console.log('PASS serial execution and same-slot deduplication');
 
-  const runnerTask = task('runner', { kind: 'manual' });
+  const runnerTask = store.saveTask(workspace, { name: 'runner', topic: 'runner topic', itemCount: 1, schedule: { kind: 'manual' }, provider: 'agy', sources: { connectorIds: ['smithsonian'] } });
   let attempts = 0;
+  let generatedPrompt = '';
   const run = await runExploration({
     store,
     workspace,
     taskId: runnerTask.id,
     now: new Date('2026-09-14T01:00:00.000Z'),
     collect: async () => ({ candidates: [], snapshot: { connectors: [], candidateCount: 0 } }),
-    generate: async () => {
+    generate: async prompt => {
+      generatedPrompt = prompt;
       attempts += 1;
       if (attempts === 1) return 'not-json';
       return JSON.stringify(fixture.aiReply);
@@ -71,6 +73,8 @@ try {
   assert.equal(attempts, 2);
   assert.equal(run.status, 'completed');
   assert.equal(run.attempts.length, 2);
+  assert.match(generatedPrompt, /來源範圍：Smithsonian Magazine/);
+  assert.match(generatedPrompt, /不可為湊數擴大範圍/);
   const saved = store.getItem(workspace, run.itemIds[0]);
   assert.equal(saved.origin, 'scheduled_ai_exploration');
   assert.equal(saved.source.provenance.generatedBy, 'agy');

@@ -3,6 +3,7 @@
     "id": "ai-technology",
     "label": "AI 與科技",
     "description": "人機協作、模型能力與新工具",
+    "sourceIds": ["github", "hacker-news", "reddit", "mit-tech-review", "openai-community", "bbc-technology"],
     "topics": [
       "AI 代理如何重新分配個人工作流程與判斷責任",
       "小型語言模型在本機工具與隱私場景的新用途",
@@ -14,6 +15,7 @@
     "id": "software-development",
     "label": "軟體開發",
     "description": "工程方法、工具與本機優先軟體",
+    "sourceIds": ["github", "hacker-news", "reddit", "devto", "stack-overflow", "infoq"],
     "topics": [
       "程式碼之外，哪些工程實踐最能降低長期維護成本",
       "AI 輔助開發正在改變哪些測試與除錯方法",
@@ -25,6 +27,7 @@
     "id": "design-creativity",
     "label": "設計與創意",
     "description": "視覺敘事、介面與創作方法",
+    "sourceIds": ["reddit", "smashing-magazine", "ux-collective", "dezeen", "wired", "bbc-culture"],
     "topics": [
       "有哪些新方法能把抽象概念轉成清楚的視覺敘事",
       "低刺激介面如何減少注意力負擔而不犧牲資訊密度",
@@ -36,6 +39,7 @@
     "id": "business-strategy",
     "label": "商業策略",
     "description": "市場訊號、商業模式與自動化價值",
+    "sourceIds": ["entrepreneur", "bbc-business", "the-conversation", "product-hunt", "mit-tech-review", "wired"],
     "topics": [
       "小型產品如何找到被大型平台忽略的需求",
       "哪些商業模式能在不依賴廣告下長期運作",
@@ -47,6 +51,7 @@
     "id": "startup-product",
     "label": "創業與產品",
     "description": "需求驗證、產品留存與早期方向",
+    "sourceIds": ["product-hunt", "hacker-news", "entrepreneur", "reddit", "mit-tech-review", "wired"],
     "topics": [
       "個人開發者如何驗證需求而不先做完整產品",
       "哪些產品留存方法不依賴通知與成癮設計",
@@ -58,6 +63,7 @@
     "id": "personal-growth",
     "label": "個人成長",
     "description": "生活系統、能量與長期節奏",
+    "sourceIds": ["farnam-street", "greater-good", "psypost", "aeon", "bbc-health", "the-conversation"],
     "topics": [
       "哪些生活系統能減少意志力消耗而不是增加自律壓力",
       "人如何辨識自己正在累積能力還是只在忙碌",
@@ -69,6 +75,7 @@
     "id": "learning-methods",
     "label": "學習方法",
     "description": "理解缺口、間隔回訪與跨域遷移",
+    "sourceIds": ["edsurge", "education-week", "greater-good", "the-conversation", "jstor-daily", "aeon"],
     "topics": [
       "如何設計會主動暴露理解缺口的學習流程",
       "間隔回訪如何與真實專案結合而不是只做記憶卡",
@@ -80,6 +87,7 @@
     "id": "psychology",
     "label": "心理學",
     "description": "認知、好奇心、情緒與決策",
+    "sourceIds": ["psypost", "greater-good", "nature-psychology", "scientific-american", "the-conversation", "bbc-health"],
     "topics": [
       "哪些認知偏誤最容易影響資訊搜尋與來源判斷",
       "好奇心如何受到環境、壓力與獎勵設計影響",
@@ -91,6 +99,7 @@
     "id": "philosophy",
     "label": "哲學思辨",
     "description": "知識責任、不確定性與技術倫理",
+    "sourceIds": ["aeon", "the-conversation", "jstor-daily", "bbc-culture", "smithsonian", "reddit"],
     "topics": [
       "當 AI 參與思考時，知識責任應如何分配",
       "不確定性可以如何成為更好決策的工具",
@@ -102,6 +111,7 @@
     "id": "society-culture",
     "label": "社會與文化",
     "description": "社群、信任與新興數位規範",
+    "sourceIds": ["the-conversation", "bbc-world", "bbc-culture", "smithsonian", "jstor-daily", "aeon"],
     "topics": [
       "網路社群如何形成共同語言與群體盲點",
       "新工具如何改變人們對專業與創作價值的理解",
@@ -113,6 +123,7 @@
     "id": "history-civilization",
     "label": "歷史與文明",
     "description": "制度、知識保存與文明轉折",
+    "sourceIds": ["smithsonian", "jstor-daily", "archaeology", "bbc-world", "bbc-culture", "the-conversation"],
     "topics": [
       "過去的資訊革命如何改變教育與權力分配",
       "城市、貿易與技術如何共同塑造文明轉折",
@@ -124,6 +135,7 @@
     "id": "science",
     "label": "科學探索",
     "description": "大腦、複雜系統與新觀測方法",
+    "sourceIds": ["nature-physical", "scientific-american", "bbc-science", "nasa", "smithsonian", "the-conversation"],
     "topics": [
       "哪些近期研究正在挑戰我們對大腦與意識的理解",
       "複雜系統如何解釋看似無關的自然與社會現象",
@@ -135,6 +147,7 @@
     "id": "health-life",
     "label": "健康與生活",
     "description": "睡眠、日常節奏與可持續照顧",
+    "sourceIds": ["who", "bbc-health", "nature-health", "scientific-american", "psypost", "the-conversation"],
     "topics": [
       "睡眠、光線與日常節奏如何共同影響認知表現",
       "哪些健康建議的證據常被社群內容過度簡化",
@@ -146,6 +159,7 @@
     "id": "finance-investing",
     "label": "金融與投資",
     "description": "資訊判斷、資產配置與長期風險",
+    "sourceIds": ["federal-reserve", "sec", "bbc-business", "marketwatch", "financial-times", "the-conversation"],
     "topics": [
       "投資決策中哪些資訊看似重要卻最容易造成誤判",
       "個人如何建立能承受不確定性的資產配置思維",
@@ -157,6 +171,7 @@
     "id": "economy",
     "label": "經濟趨勢",
     "description": "工作、人口、平台與家庭壓力",
+    "sourceIds": ["federal-reserve", "bbc-business", "marketwatch", "un-economy", "ecb", "the-conversation"],
     "topics": [
       "自動化如何改變工作內容而不只是工作數量",
       "人口結構變化會如何影響住房、消費與公共財政",
@@ -168,6 +183,7 @@
     "id": "law-policy",
     "label": "法律與政策",
     "description": "AI 責任、隱私與新科技治理",
+    "sourceIds": ["eff", "tech-policy-press", "scotusblog", "just-security", "bbc-world", "the-conversation"],
     "topics": [
       "AI 生成內容的責任與權利邊界正在如何變化",
       "數位隱私規則如何影響小型產品的設計選擇",
@@ -179,6 +195,7 @@
     "id": "sustainability",
     "label": "永續與環境",
     "description": "循環經濟、城市韌性與科技成本",
+    "sourceIds": ["carbon-brief", "yale-e360", "inside-climate-news", "un-climate", "bbc-science", "nature-environment"],
     "topics": [
       "個人行動與系統性改變之間如何建立有效連結",
       "哪些循環經濟模式已經從概念走向可持續營運",
@@ -190,6 +207,7 @@
     "id": "future-education",
     "label": "教育未來",
     "description": "AI 學習、理解評量與教師角色",
+    "sourceIds": ["edsurge", "education-week", "the-conversation", "greater-good", "jstor-daily", "aeon"],
     "topics": [
       "AI 普及後，學校最應該保留與重新設計的是什麼",
       "如何評量真正的理解而不是完成度與標準答案",
@@ -201,6 +219,7 @@
     "id": "games-interaction",
     "label": "遊戲與互動",
     "description": "機制、世界感、玩家創作與無障礙",
+    "sourceIds": ["game-developer", "polygon", "ars-technica", "reddit", "wired", "bbc-technology"],
     "topics": [
       "遊戲機制如何讓學習與行為改變產生真實回饋",
       "小型遊戲如何用有限資產建立強烈世界感",
@@ -212,6 +231,7 @@
     "id": "writing-communication",
     "label": "寫作與傳播",
     "description": "知識寫作、敘事與新媒介閱讀",
+    "sourceIds": ["nieman-lab", "poynter", "writers-digest", "the-conversation", "bbc-culture", "jstor-daily"],
     "topics": [
       "如何把複雜知識寫成不失真的易懂內容",
       "哪些敘事結構最適合呈現不確定性與多方觀點",

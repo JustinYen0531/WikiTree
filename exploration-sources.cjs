@@ -1,7 +1,9 @@
 const dns = require('dns').promises;
 const net = require('net');
+const SOURCE_CATALOG = require('./src/data/exploration-source-catalog.json');
 
-const CONNECTOR_IDS = new Set(['github', 'hacker-news', 'reddit', 'devto', 'openai-community', 'indie-hackers']);
+const SOURCE_BY_ID = new Map(SOURCE_CATALOG.map(source => [source.id, source]));
+const CONNECTOR_IDS = new Set(SOURCE_BY_ID.keys());
 const UNSUPPORTED_IDS = new Set(['facebook', 'line', 'roboco']);
 
 function compact(value, max = 1200) {
@@ -143,10 +145,10 @@ async function collectConnector(id, task, options) {
     const { body } = await fetchText(`https://dev.to/api/articles?tag=${tag}&per_page=10`, options);
     return (JSON.parse(body) || []).map(item => normalizeCandidate({ title: item.title, url: item.url, publishedAt: item.published_at || item.created_at, description: item.description || item.title, platform: 'DEV.to', author: item.user?.name })).filter(Boolean);
   }
-  if (id === 'openai-community' || id === 'indie-hackers') {
-    const url = id === 'openai-community' ? 'https://community.openai.com/latest.rss' : 'https://www.indiehackers.com/feed.xml';
-    const { body } = await fetchText(url, options);
-    return parseFeed(body, id === 'openai-community' ? 'OpenAI Community' : 'Indie Hackers');
+  const source = SOURCE_BY_ID.get(id);
+  if (source?.kind === 'rss' && source.feedUrl) {
+    const { body } = await fetchText(source.feedUrl, options);
+    return parseFeed(body, source.label);
   }
   return [];
 }
@@ -170,20 +172,21 @@ async function collectSourceCandidates(task, asOfDate, options = {}) {
   const records = [];
   const candidates = [];
   for (const id of connectorIds) {
+    const source = SOURCE_BY_ID.get(id);
     if (UNSUPPORTED_IDS.has(id)) {
-      records.push({ id, status: 'unsupported', count: 0, note: '需要官方 API、合法授權或手動匯入；未進行爬取。' });
+      records.push({ id, label: id, status: 'unsupported', count: 0, note: '需要官方 API、合法授權或手動匯入；未進行爬取。' });
       continue;
     }
     if (!CONNECTOR_IDS.has(id)) {
-      records.push({ id, status: 'unavailable', count: 0 });
+      records.push({ id, label: id, status: 'unavailable', count: 0 });
       continue;
     }
     try {
       const found = await collectConnector(id, task, options);
       candidates.push(...found);
-      records.push({ id, status: found.length ? 'ok' : 'empty', count: found.length });
+      records.push({ id, label: source?.label || id, status: found.length ? 'ok' : 'empty', count: found.length });
     } catch (error) {
-      records.push({ id, status: 'error', count: 0, error: compact(error.message, 200) });
+      records.push({ id, label: source?.label || id, status: 'error', count: 0, error: compact(error.message, 200) });
     }
   }
   for (const url of urls) {
@@ -223,4 +226,4 @@ async function verifyCandidateUrls(items, options = {}) {
   return { items: results.filter(result => result.accepted).map(result => result.item), checks: results.map(result => ({ url: result.item.source?.url, ...result.item.urlCheck })) };
 }
 
-module.exports = { CONNECTOR_IDS, UNSUPPORTED_IDS, assertPublicUrl, canonicalUrl, collectSourceCandidates, normalizeCandidate, parseFeed, verifyCandidateUrls };
+module.exports = { SOURCE_CATALOG, CONNECTOR_IDS, UNSUPPORTED_IDS, assertPublicUrl, canonicalUrl, collectSourceCandidates, normalizeCandidate, parseFeed, verifyCandidateUrls };

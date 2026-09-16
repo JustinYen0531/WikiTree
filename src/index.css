@@ -260,6 +260,7 @@ button.exploration-task-row { padding: 12px; display: flex; justify-content: spa
 .advanced-settings-body { padding: 12px; display: flex; flex-direction: column; gap: 13px; }
 .advanced-settings-body > label, .advanced-settings-body fieldset { min-width: 0; display: flex; flex-direction: column; gap: 5px; color: var(--text-secondary); font-size: 10.5px; }
 .advanced-settings-body > div:first-child > div { margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }
+.source-scope-note { margin-bottom: 4px; color: var(--text-muted); font-size: 9px; line-height: 1.5; }
 .connector-grid, .day-grid { display: flex; flex-wrap: wrap; gap: 7px 14px; }
 .connector-grid label, .day-grid label, .toggle-line { display: flex !important; flex-direction: row !important; align-items: center; gap: 5px !important; }
 

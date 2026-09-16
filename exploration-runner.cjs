@@ -1,5 +1,7 @@
 const crypto = require('node:crypto');
 const { collectSourceCandidates, canonicalUrl, normalizeCandidate, verifyCandidateUrls } = require('./exploration-sources.cjs');
+const SOURCE_CATALOG = require('./src/data/exploration-source-catalog.json');
+const SOURCE_BY_ID = new Map(SOURCE_CATALOG.map(source => [source.id, source]));
 
 function compact(value, max = 4000) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -56,6 +58,14 @@ function feedbackGuidance(feedback, existingItems) {
   return { wanted, buildNext, avoided, excludedDomains };
 }
 
+function configuredSourceScope(task) {
+  const selected = (task.sources?.connectorIds || []).map(id => SOURCE_BY_ID.get(id)?.label || id);
+  const urls = [...(task.sources?.customUrls || []), ...(task.sources?.directUrls || [])].flatMap(value => {
+    try { return [new URL(value).hostname]; } catch { return []; }
+  });
+  return [...new Set([...selected, ...urls])];
+}
+
 function buildExplorationPrompt(task, candidates, asOfDate, guidance = {}) {
   const safeCandidates = candidates.slice(0, 60).map((item, index) => ({
     candidate: index + 1,
@@ -70,6 +80,7 @@ function buildExplorationPrompt(task, candidates, asOfDate, guidance = {}) {
     '你正在執行 WikiTree 的「探索苗圃」任務。來源只是可質疑的參考，不是絕對事實。',
     `探索題目：${task.topic}`,
     task.instructions ? `補充要求：${task.instructions}` : '',
+    configuredSourceScope(task).length ? `來源範圍：${configuredSourceScope(task).join('、')}。已收集候選與即時網路補充都應優先使用這些來源；若不足就少輸出，不可為湊數擴大範圍。` : '',
     `資料截止日期：${asOfDate}。最多輸出 ${task.itemCount} 筆，不足時就少輸出，不可硬湊。`,
     guidance.wanted?.length ? `使用者想延伸的方向：${guidance.wanted.join('；')}` : '',
     guidance.buildNext?.length ? `使用者想實作的方向：${guidance.buildNext.join('；')}` : '',

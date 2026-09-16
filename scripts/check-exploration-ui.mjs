@@ -52,16 +52,24 @@ try {
   console.log('PASS advanced AI/source controls are collapsed at the bottom while core schedule stays visible');
 
   const presets = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'data', 'exploration-presets.json'), 'utf8'));
+  const sourceCatalog = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'data', 'exploration-source-catalog.json'), 'utf8'));
+  const knownSourceIds = new Set(sourceCatalog.map(source => source.id));
   assert.equal(presets.length, 20, 'the starter catalog must offer 20 interest domains');
   for (const preset of presets) {
     assert.equal(typeof preset.label, 'string');
     assert.ok(preset.topics.length >= 3 && preset.topics.length <= 4, `${preset.label} must have 3-4 refined topics`);
+    assert.ok(preset.sourceIds.length >= 5 && preset.sourceIds.length <= 6, `${preset.label} must have 5-6 tailored sources`);
+    assert.ok(preset.sourceIds.every(id => knownSourceIds.has(id)), `${preset.label} must only use supported source ids`);
   }
+  const historyPreset = presets.find(preset => preset.id === 'history-civilization');
+  assert.ok(historyPreset && !historyPreset.sourceIds.includes('github'), 'history and civilization must not default to GitHub');
   assert.match(ui, /挑興趣/);
   assert.match(ui, /挑題目/);
   assert.match(ui, /你對什麼有興趣？/);
   assert.match(ui, /setPresetPickerMode\(task \? null : 'name'\)/);
-  console.log('PASS new tasks ask about interests and offer 20 domains with 3-4 refined topics each');
+  assert.match(ui, /connectorIds: \[\.\.\.preset\.sourceIds\]/);
+  assert.match(ui, /selectedPreset\.label}的建議來源/);
+  console.log('PASS new tasks offer 20 domains with refined topics and 5-6 tailored mainstream sources each');
 
   const app = fs.readFileSync(path.join(process.cwd(), 'src', 'App.tsx'), 'utf8');
   const chat = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'AntigravityPlugin.tsx'), 'utf8');

@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { ExplorationStore, workspaceId } = require('../exploration-store.cjs');
-const { assertPublicUrl, canonicalUrl, collectSourceCandidates, normalizeCandidate, verifyCandidateUrls } = require('../exploration-sources.cjs');
+const { SOURCE_CATALOG, assertPublicUrl, canonicalUrl, collectSourceCandidates, normalizeCandidate, verifyCandidateUrls } = require('../exploration-sources.cjs');
 const { importLegacyBrew } = require('../exploration-import.cjs');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'wikitree-exploration-core-'));
 const workspaceA = path.join(root, 'forest-a');
@@ -48,6 +48,7 @@ await assert.rejects(() => assertPublicUrl('http://127.0.0.1/private', lookup), 
 await assert.rejects(() => assertPublicUrl('file:///secret', lookup), /HTTP/);
 const mockFetch = async url => {
   if (String(url).includes('api.github.com')) return { ok: true, status: 200, headers: { get: () => 'application/json' }, text: async () => JSON.stringify({ items: [{ title: '公開討論', html_url: 'https://github.com/example/repo/issues/1', updated_at: '2026-09-12T00:00:00Z', body: '具體做法', user: { login: 'author' } }] }) };
+  if (String(url).includes('smithsonianmag.com')) return { ok: true, status: 200, headers: { get: () => 'application/rss+xml' }, text: async () => '<rss><channel><item><title>歷史中的知識保存</title><link>https://www.smithsonianmag.com/history/knowledge/</link><pubDate>Fri, 12 Sep 2026 00:00:00 GMT</pubDate><description>可驗證的歷史摘要</description></item></channel></rss>' };
   return { ok: true, status: 200, headers: { get: () => 'text/html' }, text: async () => '' };
 };
 const collection = await collectSourceCandidates({ topic: 'agent workflow', sources: { connectorIds: ['github', 'facebook'], customUrls: [], directUrls: [], excludedDomains: [] } }, '2026-09-13', { fetchImpl: mockFetch, lookup });
@@ -55,7 +56,12 @@ assert.equal(collection.candidates.length, 1);
 assert.equal(collection.snapshot.connectors.find(record => record.id === 'facebook').status, 'unsupported');
 const verified = await verifyCandidateUrls(collection.candidates, { fetchImpl: mockFetch, lookup });
 assert.equal(verified.items.length, 1);
-console.log('PASS public-source guard, connector status, cutoff, dedupe and URL verification');
+assert.equal(new Set(SOURCE_CATALOG.map(source => source.id)).size, SOURCE_CATALOG.length);
+assert.ok(SOURCE_CATALOG.filter(source => source.kind === 'rss').every(source => source.feedUrl.startsWith('https://')));
+const historyCollection = await collectSourceCandidates({ topic: '文明與知識保存', sources: { connectorIds: ['smithsonian'], customUrls: [], directUrls: [], excludedDomains: [] } }, '2026-09-13', { fetchImpl: mockFetch, lookup });
+assert.equal(historyCollection.candidates.length, 1);
+assert.equal(historyCollection.candidates[0].source.platform, 'Smithsonian Magazine');
+console.log('PASS public-source guard, catalog RSS connectors, cutoff, dedupe and URL verification');
 
 const brew = path.join(root, 'brew');
 const daily = path.join(brew, 'outputs', 'vibe-coding-daily-brew', 'daily');
