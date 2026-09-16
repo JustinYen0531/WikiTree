@@ -17,7 +17,7 @@ import {
 import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 import { preprocessCallouts, renderCalloutBlock } from '../utils/callouts';
-import { renderMarkdown, renderMarkdownSync, renderInlineMarkdown } from '../utils/markdownRenderer';
+import { extractFrontmatterBlockAt, renderMarkdown, renderMarkdownSync, renderInlineMarkdown } from '../utils/markdownRenderer';
 import { PendingDiffInfo } from '../utils/diffUtils';
 
 interface EditorProps {
@@ -35,7 +35,7 @@ interface EditorProps {
 
 interface Block {
   id: string;
-  type: 'header1' | 'header2' | 'header3' | 'header4' | 'header5' | 'header6' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'math' | 'paragraph';
+  type: 'frontmatter' | 'header1' | 'header2' | 'header3' | 'header4' | 'header5' | 'header6' | 'list' | 'todo' | 'code' | 'callout' | 'table' | 'hr' | 'math' | 'paragraph';
   raw: string;
 }
 
@@ -107,6 +107,13 @@ export const Editor: React.FC<EditorProps> = ({
 
     while (i < lines.length) {
       const line = lines[i];
+
+      const frontmatterBlock = extractFrontmatterBlockAt(lines, i);
+      if (frontmatterBlock) {
+        parsedBlocks.push({ id: Math.random().toString(36).substr(2, 9), type: 'frontmatter', raw: frontmatterBlock.raw });
+        i = frontmatterBlock.endIndex + 1;
+        continue;
+      }
 
       // Code blocks
       if (line.trim().startsWith('```')) {
@@ -302,7 +309,8 @@ export const Editor: React.FC<EditorProps> = ({
       // Auto-focus first block on initial load
       if (!hasAutoFocused.current && viewMode === 'wysiwyg') {
         hasAutoFocused.current = true;
-        setTimeout(() => setFocusedBlockIndex(0), 30);
+        const firstWritingBlock = newBlocks.findIndex(block => block.type !== 'frontmatter' && block.raw.trim());
+        if (firstWritingBlock >= 0) setTimeout(() => setFocusedBlockIndex(firstWritingBlock), 30);
       }
     }
   }, [content]);
@@ -1456,7 +1464,56 @@ export const Editor: React.FC<EditorProps> = ({
                   <div
                     style={{ position: 'relative', minHeight: '26px' }}
                   >
-                  {block.type === 'hr' ? (
+                  {block.type === 'frontmatter' ? (
+                    <div className="wysiwyg-frontmatter-block" style={{ position: 'relative', padding: '6px 0' }}>
+                      {focusedBlockIndex === index ? (
+                        <textarea
+                          className="block-textarea"
+                          ref={(el) => { blockRefs.current[index] = el; }}
+                          value={block.raw}
+                          onChange={(e) => handleBlockInputChange(index, e.target.value)}
+                          onPaste={(e) => handleBlockPaste(index, e)}
+                          onKeyDown={(e) => handleBlockKeyDown(index, e)}
+                          onFocus={() => setFocusedBlockIndex(index)}
+                          onBlur={(event) => finishInlineEditing(index, event)}
+                          rows={Math.max(3, block.raw.split('\n').length)}
+                          aria-label="編輯筆記資訊"
+                          style={{
+                            width: '100%',
+                            resize: 'none',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '10px',
+                            outline: 'none',
+                            background: 'var(--bg-sidebar)',
+                            color: 'var(--text-secondary)',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '12px',
+                            lineHeight: '1.55',
+                            padding: '12px',
+                            overflow: 'hidden',
+                          }}
+                        />
+                      ) : (
+                        <div
+                          className="rendered-markdown"
+                          role="button"
+                          tabIndex={0}
+                          aria-label="筆記資訊；點擊編輯原始資料"
+                          onClick={() => {
+                            setFocusedBlockIndex(index);
+                            setTimeout(() => blockRefs.current[index]?.focus(), 0);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setFocusedBlockIndex(index);
+                            }
+                          }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(block.raw)) }}
+                        />
+                      )}
+                    </div>
+                  ) : block.type === 'hr' ? (
                     <div
                       onClick={() => {
                         setFocusedBlockIndex(index);

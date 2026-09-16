@@ -1118,6 +1118,11 @@ body {
   color: var(--text-secondary);
 }
 
+.wysiwyg-frontmatter-block .note-frontmatter {
+  margin: 0;
+  cursor: text;
+}
+
 .note-frontmatter dl {
   display: grid;
   gap: 2px;

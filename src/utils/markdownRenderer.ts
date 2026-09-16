@@ -106,6 +106,20 @@ export function extractFrontmatter(markdown: string): { fields: FrontmatterField
   return { fields: fields.filter(field => field.values.length), body: normalized.slice(match[0].length) };
 }
 
+export function extractFrontmatterBlockAt(lines: string[], startIndex: number): { raw: string; endIndex: number } | null {
+  if (!/^---[\t ]*$/.test(lines[startIndex] || '')) return null;
+
+  for (let endIndex = startIndex + 1; endIndex < lines.length; endIndex++) {
+    if (!/^---[\t ]*$/.test(lines[endIndex])) continue;
+    const raw = lines.slice(startIndex, endIndex + 1).join('\n');
+    const parsed = extractFrontmatter(raw);
+    if (parsed.fields.length > 0 && !parsed.body.trim()) return { raw, endIndex };
+    return null;
+  }
+
+  return null;
+}
+
 function compactIdentifier(value: string): string {
   return value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
 }
@@ -145,6 +159,33 @@ function renderFrontmatter(fields: FrontmatterField[]): string {
   const explorationClass = isExplorationNote ? ' note-frontmatter--exploration' : '';
   const ariaLabel = isExplorationNote ? '探索筆記資訊' : '筆記資訊';
   return `<section class="note-frontmatter${explorationClass}" aria-label="${ariaLabel}"><dl>${rows}</dl></section>`;
+}
+
+function renderEmbeddedExplorationFrontmatter(markdown: string): string {
+  const lines = markdown.split('\n');
+  const rendered: string[] = [];
+
+  for (let index = 0; index < lines.length; index++) {
+    const block = extractFrontmatterBlockAt(lines, index);
+    if (!block) {
+      rendered.push(lines[index]);
+      continue;
+    }
+
+    const parsed = extractFrontmatter(block.raw);
+    const isExplorationBlock = parsed.fields.some(field => explorationFrontmatterKeys.has(field.key));
+    if (!isExplorationBlock) {
+      rendered.push(...lines.slice(index, block.endIndex + 1));
+      index = block.endIndex;
+      continue;
+    }
+
+    if (rendered.length > 0 && rendered[rendered.length - 1] !== '') rendered.push('');
+    rendered.push(renderFrontmatter(parsed.fields), '');
+    index = block.endIndex;
+  }
+
+  return rendered.join('\n');
 }
 
 function renderMath(value: string, displayMode: boolean): string {
@@ -268,7 +309,8 @@ const noteMarkdown = new Marked({
 
 export function renderMarkdownSync(markdown: string): string {
   const { fields, body } = extractFrontmatter(markdown);
-  return renderFrontmatter(fields) + noteMarkdown.parse(preprocessMath(body), { async: false });
+  const bodyWithExplorationPanels = renderEmbeddedExplorationFrontmatter(body);
+  return renderFrontmatter(fields) + noteMarkdown.parse(preprocessMath(bodyWithExplorationPanels), { async: false });
 }
 
 export async function renderMarkdown(markdown: string): Promise<string> {

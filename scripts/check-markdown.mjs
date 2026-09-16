@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', optimizeDeps: { noDiscovery: true, include: [] } });
 try {
-  const { renderMarkdown, renderMarkdownSync, renderInlineMarkdown, preprocessMath, createMarkdownRenderer, extractFrontmatter } = await server.ssrLoadModule('/src/utils/markdownRenderer.ts');
+  const { renderMarkdown, renderMarkdownSync, renderInlineMarkdown, preprocessMath, createMarkdownRenderer, extractFrontmatter, extractFrontmatterBlockAt } = await server.ssrLoadModule('/src/utils/markdownRenderer.ts');
   const { preprocessCallouts } = await server.ssrLoadModule('/src/utils/callouts.ts');
   const cases = [
     ['headings and emphasis', async () => assert.match(await renderMarkdown('# 標題\n\n**重點**'), /<strong>重點<\/strong>/)],
@@ -49,6 +49,23 @@ try {
       for (const field of ['origin', 'exploration_task_id', 'exploration_run_id', 'source_ids']) {
         assert.match(html, new RegExp(`data-frontmatter-field="${field}"`));
       }
+    }],
+    ['editor and mid-note preview recognize exploration metadata as one panel', async () => {
+      const lines = ['前一段筆記', '---', 'origin: "scheduled_ai_exploration"', 'exploration_task_id: "6d187207-f7d9-47fa-a5bb-e44f0b925ed9"', 'source_ids: ["88a10010-c52d-4624-a2d5-f1129773283e"]', '---', '後一段筆記'];
+      const block = extractFrontmatterBlockAt(lines, 1);
+      assert.ok(block);
+      assert.equal(block.endIndex, 5);
+      assert.match(renderMarkdownSync(block.raw), /note-frontmatter--exploration/);
+
+      const midNoteHtml = renderMarkdownSync(lines.join('\n'));
+      assert.match(midNoteHtml, /<p>前一段筆記<\/p>[\s\S]*note-frontmatter--exploration[\s\S]*<p>後一段筆記<\/p>/);
+      assert.doesNotMatch(midNoteHtml, /origin: &quot;scheduled_ai_exploration&quot;/);
+
+      const editor = await readFile(new URL('../src/components/Editor.tsx', import.meta.url), 'utf8');
+      assert.match(editor, /type: 'frontmatter'/);
+      assert.match(editor, /extractFrontmatterBlockAt\(lines, i\)/);
+      assert.match(editor, /block\.type === 'frontmatter'/);
+      assert.match(editor, /renderMarkdownSync\(block\.raw\)/);
     }],
     ['frontmatter icons are CSS-only in the app and published reader', async () => {
       const appCss = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
@@ -116,9 +133,9 @@ try {
     ['editor does not limit formatted display to math', async () => {
       const editor = await readFile(new URL('../src/components/Editor.tsx', import.meta.url), 'utf8');
       assert.doesNotMatch(editor, /hasInlineMath/);
-      // List, task, and ordinary text all show source only while active or empty.
+      // Lists, tasks, and ordinary text show source only while active or empty; frontmatter also returns to its card on blur.
       assert.equal(editor.split('focusedBlockIndex === index || !getBlockDisplayValue(block).trim()').length - 1, 3);
-      assert.equal(editor.split('onBlur={(event) => finishInlineEditing(index, event)}').length - 1, 3);
+      assert.equal(editor.split('onBlur={(event) => finishInlineEditing(index, event)}').length - 1, 4);
       assert.match(editor, /setFocusedBlockIndex\(current => current === index \? null : current\)/);
     }],
   ];
