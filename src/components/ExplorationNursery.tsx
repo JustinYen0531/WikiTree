@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Archive, Bell, BellOff, BookOpen, CalendarClock, Check, ChevronRight, Clock3,
   ExternalLink, History, Inbox, Pause, Play, Plus, RefreshCw, Search, Settings2,
-  Sparkles, Star, Trash2, X,
+  Sparkles, Star, Tags, Trash2, X,
 } from 'lucide-react';
 import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
+import explorationPresets from '../data/exploration-presets.json';
 import { explorationApi } from '../utils/explorationApi';
 import type { ExplorationItem, ExplorationRun, ExplorationScheduleKind, ExplorationTask } from '../types/exploration';
 
@@ -52,6 +53,8 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'error' | 'success' | 'info'; text: string } | null>(null);
   const [editor, setEditor] = useState<TaskDraft | null>(null);
+  const [presetPickerMode, setPresetPickerMode] = useState<'name' | 'topic' | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState(explorationPresets[0].id);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [aiReady, setAiReady] = useState(false);
   const [scheduler, setScheduler] = useState<{ installed: boolean; status: string; error: string } | null>(null);
@@ -95,6 +98,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
   const running = runs.filter(run => run.status === 'running' || run.status === 'pending').length;
   const nextTask = tasks.filter(task => task.nextRunAt).sort((a, b) => String(a.nextRunAt).localeCompare(String(b.nextRunAt)))[0];
   const basketIds = new Set(basket.map(item => item.id));
+  const selectedPreset = explorationPresets.find(preset => preset.id === selectedPresetId) || explorationPresets[0];
 
   const act = async (action: () => Promise<unknown>, message: string) => {
     try { await action(); setNotice({ kind: 'success', text: message }); await load(true); }
@@ -105,9 +109,23 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
     basketIds.has(item.id) ? '已移出來源籃。' : '已放進來源籃。',
   );
   const editTask = (task?: ExplorationTask) => {
+    const draft = task ? { ...task, schedule: { ...task.schedule }, sources: { ...task.sources } } : emptyDraft();
+    const matchingPreset = explorationPresets.find(preset => preset.label === draft.name || preset.topics.includes(draft.topic || ''));
     setAiReady(false);
     setAdvancedOpen(false);
-    setEditor(task ? { ...task, schedule: { ...task.schedule }, sources: { ...task.sources } } : emptyDraft());
+    setPresetPickerMode(task ? null : 'name');
+    setSelectedPresetId(matchingPreset?.id || explorationPresets[0].id);
+    setEditor(draft);
+  };
+  const choosePresetDomain = (id: string) => {
+    const preset = explorationPresets.find(candidate => candidate.id === id);
+    if (!preset) return;
+    setSelectedPresetId(id);
+    setEditor(current => current ? { ...current, name: preset.label } : current);
+  };
+  const choosePresetTopic = (topic: string) => {
+    setEditor(current => current ? { ...current, name: selectedPreset.label, topic } : current);
+    setPresetPickerMode(null);
   };
   const saveTask = async () => {
     if (!editor?.topic?.trim() || !editor.name?.trim()) { setNotice({ kind: 'error', text: '請填寫任務名稱與探索題目。' }); return; }
@@ -228,9 +246,40 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
         <form className="exploration-task-editor" onSubmit={event => { event.preventDefault(); void saveTask(); }}>
           <header><div><span>探索任務</span><h2>{editor.id ? '調整探索路線' : '建立一條自動探索路線'}</h2></div><button type="button" onClick={() => setEditor(null)}><X size={16} /></button></header>
           <div className="task-form-grid">
-            <label>任務名稱<input className="form-input" value={editor.name || ''} onChange={event => setEditor({ ...editor, name: event.target.value })} placeholder="例如：AI 工具的人機協作新方法" /></label>
-            <label className="wide">自由探索題目<textarea className="form-input" rows={3} value={editor.topic || ''} onChange={event => setEditor({ ...editor, topic: event.target.value })} placeholder="我想被帶進哪一扇陌生的門？" /></label>
+            <div className="task-field wide">
+              <label htmlFor="exploration-task-name"><span>任務名稱</span><small>可自己輸入，也可從 20 個興趣領域挑選</small></label>
+              <div className="preset-input-row">
+                <input id="exploration-task-name" className="form-input" value={editor.name || ''} onChange={event => setEditor({ ...editor, name: event.target.value })} placeholder="例如：AI 與科技" />
+                <button type="button" className={`preset-trigger ${presetPickerMode === 'name' ? 'active' : ''}`} onClick={() => setPresetPickerMode(current => current === 'name' ? null : 'name')} aria-expanded={presetPickerMode === 'name'}><Tags size={13} />挑興趣</button>
+              </div>
+            </div>
+            <div className="task-field wide">
+              <label htmlFor="exploration-task-topic"><span>自由探索題目</span><small>保留自由輸入，或從興趣下挑一個更精細的題目</small></label>
+              <div className="preset-input-row preset-textarea-row">
+                <textarea id="exploration-task-topic" className="form-input" rows={3} value={editor.topic || ''} onChange={event => setEditor({ ...editor, topic: event.target.value })} placeholder="我想被帶進哪一扇陌生的門？" />
+                <button type="button" className={`preset-trigger ${presetPickerMode === 'topic' ? 'active' : ''}`} onClick={() => setPresetPickerMode(current => current === 'topic' ? null : 'topic')} aria-expanded={presetPickerMode === 'topic'}><Tags size={13} />挑題目</button>
+              </div>
+            </div>
+            {presetPickerMode && <section className="exploration-preset-picker wide" aria-label={presetPickerMode === 'name' ? '興趣領域選擇' : '細分探索題目選擇'}>
+              <div className="preset-picker-heading">
+                <div><strong>{presetPickerMode === 'name' ? '你對什麼有興趣？' : '想從哪個方向開始？'}</strong><small>先選領域，下方會出現 4 個可直接使用的題目。</small></div>
+                <button type="button" onClick={() => setPresetPickerMode(null)} aria-label="關閉預設選擇"><X size={13} /></button>
+              </div>
+              <div className="preset-domain-list" aria-label="20 個興趣領域">
+                {explorationPresets.map(preset => <button type="button" key={preset.id} className={preset.id === selectedPreset.id ? 'active' : ''} onClick={() => choosePresetDomain(preset.id)}><span>{preset.label}</span><small>{preset.description}</small></button>)}
+              </div>
+              <div className="preset-topic-panel">
+                <div><span>目前領域</span><strong>{selectedPreset.label}</strong><small>點選一個題目後，仍可在上方自由修改。</small></div>
+                <div className="preset-topic-list">{selectedPreset.topics.map((topic, index) => <button type="button" key={topic} onClick={() => choosePresetTopic(topic)}><b>{String(index + 1).padStart(2, '0')}</b><span>{topic}</span><ChevronRight size={13} /></button>)}</div>
+              </div>
+            </section>}
             <label className="wide">補充要求<textarea className="form-input" rows={2} value={editor.instructions || ''} onChange={event => setEditor({ ...editor, instructions: event.target.value })} placeholder="語言、時間範圍、不要出現的內容……" /></label>
+            <label>每次素材數<select className="form-input" value={editor.itemCount || 5} onChange={event => setEditor({ ...editor, itemCount: Number(event.target.value) })}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} 筆</option>)}</select></label>
+            <label>節奏<select className="form-input" value={editor.schedule.kind || 'manual'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, kind: event.target.value as ExplorationScheduleKind } })}><option value="manual">只手動執行</option><option value="daily">每天</option><option value="weekdays">指定星期</option><option value="weekly">每週</option><option value="monthly">每月</option></select></label>
+            {editor.schedule.kind !== 'manual' && <label>本地時間<input className="form-input" type="time" value={editor.schedule.localTime || '09:00'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, localTime: event.target.value } })} /></label>}
+            {(editor.schedule.kind === 'weekdays' || editor.schedule.kind === 'weekly') && <fieldset className="wide"><legend>星期</legend><div className="day-grid">{dayLabels.map((label, index) => { const day = index + 1; return <label key={day}><input type={editor.schedule.kind === 'weekly' ? 'radio' : 'checkbox'} name={editor.schedule.kind === 'weekly' ? 'weekly-day' : undefined} checked={editor.schedule.daysOfWeek?.includes(day)} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, daysOfWeek: editor.schedule.kind === 'weekly' ? [day] : event.target.checked ? [...(editor.schedule.daysOfWeek || []), day] : (editor.schedule.daysOfWeek || []).filter(value => value !== day) } })} />{label}</label>; })}</div></fieldset>}
+            {editor.schedule.kind === 'monthly' && <label>每月日期<input className="form-input" type="number" min={1} max={31} value={editor.schedule.dayOfMonth || 1} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, dayOfMonth: Number(event.target.value) } })} /></label>}
+            <label className="toggle-line"><input type="checkbox" checked={Boolean(editor.notificationEnabled)} onChange={event => setEditor({ ...editor, notificationEnabled: event.target.checked })} />完成時顯示 Windows 通知（預設關閉）</label>
             <details className="task-advanced-settings wide" open={advancedOpen} onToggle={event => setAdvancedOpen(event.currentTarget.open)}>
               <summary>
                 <span><strong>進階設定</strong><small>AI 模型、來源範圍與網址限制</small></span>
@@ -245,12 +294,6 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
                 <label>排除來源網域（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.excludedDomains || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, excludedDomains: event.target.value.split('\n').map(value => value.trim().toLowerCase()).filter(Boolean) } })} placeholder="example.com" /></label>
               </div>
             </details>
-            <label>每次素材數<select className="form-input" value={editor.itemCount || 5} onChange={event => setEditor({ ...editor, itemCount: Number(event.target.value) })}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} 筆</option>)}</select></label>
-            <label>節奏<select className="form-input" value={editor.schedule.kind || 'manual'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, kind: event.target.value as ExplorationScheduleKind } })}><option value="manual">只手動執行</option><option value="daily">每天</option><option value="weekdays">指定星期</option><option value="weekly">每週</option><option value="monthly">每月</option></select></label>
-            {editor.schedule.kind !== 'manual' && <label>本地時間<input className="form-input" type="time" value={editor.schedule.localTime || '09:00'} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, localTime: event.target.value } })} /></label>}
-            {(editor.schedule.kind === 'weekdays' || editor.schedule.kind === 'weekly') && <fieldset className="wide"><legend>星期</legend><div className="day-grid">{dayLabels.map((label, index) => { const day = index + 1; return <label key={day}><input type={editor.schedule.kind === 'weekly' ? 'radio' : 'checkbox'} name={editor.schedule.kind === 'weekly' ? 'weekly-day' : undefined} checked={editor.schedule.daysOfWeek?.includes(day)} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, daysOfWeek: editor.schedule.kind === 'weekly' ? [day] : event.target.checked ? [...(editor.schedule.daysOfWeek || []), day] : (editor.schedule.daysOfWeek || []).filter(value => value !== day) } })} />{label}</label>; })}</div></fieldset>}
-            {editor.schedule.kind === 'monthly' && <label>每月日期<input className="form-input" type="number" min={1} max={31} value={editor.schedule.dayOfMonth || 1} onChange={event => setEditor({ ...editor, schedule: { ...editor.schedule, dayOfMonth: Number(event.target.value) } })} /></label>}
-            <label className="toggle-line"><input type="checkbox" checked={Boolean(editor.notificationEnabled)} onChange={event => setEditor({ ...editor, notificationEnabled: event.target.checked })} />完成時顯示 Windows 通知（預設關閉）</label>
           </div>
           <footer>{editor.id && <button type="button" className="btn danger" onClick={() => { if (window.confirm('封存任務後不再執行，但歷史與素材會保留。確定封存？')) void act(() => explorationApi.archiveTask(workspace, editor.id!), '任務已封存。').then(() => setEditor(null)); }}>封存任務</button>}<span /><button type="button" className="btn" onClick={() => setEditor(null)}>取消</button><button type="submit" className="btn btn-primary">{editor.id ? '儲存調整' : '建立任務'}</button></footer>
         </form>

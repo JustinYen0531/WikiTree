@@ -37,16 +37,31 @@ try {
 
   const advancedStart = ui.indexOf('<details className="task-advanced-settings wide"');
   const advancedEnd = ui.indexOf('</details>', advancedStart);
-  const basicCount = ui.indexOf('<label>每次素材數', advancedStart);
-  const basicRhythm = ui.indexOf('<label>節奏', advancedStart);
+  const supplementaryRequirements = ui.indexOf('<label className="wide">補充要求');
+  const basicCount = ui.indexOf('<label>每次素材數');
+  const basicRhythm = ui.indexOf('<label>節奏');
+  const notification = ui.indexOf('完成時顯示 Windows 通知');
   assert.ok(advancedStart > 0 && advancedEnd > advancedStart, 'advanced settings must use a collapsible details region');
   for (const label of ['AiProviderPicker', '來源範圍', '指定網站／RSS', '硬性網址', '排除來源網域']) {
     const position = ui.indexOf(label, advancedStart);
     assert.ok(position > advancedStart && position < advancedEnd, `${label} must stay inside advanced settings`);
   }
-  assert.ok(basicCount > advancedEnd && basicRhythm > advancedEnd, 'material count and rhythm must remain visible outside advanced settings');
+  assert.ok(supplementaryRequirements < basicCount && basicCount < basicRhythm, 'supplementary requirements must stay before the visible material count and rhythm controls');
+  assert.ok(basicCount < advancedStart && basicRhythm < advancedStart && notification < advancedStart, 'advanced settings must be the final form section after the core schedule and notification controls');
   assert.match(ui, /setAdvancedOpen\(false\)/);
-  console.log('PASS advanced AI/source controls start collapsed while core schedule stays visible');
+  console.log('PASS advanced AI/source controls are collapsed at the bottom while core schedule stays visible');
+
+  const presets = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'data', 'exploration-presets.json'), 'utf8'));
+  assert.equal(presets.length, 20, 'the starter catalog must offer 20 interest domains');
+  for (const preset of presets) {
+    assert.equal(typeof preset.label, 'string');
+    assert.ok(preset.topics.length >= 3 && preset.topics.length <= 4, `${preset.label} must have 3-4 refined topics`);
+  }
+  assert.match(ui, /挑興趣/);
+  assert.match(ui, /挑題目/);
+  assert.match(ui, /你對什麼有興趣？/);
+  assert.match(ui, /setPresetPickerMode\(task \? null : 'name'\)/);
+  console.log('PASS new tasks ask about interests and offer 20 domains with 3-4 refined topics each');
 
   const app = fs.readFileSync(path.join(process.cwd(), 'src', 'App.tsx'), 'utf8');
   const chat = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'AntigravityPlugin.tsx'), 'utf8');
