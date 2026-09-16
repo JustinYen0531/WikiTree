@@ -27,9 +27,19 @@ const frontmatterLabels: Record<string, string> = {
   parent: '父節點',
   tags: '標籤',
   summary: '摘要',
+  origin: '探索來源',
+  exploration_task_id: '探索任務',
+  exploration_run_id: '探索批次',
+  source_ids: '參考來源',
 };
 
 const frontmatterIcons = new Set(['title', 'domain', 'branch', 'parent', 'tags', 'summary']);
+const explorationFrontmatterKeys = new Set(['origin', 'exploration_task_id', 'exploration_run_id', 'source_ids']);
+const explorationOriginLabels: Record<string, string> = {
+  scheduled_ai_exploration: '每日排程探索',
+  manual_ai_exploration: '手動 AI 探索',
+  legacy_brew_import: 'Brew 歷史匯入',
+};
 
 function parseFrontmatterScalar(rawValue: string): string {
   const value = rawValue.trim();
@@ -96,17 +106,45 @@ export function extractFrontmatter(markdown: string): { fields: FrontmatterField
   return { fields: fields.filter(field => field.values.length), body: normalized.slice(match[0].length) };
 }
 
+function compactIdentifier(value: string): string {
+  return value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
+}
+
+function renderExplorationValue(field: FrontmatterField): string {
+  if (field.key === 'origin') {
+    return field.values.map(value => {
+      const label = explorationOriginLabels[value] || value;
+      return `<span class="note-frontmatter-origin" title="${escapeHtml(value)}">${escapeHtml(label)}</span>`;
+    }).join('');
+  }
+
+  return `<span class="note-frontmatter-identifiers">${field.values.map(value => (
+    `<span class="note-frontmatter-identifier" title="完整識別碼：${escapeHtml(value)}" aria-label="${escapeHtml(value)}"><span aria-hidden="true">${escapeHtml(compactIdentifier(value))}</span></span>`
+  )).join('')}</span>`;
+}
+
 function renderFrontmatter(fields: FrontmatterField[]): string {
   if (!fields.length) return '';
+  const isExplorationNote = fields.some(field => (
+    field.key === 'exploration_task_id'
+    || field.key === 'exploration_run_id'
+    || field.key === 'source_ids'
+    || (field.key === 'origin' && field.values.some(value => value in explorationOriginLabels))
+  ));
   const rows = fields.map(field => {
-    const icon = frontmatterIcons.has(field.key) ? field.key : 'generic';
+    const isExplorationField = isExplorationNote && explorationFrontmatterKeys.has(field.key);
+    const icon = isExplorationField ? 'exploration' : (frontmatterIcons.has(field.key) ? field.key : 'generic');
     const label = frontmatterLabels[field.key] || field.key;
-    const value = field.key === 'tags'
+    const value = isExplorationField
+      ? renderExplorationValue(field)
+      : field.key === 'tags'
       ? `<span class="note-frontmatter-tags">${field.values.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</span>`
       : escapeHtml(field.values.join('、'));
     return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon-frame" aria-hidden="true"><span class="note-frontmatter-icon note-frontmatter-icon--${icon}"></span></span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
   }).join('');
-  return `<section class="note-frontmatter" aria-label="筆記資訊"><dl>${rows}</dl></section>`;
+  const explorationClass = isExplorationNote ? ' note-frontmatter--exploration' : '';
+  const ariaLabel = isExplorationNote ? '探索筆記資訊' : '筆記資訊';
+  return `<section class="note-frontmatter${explorationClass}" aria-label="${ariaLabel}"><dl>${rows}</dl></section>`;
 }
 
 function renderMath(value: string, displayMode: boolean): string {

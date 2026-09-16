@@ -369,6 +369,9 @@ function getIndexHtmlTemplate(): string {
     .note-frontmatter-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .note-frontmatter-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; }
     .note-frontmatter-tags > span { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-hover); color: var(--text-primary); font-size: .84em; line-height: 1.4; }
+    .note-frontmatter-origin, .note-frontmatter-identifier { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 9px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--bg-hover); color: var(--text-primary); font: 500 .78em/1.4 var(--font-mono); letter-spacing: .015em; }
+    .note-frontmatter-origin { color: var(--accent-color); font-family: inherit; font-weight: 600; }
+    .note-frontmatter-identifiers { display: inline-flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
     .note-frontmatter-icon-frame { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border-color); border-radius: 7px; background: var(--bg-hover); color: var(--accent-color); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); }
     .note-frontmatter-icon { position: relative; display: inline-block; width: 16px; height: 16px; flex: 0 0 16px; color: currentColor; }
     .note-frontmatter-icon--title::before { content: ""; position: absolute; inset: 1px 2px; border: 1px solid currentColor; border-radius: 2px; }
@@ -381,6 +384,8 @@ function getIndexHtmlTemplate(): string {
     .note-frontmatter-icon--tags::before { content: ""; position: absolute; left: 3px; top: 3px; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 2px 4px 2px 2px; transform: rotate(45deg); }
     .note-frontmatter-icon--tags::after { content: ""; position: absolute; left: 5px; top: 5px; width: 2px; height: 2px; border-radius: 50%; background: currentColor; }
     .note-frontmatter-icon--summary::before, .note-frontmatter-icon--generic::before { content: ""; position: absolute; left: 2px; top: 4px; width: 12px; height: 1px; background: currentColor; box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor; }
+    .note-frontmatter-icon--exploration::before { content: ""; position: absolute; inset: 1px; background: currentColor; clip-path: polygon(50% 0, 61% 37%, 100% 50%, 61% 63%, 50% 100%, 39% 63%, 0 50%, 39% 37%); }
+    .note-frontmatter-icon--exploration::after { content: ""; position: absolute; left: 6px; top: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--bg-hover); box-shadow: 5px -5px 0 -1px currentColor; }
 
     .note-title {
       font-size: 40px;

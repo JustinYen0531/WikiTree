@@ -1201,6 +1201,33 @@ body {
   line-height: 1.4;
 }
 
+.note-frontmatter-origin,
+.note-frontmatter-identifier {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--tag-bg);
+  color: var(--text-primary);
+  font: 500 .78em/1.4 var(--font-mono);
+  letter-spacing: .015em;
+}
+
+.note-frontmatter-origin {
+  color: var(--accent);
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.note-frontmatter-identifiers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
 .note-frontmatter-icon-frame {
   display: grid;
   place-items: center;
@@ -1318,6 +1345,26 @@ body {
   height: 1px;
   background: currentColor;
   box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor;
+}
+
+.note-frontmatter-icon--exploration::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 61% 37%, 100% 50%, 61% 63%, 50% 100%, 39% 63%, 0 50%, 39% 37%);
+}
+
+.note-frontmatter-icon--exploration::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  box-shadow: 5px -5px 0 -1px currentColor;
 }
 
 @media (max-width: 640px) {

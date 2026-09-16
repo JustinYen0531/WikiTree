@@ -35,10 +35,25 @@ try {
       assert.equal(parsed.body, '本文');
       assert.deepEqual(extractFrontmatter('title: 普通段落').fields, []);
     }],
+    ['exploration frontmatter uses one CSS icon and compact readable provenance', () => {
+      const source = `---\norigin: "scheduled_ai_exploration"\nexploration_task_id: "6d187207-f7d9-47fa-a5bb-e44f0b925ed9"\nexploration_run_id: "773b1a16-71d8-4aae-aaa4-00c28bb27e8b"\nsource_ids: ["88a10010-c52d-4624-a2d5-f1129773283e"]\n---\n\n# 探索草稿`;
+      const html = renderMarkdownSync(source);
+      assert.match(html, /note-frontmatter--exploration/);
+      assert.equal(html.match(/note-frontmatter-icon--exploration/g)?.length, 4);
+      assert.match(html, /探索筆記資訊/);
+      assert.match(html, />每日排程探索</);
+      assert.match(html, />6d187207…925ed9</);
+      assert.match(html, />773b1a16…b27e8b</);
+      assert.match(html, />88a10010…73283e</);
+      assert.match(html, /aria-label="6d187207-f7d9-47fa-a5bb-e44f0b925ed9"/);
+      for (const field of ['origin', 'exploration_task_id', 'exploration_run_id', 'source_ids']) {
+        assert.match(html, new RegExp(`data-frontmatter-field="${field}"`));
+      }
+    }],
     ['frontmatter icons are CSS-only in the app and published reader', async () => {
       const appCss = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
       const publisher = await readFile(new URL('../src/utils/publisher.ts', import.meta.url), 'utf8');
-      for (const icon of ['title', 'domain', 'branch', 'parent', 'tags', 'summary']) {
+      for (const icon of ['title', 'domain', 'branch', 'parent', 'tags', 'summary', 'exploration']) {
         assert.match(appCss, new RegExp(`note-frontmatter-icon--${icon}`));
         assert.match(publisher, new RegExp(`note-frontmatter-icon--${icon}`));
       }
