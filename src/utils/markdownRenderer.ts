@@ -35,6 +35,12 @@ const frontmatterLabels: Record<string, string> = {
 
 const frontmatterIcons = new Set(['title', 'domain', 'branch', 'parent', 'tags', 'summary']);
 const explorationFrontmatterKeys = new Set(['origin', 'exploration_task_id', 'exploration_run_id', 'source_ids']);
+const explorationFrontmatterIcons: Record<string, string> = {
+  origin: 'exploration-origin',
+  exploration_task_id: 'exploration-task',
+  exploration_run_id: 'exploration-run',
+  source_ids: 'exploration-source',
+};
 const explorationOriginLabels: Record<string, string> = {
   scheduled_ai_exploration: '每日排程探索',
   manual_ai_exploration: '手動 AI 探索',
@@ -147,7 +153,9 @@ function renderFrontmatter(fields: FrontmatterField[]): string {
   ));
   const rows = fields.map(field => {
     const isExplorationField = isExplorationNote && explorationFrontmatterKeys.has(field.key);
-    const icon = isExplorationField ? 'exploration' : (frontmatterIcons.has(field.key) ? field.key : 'generic');
+    const icon = isExplorationField
+      ? explorationFrontmatterIcons[field.key]
+      : (frontmatterIcons.has(field.key) ? field.key : 'generic');
     const label = frontmatterLabels[field.key] || field.key;
     const value = isExplorationField
       ? renderExplorationValue(field)
