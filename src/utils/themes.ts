@@ -1,4 +1,5 @@
 export const THEME_IDS = [
+  'wikitree-original',
   'rose-terminal',
   'warm-paper',
   'soft-pastel',
@@ -18,10 +19,19 @@ export type ThemeDefinition = {
   colors: readonly [string, string, string, string];
 };
 
-export const DEFAULT_THEME: ThemeId = 'rose-terminal';
+export const DEFAULT_THEME: ThemeId = 'wikitree-original';
 export const THEME_STORAGE_KEY = 'wikitree_theme_v1';
+export const THEME_DEFAULT_MIGRATION_KEY = 'wikitree_theme_default_v2';
 
 export const THEMES: readonly ThemeDefinition[] = [
+  {
+    id: 'wikitree-original',
+    name: 'WikiTree Original',
+    mood: '最初的純黑、冷白與細灰線條；安靜、克制，讓知識內容站在最前面。',
+    mode: 'dark',
+    inspiration: '最初的森林',
+    colors: ['#000000', '#050505', '#FFFFFF', '#D8DDE1'],
+  },
   {
     id: 'rose-terminal',
     name: 'Rose Terminal',
@@ -78,6 +88,8 @@ export const isThemeId = (value: string | null): value is ThemeId =>
 export const readSavedTheme = (): ThemeId => {
   try {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    const defaultMigrated = localStorage.getItem(THEME_DEFAULT_MIGRATION_KEY) === '1';
+    if (!defaultMigrated && saved === 'rose-terminal') return DEFAULT_THEME;
     return isThemeId(saved) ? saved : DEFAULT_THEME;
   } catch {
     return DEFAULT_THEME;

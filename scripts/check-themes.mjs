@@ -10,6 +10,7 @@ const [themeSource, css, app, sidebar, studio] = await Promise.all([
 ]);
 
 const expectedThemes = [
+  'wikitree-original',
   'rose-terminal',
   'warm-paper',
   'soft-pastel',
@@ -19,7 +20,11 @@ const expectedThemes = [
 ];
 
 const declaredThemes = [...themeSource.matchAll(/\bid: '([^']+)'/g)].map(match => match[1]);
-assert.deepEqual(declaredThemes, expectedThemes, 'Theme catalog must contain the six first-release themes in display order.');
+assert.deepEqual(declaredThemes, expectedThemes, 'Theme catalog must contain WikiTree Original followed by the six first-release themes.');
+assert.match(themeSource, /DEFAULT_THEME: ThemeId = 'wikitree-original'/, 'WikiTree Original must be the default theme.');
+assert.match(themeSource, /saved === 'rose-terminal'\) return DEFAULT_THEME/, 'The former automatic Rose Terminal default must migrate once.');
+assert.match(css, /:root\s*\{[^}]*--bg-primary: #000000;[^}]*--bg-sidebar: #050505;[^}]*--text-primary: #ffffff;[^}]*--accent: #d8dde1;/s, 'WikiTree Original must retain the initial black, white, and cool-gray palette.');
+assert.match(css, /\[data-theme="rose-terminal"\]\s*\{[^}]*--bg-primary: #191724;[^}]*--accent: #ebbcba;/s, 'Rose Terminal must remain available after restoring the original theme.');
 
 for (const id of expectedThemes) {
   assert.match(css, new RegExp(`\\[data-theme="${id}"\\]`), `Missing CSS palette for ${id}.`);
@@ -52,7 +57,8 @@ assert.ok(nurseryPosition >= 0 && stylePosition > nurseryPosition, '風格 must 
 assert.match(sidebar, /<strong>風格<\/strong><small>打造你的森林樣貌<\/small>/, 'Style navigation label is missing.');
 assert.match(app, /<StyleStudio theme=\{theme\} onThemeChange=\{setTheme\} \/>/, 'Style Studio is not connected to the app theme state.');
 assert.match(app, /localStorage\.setItem\(THEME_STORAGE_KEY, theme\)/, 'Theme selection must persist locally.');
+assert.match(app, /localStorage\.setItem\(THEME_DEFAULT_MIGRATION_KEY, '1'\)/, 'Default-theme migration must be recorded locally.');
 assert.doesNotMatch(app, /setTheme\(theme === 'dark'/, 'The legacy binary theme toggle must not remain.');
 assert.match(studio, /個人封面、苗圃裝飾/, 'The future personal-space direction must remain visible.');
 
-console.log(`Theme checks passed: ${expectedThemes.length} palettes, persistent selection, Style Studio navigation, and future profile direction.`);
+console.log(`Theme checks passed: ${expectedThemes.length} palettes, WikiTree Original default, persistent selection, Style Studio navigation, and future profile direction.`);

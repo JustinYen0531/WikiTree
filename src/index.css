@@ -241,7 +241,66 @@ button.exploration-task-row { padding: 12px; display: flex; justify-content: spa
 .spin { animation: spin 1s linear infinite; }
 
 :root {
-  /* Rose Terminal is the default while the saved preference is loading. */
+  /* WikiTree Original is the default while the saved preference is loading. */
+  --bg-primary: #000000;
+  --bg-secondary: #070707;
+  --bg-sidebar: #050505;
+  --bg-tertiary: #0c0c0c;
+  --border-color: rgba(255, 255, 255, 0.16);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.58);
+  --text-muted: rgba(255, 255, 255, 0.34);
+  --accent: #d8dde1;
+  --accent-hover: #ffffff;
+  --accent-bg: rgba(255, 255, 255, 0.07);
+  --success: #c8d8cf;
+  --success-bg: rgba(255, 255, 255, 0.06);
+  --success-border: rgba(255, 255, 255, 0.18);
+  --warning: #cfcfcf;
+  --warning-bg: rgba(255, 255, 255, 0.05);
+  --danger: #f0f0f0;
+  --danger-bg: rgba(255, 255, 255, 0.08);
+  --diff-added: rgba(255, 255, 255, 0.08);
+  --diff-added-text: #ffffff;
+  --diff-removed: rgba(255, 255, 255, 0.04);
+  --diff-removed-text: rgba(255, 255, 255, 0.68);
+  --surface-translucent: rgba(0, 0, 0, 0.72);
+  --surface-strong: rgba(0, 0, 0, 0.36);
+  --surface-hover: rgba(255, 255, 255, 0.075);
+  --surface-active: rgba(255, 255, 255, 0.13);
+  --input-bg: rgba(0, 0, 0, 0.58);
+  --grid-line: rgba(255, 255, 255, 0.035);
+  --ambient-primary: rgba(255, 255, 255, 0.06);
+  --ambient-secondary: rgba(255, 255, 255, 0.04);
+  --ambient-edge: rgba(255, 255, 255, 0.035);
+  --header-sheen: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent 44%, rgba(255, 255, 255, 0.025));
+  --highlight: #d8dde1;
+  --highlight-text: #000000;
+  --code-bg: rgba(255, 255, 255, 0.07);
+  --code-border: rgba(255, 255, 255, 0.12);
+  --quote-border: rgba(255, 255, 255, 0.44);
+  --tag-bg: rgba(255, 255, 255, 0.075);
+  --graph-node: #d8dde1;
+  --overlay: rgba(0, 0, 0, 0.76);
+
+  /* Layout and UI */
+  --sidebar-width: 250px;
+  --font-sans: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: 'Roboto Mono', 'Noto Sans TC', Consolas, Menlo, Monaco, monospace;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --border-radius-sm: 2px;
+  --border-radius-md: 3px;
+  --border-radius-lg: 4px;
+}
+
+[data-theme="wikitree-original"] {
+  color-scheme: dark;
+}
+
+[data-theme="rose-terminal"] {
+  color-scheme: dark;
   --bg-primary: #191724;
   --bg-secondary: #1f1d2e;
   --bg-sidebar: #26233a;
@@ -282,21 +341,6 @@ button.exploration-task-row { padding: 12px; display: flex; justify-content: spa
   --tag-bg: rgba(196, 167, 231, 0.12);
   --graph-node: #9ccfd8;
   --overlay: rgba(12, 10, 18, 0.78);
-
-  /* Layout and UI */
-  --sidebar-width: 250px;
-  --font-sans: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: 'Roboto Mono', 'Noto Sans TC', Consolas, Menlo, Monaco, monospace;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --border-radius-sm: 2px;
-  --border-radius-md: 3px;
-  --border-radius-lg: 4px;
-}
-
-[data-theme="rose-terminal"] {
-  color-scheme: dark;
 }
 
 [data-theme="warm-paper"] {

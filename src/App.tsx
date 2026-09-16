@@ -52,7 +52,13 @@ import { notionHtmlToMarkdown } from './utils/notionImporter';
 
 import { workspaceId, type WorkspaceFolder } from './utils/workspaceMemory';
 import { PendingDiffInfo } from './utils/diffUtils';
-import { getTheme, readSavedTheme, THEME_STORAGE_KEY, type ThemeId } from './utils/themes';
+import {
+  getTheme,
+  readSavedTheme,
+  THEME_DEFAULT_MIGRATION_KEY,
+  THEME_STORAGE_KEY,
+  type ThemeId,
+} from './utils/themes';
 import { getManagedLibrary, type LibraryImportResult, type LibraryInfo } from './utils/library';
 
 function App() {
@@ -300,6 +306,7 @@ function App() {
     document.documentElement.style.colorScheme = selectedTheme.mode;
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
+      localStorage.setItem(THEME_DEFAULT_MIGRATION_KEY, '1');
     } catch {
       // The theme still works for this session when storage is unavailable.
     }
