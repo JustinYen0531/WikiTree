@@ -384,16 +384,6 @@ function getIndexHtmlTemplate(): string {
     .note-frontmatter-icon--tags::before { content: ""; position: absolute; left: 3px; top: 3px; width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 2px 4px 2px 2px; transform: rotate(45deg); }
     .note-frontmatter-icon--tags::after { content: ""; position: absolute; left: 5px; top: 5px; width: 2px; height: 2px; border-radius: 50%; background: currentColor; }
     .note-frontmatter-icon--summary::before, .note-frontmatter-icon--generic::before { content: ""; position: absolute; left: 2px; top: 4px; width: 12px; height: 1px; background: currentColor; box-shadow: 0 4px 0 currentColor, 0 8px 0 currentColor; }
-    .note-frontmatter-icon--exploration-origin::before { content: ""; position: absolute; inset: 1px; background: currentColor; clip-path: polygon(50% 0, 61% 37%, 100% 50%, 61% 63%, 50% 100%, 39% 63%, 0 50%, 39% 37%); }
-    .note-frontmatter-icon--exploration-origin::after { content: ""; position: absolute; left: 6px; top: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--bg-hover); box-shadow: 5px -5px 0 -1px currentColor; }
-    .note-frontmatter-icon--exploration-task::before { content: ""; position: absolute; inset: 1px 1px 0; border: 1px solid currentColor; border-radius: 2px; }
-    .note-frontmatter-icon--exploration-task::after { content: ""; position: absolute; left: 3px; top: 4px; width: 10px; height: 9px; background: radial-gradient(circle at 1px 1px, currentColor 0 1px, transparent 1.2px), linear-gradient(currentColor, currentColor) 4px 1px / 6px 1px no-repeat, radial-gradient(circle at 1px 4.5px, currentColor 0 1px, transparent 1.2px), linear-gradient(currentColor, currentColor) 4px 4.5px / 6px 1px no-repeat, radial-gradient(circle at 1px 8px, currentColor 0 1px, transparent 1.2px), linear-gradient(currentColor, currentColor) 4px 8px / 6px 1px no-repeat; }
-    .note-frontmatter-icon--exploration-run::before { content: ""; position: absolute; inset: 2px; border: 1px solid currentColor; border-right-color: transparent; border-radius: 50%; transform: rotate(-32deg); }
-    .note-frontmatter-icon--exploration-run::after { content: ""; position: absolute; right: 0; top: 1px; width: 5px; height: 5px; border-top: 1px solid currentColor; border-right: 1px solid currentColor; transform: rotate(12deg); }
-    .note-frontmatter-icon--exploration-source::before, .note-frontmatter-icon--exploration-source::after { content: ""; position: absolute; width: 9px; height: 5px; border: 1px solid currentColor; border-radius: 999px; transform: rotate(-38deg); }
-    .note-frontmatter-icon--exploration-source::before { left: 0; top: 3px; }
-    .note-frontmatter-icon--exploration-source::after { right: 0; bottom: 3px; }
-
     .note-title {
       font-size: 40px;
       font-weight: 700;

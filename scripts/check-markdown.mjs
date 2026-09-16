@@ -41,7 +41,13 @@ try {
       assert.match(html, /note-frontmatter--exploration/);
       for (const icon of ['exploration-origin', 'exploration-task', 'exploration-run', 'exploration-source']) {
         assert.equal(html.match(new RegExp(`note-frontmatter-icon--${icon}\\b`, 'g'))?.length, 1);
+        assert.equal(html.match(new RegExp(`data-css-icon="${icon}"`, 'g'))?.length, 1);
       }
+      assert.match(html, /data-css-icon="exploration-origin"[^>]*style="[^"]*position:relative/);
+      assert.match(html, /data-css-icon="exploration-task"[\s\S]*border-radius:50%/);
+      assert.match(html, /data-css-icon="exploration-run"[\s\S]*border-right-color:transparent/);
+      assert.match(html, /data-css-icon="exploration-source"[\s\S]*rotate\(-38deg\)/);
+      assert.doesNotMatch(html, /<svg|data:image|[\u{1F300}-\u{1FAFF}]/u);
       assert.match(html, /探索筆記資訊/);
       assert.match(html, />每日排程探索</);
       assert.match(html, />6d187207…925ed9</);
@@ -72,7 +78,7 @@ try {
     ['frontmatter icons are CSS-only in the app and published reader', async () => {
       const appCss = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
       const publisher = await readFile(new URL('../src/utils/publisher.ts', import.meta.url), 'utf8');
-      for (const icon of ['title', 'domain', 'branch', 'parent', 'tags', 'summary', 'exploration-origin', 'exploration-task', 'exploration-run', 'exploration-source']) {
+      for (const icon of ['title', 'domain', 'branch', 'parent', 'tags', 'summary']) {
         assert.match(appCss, new RegExp(`note-frontmatter-icon--${icon}`));
         assert.match(publisher, new RegExp(`note-frontmatter-icon--${icon}`));
       }

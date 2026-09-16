@@ -143,6 +143,31 @@ function renderExplorationValue(field: FrontmatterField): string {
   )).join('')}</span>`;
 }
 
+function renderFrontmatterIcon(icon: string): string {
+  const className = `note-frontmatter-icon note-frontmatter-icon--${icon}`;
+  const baseStyle = 'position:relative;display:inline-block;width:16px;height:16px;flex:0 0 16px;color:inherit';
+
+  if (icon === 'exploration-origin') {
+    return `<span class="${className}" data-css-icon="${icon}" style="${baseStyle}"><span style="position:absolute;inset:1px;background:currentColor;clip-path:polygon(50% 0,61% 37%,100% 50%,61% 63%,50% 100%,39% 63%,0 50%,39% 37%)"></span><span style="position:absolute;left:6px;top:6px;width:4px;height:4px;border-radius:50%;background:var(--accent-bg,var(--bg-sidebar))"></span></span>`;
+  }
+
+  if (icon === 'exploration-task') {
+    const taskLines = [4, 7.5, 11].map(top => `<span style="position:absolute;left:3px;top:${top}px;width:2px;height:2px;border-radius:50%;background:currentColor"></span><span style="position:absolute;left:7px;top:${top + 0.5}px;width:6px;height:1px;background:currentColor"></span>`).join('');
+    return `<span class="${className}" data-css-icon="${icon}" style="${baseStyle}"><span style="position:absolute;inset:1px 1px 0;border:1px solid currentColor;border-radius:2px"></span>${taskLines}</span>`;
+  }
+
+  if (icon === 'exploration-run') {
+    return `<span class="${className}" data-css-icon="${icon}" style="${baseStyle}"><span style="position:absolute;inset:2px;border:1px solid currentColor;border-right-color:transparent;border-radius:50%;transform:rotate(-32deg)"></span><span style="position:absolute;right:0;top:1px;width:5px;height:5px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(12deg)"></span></span>`;
+  }
+
+  if (icon === 'exploration-source') {
+    const linkStyle = 'position:absolute;width:9px;height:5px;border:1px solid currentColor;border-radius:999px;transform:rotate(-38deg)';
+    return `<span class="${className}" data-css-icon="${icon}" style="${baseStyle}"><span style="${linkStyle};left:0;top:3px"></span><span style="${linkStyle};right:0;bottom:3px"></span></span>`;
+  }
+
+  return `<span class="${className}"></span>`;
+}
+
 function renderFrontmatter(fields: FrontmatterField[]): string {
   if (!fields.length) return '';
   const isExplorationNote = fields.some(field => (
@@ -162,7 +187,7 @@ function renderFrontmatter(fields: FrontmatterField[]): string {
       : field.key === 'tags'
       ? `<span class="note-frontmatter-tags">${field.values.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</span>`
       : escapeHtml(field.values.join('、'));
-    return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon-frame" aria-hidden="true"><span class="note-frontmatter-icon note-frontmatter-icon--${icon}"></span></span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
+    return `<div class="note-frontmatter-row note-frontmatter-row--${icon}" data-frontmatter-field="${escapeHtml(field.key)}"><dt title="${escapeHtml(label)}"><span class="note-frontmatter-icon-frame" aria-hidden="true">${renderFrontmatterIcon(icon)}</span><span class="note-frontmatter-label">${escapeHtml(label)}</span><span class="note-frontmatter-separator" aria-hidden="true">:</span></dt><dd>${value}</dd></div>`;
   }).join('');
   const explorationClass = isExplorationNote ? ' note-frontmatter--exploration' : '';
   const ariaLabel = isExplorationNote ? '探索筆記資訊' : '筆記資訊';
