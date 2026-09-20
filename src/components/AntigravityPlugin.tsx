@@ -36,6 +36,7 @@ import { renderMarkdownSync } from '../utils/markdownRenderer';
 import { preprocessCallouts } from '../utils/callouts';
 import DOMPurify from 'dompurify';
 import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
+import { AiQuickModelPicker } from './AiQuickModelPicker';
 import { readChatStream } from '../utils/chatStream';
 import { cliWorkspaceHeaders } from '../utils/cliWorkspace';
 import {
@@ -3012,6 +3013,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 <span>{conversationMode === 'ask' ? '詢問' : '編修'}</span>
                 <RefreshCw size={10} className="arborist-mode-toggle-swap" aria-hidden="true" />
               </button>
+              <AiQuickModelPicker
+                url={cliUrl}
+                selection={aiSelection}
+                onChange={setAiSelection}
+                onReadyChange={setAiReady}
+                disabled={loading}
+              />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
               <span>按 Enter 送出 • 支援拖放/「+」圖片與參考檔案</span>

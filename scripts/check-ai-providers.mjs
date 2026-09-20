@@ -9,14 +9,23 @@ const require = createRequire(import.meta.url);
 const { AiRpc } = require('../ai-rpc.cjs');
 const { AiProviders, PROVIDERS, subscriptionEnv } = require('../ai-providers.cjs');
 const { trustedAiRequest } = require('../ai-security.cjs');
-const pickerSource = readFileSync(new URL('../src/components/AiProviderPicker.tsx', import.meta.url), 'utf8');
+const quickPickerSource = readFileSync(new URL('../src/components/AiQuickModelPicker.tsx', import.meta.url), 'utf8');
+const providerOptionsSource = readFileSync(new URL('../src/utils/aiProviderOptions.ts', import.meta.url), 'utf8');
 const pluginSource = readFileSync(new URL('../src/components/AntigravityPlugin.tsx', import.meta.url), 'utf8');
-assert.match(pickerSource, /\['agy', 'Google Gemini'\]/);
-assert.doesNotMatch(pickerSource, /Google.*Gemini.*google|\['google'/i);
+assert.match(providerOptionsSource, /id: 'agy', name: 'Google Gemini'/);
+assert.doesNotMatch(providerOptionsSource, /Google.*Gemini.*google|\['google'/i);
 assert.equal(pluginSource.split('<AiProviderPicker').length - 1, 1);
 assert.ok(pluginSource.indexOf('<AiProviderPicker') > pluginSource.indexOf('設定面板'));
 assert.equal(pluginSource.indexOf('<AiProviderPicker'), pluginSource.lastIndexOf('<AiProviderPicker'));
 console.log('PASS provider picker is unique, named Google Gemini, and rendered inside the settings panel');
+
+assert.equal(pluginSource.split('<AiQuickModelPicker').length - 1, 1);
+assert.ok(pluginSource.indexOf('<AiQuickModelPicker') > pluginSource.indexOf('arborist-composer-tools'));
+assert.match(quickPickerSource, /AI_PROVIDER_OPTIONS\.map\(provider =>/);
+assert.match(quickPickerSource, /onChange\(\{ provider, model \}\)/);
+assert.match(quickPickerSource, /role="listbox" aria-label="快速切換 AI 模型"/);
+assert.match(quickPickerSource, /尚未連線，請先至設定連線/);
+console.log('PASS quick model picker groups live models by provider and switches provider with the model');
 
 const request = (origin, remote = '127.0.0.1', host = 'localhost:18080', header = '1') => ({
   socket: { remoteAddress: remote }, headers: { origin, host, 'x-wikitree-ai': header },

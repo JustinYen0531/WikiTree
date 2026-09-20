@@ -1,23 +1,18 @@
 import { useEffect, useState } from 'react';
+import {
+  AI_PROVIDER_OPTIONS,
+  type AiProviderState,
+  type AiSelection,
+} from '../utils/aiProviderOptions';
 
-export interface AiSelection { provider: string; model: string }
-interface ProviderState {
-  status: 'connected' | 'disconnected' | 'pending' | 'unsupported' | 'error';
-  message: string;
-  authUrl?: string;
-  models: { id: string; name: string; isDefault?: boolean }[];
-}
-const providers = [
-  ['agy', 'Google Gemini'],
-  ['openai', 'OpenAI · Codex'],
-];
+export type { AiSelection } from '../utils/aiProviderOptions';
 const headers = { 'X-WikiTree-AI': '1' };
 
 export function AiProviderPicker({ url, selection, onChange, onReadyChange, disabled }: {
   url: string; selection: AiSelection; onChange: (value: AiSelection) => void;
   onReadyChange: (ready: boolean) => void; disabled: boolean;
 }) {
-  const [state, setState] = useState<ProviderState | null>(null);
+  const [state, setState] = useState<AiProviderState | null>(null);
   const [working, setWorking] = useState(false);
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState('');
@@ -26,14 +21,12 @@ export function AiProviderPicker({ url, selection, onChange, onReadyChange, disa
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
     const controller = new AbortController();
-    setState(null);
-    setError('');
     onReadyChange(false);
     const load = async () => {
       try {
         const response = await fetch(`${url}/api/ai/state?provider=${encodeURIComponent(selection.provider)}`, { headers, signal: controller.signal });
         if (!response.ok) throw new Error('請重新啟動本機服務，啟用廠商選擇與登入。');
-        const next: ProviderState = await response.json();
+        const next: AiProviderState = await response.json();
         if (cancelled) return;
         setState(next);
         if (next.status === 'connected' && next.models.length) {
@@ -75,8 +68,13 @@ export function AiProviderPicker({ url, selection, onChange, onReadyChange, disa
       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
         AI 廠商
         <select className="form-input" value={selection.provider} disabled={disabled || working}
-          onChange={event => { onReadyChange(false); onChange({ provider: event.target.value, model: '' }); }} style={{ fontSize: '14px', width: '100%' }}>
-          {providers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          onChange={event => {
+            setState(null);
+            setError('');
+            onReadyChange(false);
+            onChange({ provider: event.target.value, model: '' });
+          }} style={{ fontSize: '14px', width: '100%' }}>
+          {AI_PROVIDER_OPTIONS.map(provider => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
         </select>
       </label>
       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
