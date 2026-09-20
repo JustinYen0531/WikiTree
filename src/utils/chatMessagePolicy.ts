@@ -1,4 +1,4 @@
-export type ChatMessageKind = 'note' | 'status';
+export type ChatMessageKind = 'note' | 'answer' | 'status';
 export type ChatMessageDelivery = 'streaming' | 'incomplete';
 
 export interface ChatMessagePolicyInput {
@@ -21,7 +21,7 @@ const LEGACY_STATUS_MARKERS = [
  */
 export function isStatusMessage(message: ChatMessagePolicyInput): boolean {
   if (message.kind === 'status') return true;
-  if (message.kind === 'note') return false;
+  if (message.kind === 'note' || message.kind === 'answer') return false;
 
   const content = message.content.trim();
   return message.role === 'arborist'
@@ -35,6 +35,7 @@ export function isStatusMessage(message: ChatMessagePolicyInput): boolean {
 export function canInsertKnowledgeNote(message: ChatMessagePolicyInput): boolean {
   return message.role === 'arborist'
     && !message.delivery
+    && message.kind !== 'answer'
     && message.content.trim().length > 0
     && !isStatusMessage(message);
 }

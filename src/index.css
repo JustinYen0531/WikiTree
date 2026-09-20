@@ -3394,6 +3394,109 @@ textarea:focus {
   background-color: var(--surface-hover);
 }
 
+.arborist-composer-tools {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.arborist-composer-tools-label,
+.arborist-mode-description {
+  color: var(--text-secondary);
+  font-family: 'Roboto Mono', 'Noto Sans TC', monospace;
+  font-size: 9.5px;
+}
+
+.arborist-composer-tools-label {
+  letter-spacing: 0.04em;
+}
+
+.arborist-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(68px, 1fr));
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.arborist-mode-switch button {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-right: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 10.5px/1 'Noto Sans TC', sans-serif;
+  cursor: pointer;
+}
+
+.arborist-mode-switch button:last-child {
+  border-right: 0;
+}
+
+.arborist-mode-switch button:hover:not(:disabled),
+.arborist-mode-switch button:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.arborist-mode-switch button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.arborist-mode-switch button.active {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.arborist-mode-switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.arborist-mode-description {
+  min-width: 140px;
+  flex: 1;
+}
+
+.arborist-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.arborist-answer-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+}
+
+.arborist-answer-body {
+  width: min(95%, 760px);
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .arborist-mode-description {
+    flex-basis: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .tree-node-item::after,
   .note-type-card::after {

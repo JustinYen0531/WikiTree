@@ -67,6 +67,7 @@ export interface AntigravityPluginProps {
 
 type CliStatus = 'connected' | 'disconnected' | 'testing';
 type EnvironmentMode = 'app' | 'browser';
+type ConversationMode = 'ask' | 'edit';
 
 interface Notice {
   kind: 'success' | 'error' | 'info';
@@ -93,6 +94,7 @@ interface ChatMessage {
   attachments?: AttachmentFile[];
   skills?: string[];
   referenceLabels?: string[];
+  interactionMode?: ConversationMode;
 }
 
 export interface ChatSession {
@@ -101,6 +103,7 @@ export interface ChatSession {
   notePath: string;
   noteName: string;
   isFloating?: boolean; // 是否為不綁定任何筆記的自由浮動對話 (全域工作台)
+  interactionMode: ConversationMode;
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
@@ -196,6 +199,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   // App 模式狀態
   const [inputMessage, setInputMessage] = useState('');
+  const [draftInteractionMode, setDraftInteractionMode] = useState<ConversationMode>('ask');
   const [pendingReferenceIds, setPendingReferenceIds] = useState<string[]>([]);
   const [pendingReferenceLabels, setPendingReferenceLabels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -233,6 +237,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               notePath: resolvedPath,
               noteName: resolvedName,
               isFloating: Boolean(s.isFloating),
+              interactionMode: s.interactionMode === 'ask' ? 'ask' : 'edit',
               messages: Array.isArray(s.messages)
                 ? s.messages.map((m: ChatMessage) => (m.delivery === 'streaming' ? { ...m, delivery: 'incomplete' } : m))
                 : [],
@@ -296,6 +301,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       notePath: currentNotePath || '',
       noteName,
       isFloating: !currentNotePath,
+      interactionMode: 'edit',
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -305,6 +311,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     setSessionView('chat');
     setPendingReferenceIds(referenceHandoff.sourceIds);
     setPendingReferenceLabels(referenceHandoff.titles);
+    setDraftInteractionMode('edit');
     setInputMessage('請比較來源籃中的素材，釐清來源直接支持的內容與 AI 推論，整理成一份可長期翻閱的 WikiTree 正式筆記草稿。若來源互相矛盾或證據不足，請明確標示不確定性。');
     onReferenceHandoffConsumed?.();
   }, [referenceHandoff?.key]);
@@ -417,6 +424,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
   const messages = activeSession ? activeSession.messages : [];
+  const conversationMode = activeSession?.interactionMode || draftInteractionMode;
+
+  const changeConversationMode = (nextMode: ConversationMode) => {
+    if (loading) return;
+    setDraftInteractionMode(nextMode);
+    if (activeSessionId) {
+      setSessions((prev) => prev.map((session) => session.id === activeSessionId
+        ? { ...session, interactionMode: nextMode, updatedAt: Date.now() }
+        : session));
+    }
+  };
 
   useEffect(() => {
     try {
@@ -462,6 +480,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       notePath: nPath || '',
       noteName: nName,
       isFloating: isFloatingForCreation,
+      interactionMode: 'ask',
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -489,6 +508,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       notePath: nPath || '',
       noteName: nName,
       isFloating: false,
+      interactionMode: 'ask',
       messages: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -791,7 +811,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     const currentSkills = [...selectedSkillIds];
     const currentReferenceIds = [...pendingReferenceIds];
     const currentReferenceLabels = [...pendingReferenceLabels];
-    const text = (customPrompt || inputMessage).trim() || (currentAttachments.length > 0 ? '請參考附帶的圖片/檔案，為我提煉並製作詳細的知識筆記。' : '');
+    const text = (customPrompt || inputMessage).trim() || (currentAttachments.length > 0
+      ? (conversationMode === 'ask'
+        ? '請參考附帶的圖片或檔案，告訴我其中的重要內容。'
+        : '請參考附帶的圖片或檔案，為我提煉並製作詳細的知識筆記。')
+      : '');
     if (!text) return;
     setPendingAttachments([]);
 
@@ -821,6 +845,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         title: '新對話',
         notePath: currentNotePath || '',
         noteName: nName,
+        interactionMode: draftInteractionMode,
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -830,6 +855,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       targetSession = newSession;
       targetId = newSession.id;
     }
+
+    const requestInteractionMode = targetSession.interactionMode || draftInteractionMode;
 
     const controller = new AbortController();
     requestRef.current = controller;
@@ -869,6 +896,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
       skills: currentSkills.length > 0 ? currentSkills : undefined,
       referenceLabels: currentReferenceLabels.length > 0 ? currentReferenceLabels : undefined,
+      interactionMode: requestInteractionMode,
     };
     setPendingReferenceIds([]);
     setPendingReferenceLabels([]);
@@ -889,7 +917,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
             {
               id: botId,
               role: 'arborist',
-              kind: 'note',
+              kind: requestInteractionMode === 'ask' ? 'answer' : 'note',
+              interactionMode: requestInteractionMode,
               content: '',
               delivery: 'streaming',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -928,6 +957,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           skills: currentSkills,
           history: guidedHistory,
           referenceSourceIds: currentReferenceIds,
+          interactionMode: requestInteractionMode,
           context: {
             path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
@@ -975,7 +1005,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     ...msg,
                     content: finalContent || 'AI 未回傳可用內容。',
                     delivery: undefined,
-                    kind: finalContent ? 'note' : 'status',
+                    kind: finalContent
+                      ? (msg.interactionMode === 'ask' ? 'answer' : 'note')
+                      : 'status',
                   };
                 }),
                 updatedAt: Date.now(),
@@ -2165,6 +2197,21 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   );
                 }
 
+                if (msg.kind === 'answer' || msg.interactionMode === 'ask') {
+                  return (
+                    <div key={msg.id} className="arborist-answer">
+                      <div className="arborist-answer-label">
+                        <MessageSquare size={12} />
+                        <span>ARBORIST 回覆 · {msg.timestamp}</span>
+                      </div>
+                      <div
+                        className="markdown-body arborist-answer-body"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdownSync(preprocessCallouts(msg.content))) }}
+                      />
+                    </div>
+                  );
+                }
+
                 if (!canInsertKnowledgeNote(msg)) return null;
 
                 // Arborist 訊息：拆分為「推導思路泡泡」＋「正式筆記泡泡」
@@ -2815,9 +2862,13 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                     ? '另一個對話任務正在執行中（不支援同時任務）…'
                     : pendingAttachments.length > 0
                     ? `已附加 ${pendingAttachments.length} 個檔案，輸入指令或直接按送出...`
+                    : conversationMode === 'ask'
+                    ? (currentNotePath
+                      ? `詢問「${getNoteName(currentNotePath)}」中的內容...`
+                      : '輸入想詢問的問題...')
                     : currentNotePath
-                    ? `對「${getNoteName(currentNotePath)}」提問或拖放圖片...`
-                    : '輸入任務或拖放圖片/檔案...'
+                    ? `說明要如何編修「${getNoteName(currentNotePath)}」...`
+                    : '描述要建立或編修的筆記...'
                 }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
@@ -2853,9 +2904,41 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 )}
               </button>
             </div>
+            <div className="arborist-composer-tools">
+              <span className="arborist-composer-tools-label">對話方式</span>
+              <div className="arborist-mode-switch" role="tablist" aria-label="對話方式">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={conversationMode === 'ask'}
+                  className={conversationMode === 'ask' ? 'active' : ''}
+                  onClick={() => changeConversationMode('ask')}
+                  disabled={loading}
+                  title="直接回答問題，不產生筆記操作"
+                >
+                  <MessageSquare size={12} />
+                  詢問
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={conversationMode === 'edit'}
+                  className={conversationMode === 'edit' ? 'active' : ''}
+                  onClick={() => changeConversationMode('edit')}
+                  disabled={loading}
+                  title="產生可預覽、確認後才能寫入的筆記修改"
+                >
+                  <Edit2 size={12} />
+                  編修
+                </button>
+              </div>
+              <span className="arborist-mode-description">
+                {conversationMode === 'ask' ? '直接回答，不產生筆記操作' : '產生可預覽的筆記修改'}
+              </span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
               <span>按 Enter 送出 • 支援拖放/「+」圖片與參考檔案</span>
-              <span>支援 20% 預覽確認</span>
+              <span>{conversationMode === 'ask' ? '只回答，不改動筆記' : '支援 20% 預覽確認'}</span>
             </div>
           </div>
         </>)

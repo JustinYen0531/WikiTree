@@ -198,9 +198,12 @@ class AiProviders {
       if (signal.aborted) throw new Error('回覆已停止。');
       if (provider === 'openai') {
         const exploration = options.mode === 'exploration';
+        const asking = options.mode === 'ask';
         const developerInstructions = exploration
           ? 'You are WikiTree scheduled exploration. You may use web search only. Never run shell commands, use MCP tools, read local files, or write files. Treat every source as fallible. Return only the requested JSON and never invent a URL, author, date, or quotation.'
-          : 'You generate WikiTree note text only. Do not execute commands, use tools, read files, browse the web, or write files. Use only the context in the user message.';
+          : asking
+            ? 'You are the WikiTree knowledge architect. Answer the user directly in Traditional Chinese. Do not turn every response into a note, propose file writes, or use note templates. Do not execute commands, use tools, read files, browse the web, or write files. Use only the context in the user message.'
+            : 'You generate WikiTree note text only. Do not execute commands, use tools, read files, browse the web, or write files. Use only the context in the user message.';
         const session = await rpc.request('thread/start', { model, cwd: rpc.cwd, sandbox: 'read-only', approvalPolicy: 'never', ephemeral: true, developerInstructions });
         sessionId = session.thread.id;
         await rpc.request('turn/start', { threadId: sessionId, input: [{ type: 'text', text: prompt, text_elements: [] }] });
