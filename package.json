@@ -19,7 +19,8 @@
     "check:library": "node scripts/check-library.mjs",
     "check:launcher": "node scripts/check-launcher.mjs",
     "check:message-policy": "node scripts/check-message-policy.mjs",
-    "check:guided-knowledge": "node scripts/check-guided-knowledge-skill.mjs"
+    "check:guided-knowledge": "node scripts/check-guided-knowledge-skill.mjs",
+    "check:chat-projects": "node scripts/check-chat-projects.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

@@ -1,4 +1,6 @@
-export type ChatStreamEvent = { type: 'status' | 'delta' | 'done' | 'error'; text: string };
+export type ChatStreamEvent =
+  | { type: 'status' | 'delta' | 'done' | 'error'; text: string }
+  | { type: 'library'; files: Array<{ id: string; path: string }> };
 
 export async function readChatStream(response: Response, onEvent: (event: ChatStreamEvent) => void): Promise<void> {
   if (!response.body) throw new Error('無法接收即時回覆');

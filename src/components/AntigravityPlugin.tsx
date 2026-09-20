@@ -9,6 +9,7 @@ import {
   Copy,
   Download,
   Eye,
+  Folder,
   FileText,
   GitBranch,
   Globe,
@@ -69,6 +70,7 @@ export interface AntigravityPluginProps {
 type CliStatus = 'connected' | 'disconnected' | 'testing';
 type EnvironmentMode = 'app' | 'browser';
 type ConversationMode = 'ask' | 'edit';
+type ProjectReferenceMode = 'smart' | 'always';
 
 interface Notice {
   kind: 'success' | 'error' | 'info';
@@ -83,6 +85,18 @@ export interface AttachmentFile {
   dataUrl?: string;
   path?: string;
   isImage?: boolean;
+}
+
+interface ProjectFile extends AttachmentFile {
+  source: 'attachment' | 'note';
+  longTerm: boolean;
+  addedAt: number;
+}
+
+interface ChatProjectSettings {
+  fixedPrompt: string;
+  referenceMode: ProjectReferenceMode;
+  files: ProjectFile[];
 }
 
 interface ChatMessage {
@@ -105,6 +119,7 @@ export interface ChatSession {
   noteName: string;
   isFloating?: boolean; // 是否為不綁定任何筆記的自由浮動對話 (全域工作台)
   interactionMode: ConversationMode;
+  project?: ChatProjectSettings;
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
@@ -125,6 +140,39 @@ function getNoteName(path?: string): string {
   if (!path) return '未命名筆記';
   const parts = path.split('/');
   return parts[parts.length - 1] || path;
+}
+
+function getSessionProject(session: ChatSession): ChatProjectSettings {
+  const storedFiles = Array.isArray(session.project?.files) ? session.project.files : [];
+  const files = [...storedFiles];
+
+  if (!session.isFloating && session.notePath && !files.some((file) => file.path === session.notePath)) {
+    files.unshift({
+      id: `note:${session.notePath}`,
+      name: session.noteName || getNoteName(session.notePath),
+      type: 'text/markdown',
+      path: session.notePath,
+      source: 'note',
+      longTerm: true,
+      addedAt: session.createdAt,
+    });
+  }
+
+  return {
+    fixedPrompt: session.project?.fixedPrompt || '',
+    referenceMode: session.project?.referenceMode === 'always' ? 'always' : 'smart',
+    files,
+  };
+}
+
+function mergeProjectFiles(existing: ProjectFile[], incoming: ProjectFile[]): ProjectFile[] {
+  const merged = [...existing];
+  incoming.forEach((file) => {
+    const index = merged.findIndex((item) => (file.path && item.path === file.path) || item.id === file.id);
+    if (index >= 0) merged[index] = { ...file, ...merged[index], dataUrl: merged[index].dataUrl || file.dataUrl };
+    else merged.push(file);
+  });
+  return merged;
 }
 
 const DEFAULT_CLI_URL = 'http://localhost:18080';
@@ -339,6 +387,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [listEditingTitle, setListEditingTitle] = useState('');
   // 對話集合收合狀態
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(() => new Set());
+  // 每個對話自己的專案設定與檔案庫，預設收合避免增加負擔
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
+  const [showProjectLibrary, setShowProjectLibrary] = useState(false);
 
   // 建立新對話詢問彈窗狀態
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -455,8 +506,52 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   };
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
+  const activeProject = activeSession ? getSessionProject(activeSession) : null;
   const messages = activeSession ? activeSession.messages : [];
   const conversationMode = activeSession?.interactionMode || draftInteractionMode;
+
+  const updateSessionProject = (
+    sessionId: string,
+    update: (project: ChatProjectSettings) => ChatProjectSettings,
+  ) => {
+    setSessions((previous) => previous.map((session) => session.id === sessionId
+      ? { ...session, project: update(getSessionProject(session)), updatedAt: Date.now() }
+      : session));
+  };
+
+  const addLongTermNote = (path: string) => {
+    if (!activeSessionId || !path) return;
+    const note = allMarkdownNotes.find((item) => item.path === path);
+    if (!note) return;
+    updateSessionProject(activeSessionId, (project) => ({
+      ...project,
+      files: mergeProjectFiles(project.files, [{
+        id: `note:${note.path}`,
+        name: note.name,
+        type: 'text/markdown',
+        path: note.path,
+        source: 'note',
+        longTerm: true,
+        addedAt: Date.now(),
+      }]).map((file) => file.path === note.path ? { ...file, longTerm: true } : file),
+    }));
+  };
+
+  const toggleProjectFileLongTerm = (fileId: string) => {
+    if (!activeSessionId) return;
+    updateSessionProject(activeSessionId, (project) => ({
+      ...project,
+      files: project.files.map((file) => file.id === fileId ? { ...file, longTerm: !file.longTerm } : file),
+    }));
+  };
+
+  const removeProjectFile = (fileId: string) => {
+    if (!activeSessionId) return;
+    updateSessionProject(activeSessionId, (project) => ({
+      ...project,
+      files: project.files.filter((file) => file.id !== fileId),
+    }));
+  };
 
   const changeConversationMode = (nextMode: ConversationMode) => {
     if (loading) return;
@@ -533,7 +628,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   // 專屬對話解除綁定（單向轉為自由浮動對話）
   const handleConfirmUnbindToFloating = (sessionId: string) => {
     setSessions((prev) =>
-      prev.map((s) => (s.id === sessionId ? { ...s, isFloating: true, updatedAt: Date.now() } : s))
+      prev.map((s) => (s.id === sessionId
+        ? { ...s, project: getSessionProject(s), isFloating: true, updatedAt: Date.now() }
+        : s))
     );
     setUnbindConfirmSession(null);
     flash({ kind: 'info', text: '🔓 已轉為自由浮動對話，現在可隨時切換操作目標筆記！' });
@@ -868,6 +965,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
 
     const requestInteractionMode = targetSession.interactionMode || draftInteractionMode;
+    const targetProject = getSessionProject(targetSession);
 
     const controller = new AbortController();
     requestRef.current = controller;
@@ -914,6 +1012,12 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
     const botId = 'bot-' + crypto.randomUUID();
     const currentTargetId = targetId;
+    const libraryAttachments: ProjectFile[] = currentAttachments.map((attachment) => ({
+      ...attachment,
+      source: 'attachment',
+      longTerm: false,
+      addedAt: Date.now(),
+    }));
 
     // 將使用者問題及串流訊息加入目標 Session
     setSessions((prev) =>
@@ -922,6 +1026,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         return {
           ...s,
           title: derivedTitle !== undefined ? derivedTitle : s.title,
+          project: {
+            ...getSessionProject(s),
+            files: mergeProjectFiles(getSessionProject(s).files, libraryAttachments),
+          },
           messages: [
             ...s.messages,
             userMsg,
@@ -969,10 +1077,15 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
           history: guidedHistory,
           referenceSourceIds: currentReferenceIds,
           interactionMode: requestInteractionMode,
-          context: {
+          project: {
+            fixedPrompt: targetProject.fixedPrompt,
+            referenceMode: targetProject.referenceMode,
+            references: targetProject.files.filter((file) => file.longTerm),
+          },
+          context: requestInteractionMode === 'edit' ? {
             path: targetSession.notePath || currentNotePath,
             content: currentNoteContent,
-          },
+          } : undefined,
         }),
       });
 
@@ -987,6 +1100,22 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
       await readChatStream(response, (event) => {
         if (controller.signal.aborted) return;
+        if (event.type === 'library') {
+          const storedPaths = new Map(event.files.map((file) => [file.id, file.path]));
+          setSessions((previous) => previous.map((session) => {
+            if (session.id !== currentTargetId) return session;
+            const project = getSessionProject(session);
+            return {
+              ...session,
+              project: {
+                ...project,
+                files: project.files.map((file) => storedPaths.has(file.id)
+                  ? { ...file, path: storedPaths.get(file.id), dataUrl: undefined }
+                  : file),
+              },
+            };
+          }));
+        }
         if (event.type === 'status') setStreamStatus(event.text);
         if (event.type === 'delta') {
           setStreamStatus('正在產生回覆…');
@@ -2030,6 +2159,180 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* 每個對話自己的輕量專案設定，預設收合 */}
+            {activeSession && activeProject && (
+              <div style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowProjectSettings((visible) => !visible)}
+                  aria-expanded={showProjectSettings}
+                  style={{
+                    width: '100%',
+                    padding: '6px 12px',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                    <Folder size={13} color="#22c55e" style={{ flexShrink: 0 }} />
+                    <strong style={{ fontSize: '11px', flexShrink: 0 }}>對話專案</strong>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        color: 'var(--text-secondary)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {activeProject.fixedPrompt.trim() ? '已設定提示詞' : '未設定提示詞'} · 長期文件 {activeProject.files.filter((file) => file.longTerm).length} · 檔案庫 {activeProject.files.length}
+                    </span>
+                  </span>
+                  {showProjectSettings ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+
+                {showProjectSettings && (
+                  <div
+                    style={{
+                      padding: '2px 12px 10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      maxHeight: '320px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700 }}>固定提示詞</span>
+                      <textarea
+                        value={activeProject.fixedPrompt}
+                        onChange={(event) => updateSessionProject(activeSession.id, (project) => ({
+                          ...project,
+                          fixedPrompt: event.target.value,
+                        }))}
+                        placeholder="只在這個對話中長期遵守的方向、語氣或工作規則…"
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          resize: 'vertical',
+                          minHeight: '64px',
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '11px',
+                          lineHeight: 1.5,
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </label>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700 }}>參考選項</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                        {([
+                          ['smart', '智慧參考', '只在內容相關時取用'],
+                          ['always', '每次參考', '每一輪都讀取長期文件'],
+                        ] as const).map(([value, label, description]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => updateSessionProject(activeSession.id, (project) => ({ ...project, referenceMode: value }))}
+                            style={{
+                              padding: '6px 7px',
+                              borderRadius: '6px',
+                              border: activeProject.referenceMode === value ? '1px solid #22c55e' : '1px solid var(--border-color)',
+                              backgroundColor: activeProject.referenceMode === value ? 'rgba(34, 197, 94, 0.1)' : 'var(--bg-primary)',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }}
+                          >
+                            <span style={{ display: 'block', fontSize: '10.5px', fontWeight: 700 }}>{label}</span>
+                            <span style={{ display: 'block', marginTop: '2px', fontSize: '9.5px', color: 'var(--text-secondary)' }}>{description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700 }}>長期參考文件</span>
+                        <span style={{ fontSize: '9.5px', color: 'var(--text-secondary)' }}>手動固定，隨時可取消</span>
+                      </div>
+                      <select
+                        value=""
+                        onChange={(event) => addLongTermNote(event.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '5px 7px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '10.5px',
+                        }}
+                      >
+                        <option value="">＋ 從 WikiTree 加入長期文件</option>
+                        {allMarkdownNotes
+                          .filter((note) => !activeProject.files.some((file) => file.longTerm && file.path === note.path))
+                          .map((note) => <option key={note.path} value={note.path}>{note.name}</option>)}
+                      </select>
+                      {activeProject.files.filter((file) => file.longTerm).length === 0 ? (
+                        <div style={{ padding: '7px', border: '1px dashed var(--border-color)', borderRadius: '5px', fontSize: '10px', color: 'var(--text-secondary)' }}>
+                          尚未固定長期文件。檔案庫中的內容不會自動成為長期參考。
+                        </div>
+                      ) : activeProject.files.filter((file) => file.longTerm).map((file) => (
+                        <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 7px', borderRadius: '5px', backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                          <FileText size={11} color="#22c55e" style={{ flexShrink: 0 }} />
+                          <span title={file.path || file.name} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '10.5px' }}>{file.name}</span>
+                          <button type="button" className="theme-toggle-btn" onClick={() => toggleProjectFileLongTerm(file.id)} style={{ padding: '2px 5px', fontSize: '9.5px' }}>取消固定</button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '7px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowProjectLibrary((visible) => !visible)}
+                        aria-expanded={showProjectLibrary}
+                        style={{ width: '100%', padding: 0, border: 'none', background: 'transparent', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: '10.5px' }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Paperclip size={11} />檔案庫（{activeProject.files.length}）</span>
+                        {showProjectLibrary ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                      {showProjectLibrary && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '7px' }}>
+                          {activeProject.files.length === 0 ? (
+                            <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>對話中加入的附件會自動保存在這裡。</span>
+                          ) : activeProject.files.map((file) => (
+                            <div key={file.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 7px', borderRadius: '5px', backgroundColor: 'var(--bg-primary)' }}>
+                              {file.isImage ? <ImageIcon size={11} /> : <FileText size={11} />}
+                              <span title={file.path || file.name} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '10px' }}>{file.name}</span>
+                              <button type="button" className="theme-toggle-btn" onClick={() => toggleProjectFileLongTerm(file.id)} style={{ padding: '2px 5px', fontSize: '9px', color: file.longTerm ? '#22c55e' : 'var(--text-secondary)' }}>
+                                {file.longTerm ? '已固定' : '設為長期'}
+                              </button>
+                              {file.path !== activeSession.notePath && (
+                                <button type="button" className="theme-toggle-btn" title="從檔案庫移除" onClick={() => removeProjectFile(file.id)} style={{ padding: '2px' }}><X size={10} /></button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 跨對話任務鎖定提示 */}
             {generatingSessionId && generatingSessionId !== activeSessionId && (
