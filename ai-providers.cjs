@@ -4,7 +4,6 @@ const os = require('node:os');
 const { AiRpc } = require('./ai-rpc.cjs');
 
 const PROVIDERS = [
-  { id: 'agy', name: 'Google Gemini' },
   { id: 'openai', name: 'OpenAI · Codex' },
 ];
 
@@ -40,7 +39,6 @@ class AiProviders {
 
   async client(provider) {
     this.validate(provider);
-    if (provider === 'agy') throw new Error('Google Gemini（Anti-Gravity）沿用目前的本機服務。');
     if (this.clients.has(provider)) return this.clients.get(provider);
     const pending = this.startClient(provider);
     this.clients.set(provider, pending);
@@ -86,7 +84,6 @@ class AiProviders {
 
   async state(provider) {
     this.validate(provider);
-    if (provider === 'agy') return { status: 'connected', message: '目前使用 Google Gemini（Anti-Gravity）服務。', models: [{ id: 'default', name: '目前預設模型' }] };
     let state = this.states.get(provider) || { status: 'disconnected', message: '首次使用請登入並授權。' };
     if (provider === 'openai' && state.status !== 'pending' && !state.manualDisconnect) {
       try {
@@ -119,7 +116,6 @@ class AiProviders {
 
   async login(provider) {
     this.validate(provider);
-    if (provider === 'agy') return this.state(provider);
     if (this.busy.has(provider)) throw new Error('請先停止目前的回覆，再調整登入。');
     if (this.states.get(provider)?.status === 'pending') return this.state(provider);
     const rpc = await this.client(provider);

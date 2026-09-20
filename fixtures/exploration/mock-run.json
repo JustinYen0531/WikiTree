@@ -3,7 +3,7 @@
     "name": "介面之外的新學習方法",
     "topic": "尋找近一年能改善自主學習、但不是傳統課程整理的新方法",
     "itemCount": 1,
-    "provider": "agy",
+    "provider": "openai",
     "model": "default"
   },
   "sourceCollection": {

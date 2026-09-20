@@ -242,13 +242,9 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   const [aiSelection, setAiSelection] = useState<AiSelection>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('wikitree_ai_selection') || 'null');
-      if (saved && typeof saved.model === 'string') {
-        // Google Gemini is the user-facing name of the existing Anti-Gravity service.
-        const provider = saved.provider === 'google' ? 'agy' : saved.provider;
-        if (['agy', 'openai'].includes(provider)) return { ...saved, provider };
-      }
+      if (saved?.provider === 'openai' && typeof saved.model === 'string') return saved;
     } catch {}
-    return { provider: 'agy', model: 'default' };
+    return { provider: 'openai', model: 'default' };
   });
   const [aiReady, setAiReady] = useState(false);
   useEffect(() => {

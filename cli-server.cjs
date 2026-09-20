@@ -3,8 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { exec, spawn } = require('child_process');
-const { runAgyStream } = require('./agy-stream.cjs');
+const { exec } = require('child_process');
 const { AiProviders, PROVIDERS } = require('./ai-providers.cjs');
 const aiProviders = new AiProviders();
 
@@ -21,84 +20,10 @@ const executeExploration = createExplorationExecutor({ store: explorationStore, 
 
 const isWin = process.platform === 'win32';
 const decoder = new TextDecoder(isWin ? 'big5' : 'utf-8');
-const utf8Decoder = new TextDecoder('utf-8');
 
 function decodeBuffer(buf) {
   if (!buf) return '';
   return decoder.decode(buf);
-}
-
-// Locate the Antigravity (agy) CLI binary. The installer puts it under the
-// user's local app data on Windows; otherwise we rely on it being on PATH.
-function resolveAgyPath() {
-  const candidates = [];
-  if (isWin) {
-    const local = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-    candidates.push(path.join(local, 'agy', 'bin', 'agy.exe'));
-  } else {
-    candidates.push(path.join(os.homedir(), '.local', 'bin', 'agy'));
-    candidates.push('/usr/local/bin/agy');
-  }
-  for (const c of candidates) {
-    try {
-      if (fs.existsSync(c)) return c;
-    } catch (e) {}
-  }
-  return isWin ? 'agy.exe' : 'agy'; // fall back to PATH lookup
-}
-
-const AGY_PATH = resolveAgyPath();
-
-// Runs a single prompt through `agy --print` and returns the reply text.
-function runAgy(prompt, timeoutMs = 120000, workspace = defaultWorkspace) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      AGY_PATH,
-      ['--print', prompt, '--dangerously-skip-permissions', '--print-timeout', '110s'],
-      {
-        cwd: workspace,
-        windowsHide: true,
-      }
-    );
-
-    const outChunks = [];
-    const errChunks = [];
-    let settled = false;
-
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      try { child.kill(); } catch (e) {}
-      reject(new Error('AI 回應逾時，請再試一次，或把問題縮短一點。'));
-    }, timeoutMs);
-
-    child.stdout.on('data', (c) => outChunks.push(c));
-    child.stderr.on('data', (c) => errChunks.push(c));
-
-    child.on('error', (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      reject(new Error(`找不到或無法執行 agy（${err.message}）。請確認 Antigravity CLI 已安裝並已登入。`));
-    });
-
-    child.on('close', (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      const out = utf8Decoder.decode(Buffer.concat(outChunks)).trim();
-      const errText = utf8Decoder.decode(Buffer.concat(errChunks)).trim();
-      if (out) {
-        resolve(out);
-      } else if (errText) {
-        resolve(`⚠ AI 執行提示：\n${errText}`);
-      } else if (code === 0) {
-        resolve('（agy 已完成但未產生文字輸出，請嘗試更具體的任務描述）');
-      } else {
-        reject(new Error(errText || `agy 結束代碼 ${code}`));
-      }
-    });
-  });
 }
 
 const PORT = 18080;
@@ -305,7 +230,7 @@ function loadAllSkills(workspacePath) {
   return Array.from(skillsMap.values());
 }
 
-// Simple HTTP server to act as the Antigravity CLI daemon
+// Local HTTP service used by the WikiTree desktop interface.
 const server = http.createServer((req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -396,6 +321,7 @@ const server = http.createServer((req, res) => {
     if (runMatch && req.method === 'POST') {
       const task = explorationStore.getTask(currentWorkspace, decodeURIComponent(runMatch[1]));
       if (!task || task.status === 'archived') { json(404, { error: '找不到可執行的探索任務。' }); return; }
+      if (task.legacyProviderRemoved) { json(409, { error: '這個任務原本使用的 Antigravity 連線已停用。請先編輯任務、確認 OpenAI 模型後再執行。' }); return; }
       const runId = crypto.randomUUID();
       explorationStore.writeRun(currentWorkspace, { id: runId, taskId: task.id, origin: 'manual_ai_exploration', status: 'pending', taskSnapshot: task, requestedCount: task.itemCount });
       void executeExploration({ workspace: currentWorkspace, task, origin: 'manual_ai_exploration', runId }).catch(error => console.error('Exploration run failed:', error.message));
@@ -554,50 +480,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: POST /api/open-terminal
-  // Opens a real terminal window with agy already running, so beginners can
-  // chat with the AI without opening a console or typing any command.
-  if (req.url === '/api/open-terminal' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
-      let initialPrompt = '';
-      try {
-        const payload = body ? JSON.parse(body) : {};
-        if (payload.initialPrompt && typeof payload.initialPrompt === 'string') {
-          // Keep it to a single safe line for the command shell.
-          initialPrompt = payload.initialPrompt.replace(/[\r\n]+/g, ' ').replace(/"/g, "'").trim();
-        }
-      } catch (e) {}
-
-      try {
-        if (isWin) {
-          // start "" opens a new console window; cmd /k keeps it open after agy exits.
-          let agyCmd = `"${AGY_PATH}"`;
-          if (initialPrompt) agyCmd += ` -i "${initialPrompt}"`;
-          const full = `start "AI 對話" cmd /k ${agyCmd}`;
-          spawn(full, { cwd: currentWorkspace, shell: true, detached: true, stdio: 'ignore' }).unref();
-        } else {
-          // Best-effort on non-Windows: try a few common terminals.
-          const inner = initialPrompt ? `${AGY_PATH} -i "${initialPrompt}"` : AGY_PATH;
-          const launchers = [
-            ['x-terminal-emulator', ['-e', 'bash', '-lc', `${inner}; exec bash`]],
-            ['gnome-terminal', ['--', 'bash', '-lc', `${inner}; exec bash`]],
-            ['xterm', ['-e', `bash -lc "${inner}; exec bash"`]],
-          ];
-          const [cmd, args] = launchers[0];
-          spawn(cmd, args, { cwd: currentWorkspace, detached: true, stdio: 'ignore' }).unref();
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: '無法開啟終端機：' + e.message }));
-      }
-    });
-    return;
-  }
-
   // Route: POST /api/chat
   if (req.url === '/api/chat' && req.method === 'POST') {
     let body = '';
@@ -616,10 +498,10 @@ const server = http.createServer((req, res) => {
       }
 
       const { message, context } = payload;
-      const provider = payload.provider || 'agy';
+      const provider = payload.provider || 'openai';
       const interactionMode = payload.interactionMode === 'ask' ? 'ask' : 'edit';
       const referenceSourceIds = Array.isArray(payload.referenceSourceIds) ? payload.referenceSourceIds : [];
-      if ((provider !== 'agy' || referenceSourceIds.length > 0) && !trustedAiRequest(req)) {
+      if (!trustedAiRequest(req)) {
         res.writeHead(403, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: '請從本機 WikiTree 使用 AI。' }));
         return;
@@ -902,9 +784,7 @@ const server = http.createServer((req, res) => {
         if (storedAttachmentFiles.length > 0) emit({ type: 'library', files: storedAttachmentFiles });
         emit({ type: 'status', text: '請求已送出，正在啟動 AI…' });
         try {
-          const reply = provider === 'agy'
-            ? await runAgyStream(AGY_PATH, prompt, currentWorkspace, emit, controller.signal)
-            : await aiProviders.run(provider, payload.model, prompt, emit, controller.signal, { mode: interactionMode === 'ask' ? 'ask' : 'note' });
+          const reply = await aiProviders.run(provider, payload.model, prompt, emit, controller.signal, { mode: interactionMode === 'ask' ? 'ask' : 'note' });
           emit({ type: 'done', text: reply });
         } catch (error) { emit({ type: 'error', text: error.message }); }
         finally { res.removeListener('close', disconnect); res.end(); }
@@ -912,9 +792,7 @@ const server = http.createServer((req, res) => {
       }
 
       try {
-        const reply = provider === 'agy'
-          ? await runAgy(prompt, 120000, currentWorkspace)
-          : await aiProviders.run(provider, payload.model, prompt, () => {}, new AbortController().signal, { mode: interactionMode === 'ask' ? 'ask' : 'note' });
+        const reply = await aiProviders.run(provider, payload.model, prompt, () => {}, new AbortController().signal, { mode: interactionMode === 'ask' ? 'ask' : 'note' });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ reply }));
       } catch (e) {
@@ -1014,7 +892,7 @@ const server = http.createServer((req, res) => {
   // Route: POST /api/workspace/browse
   if (req.url === '/api/workspace/browse' && req.method === 'POST') {
     if (process.platform === 'win32') {
-      const tempFilePath = path.join(os.tmpdir(), `antigravity-browse-${Date.now()}.ps1`);
+      const tempFilePath = path.join(os.tmpdir(), `wikitree-browse-${Date.now()}.ps1`);
       const psScript = `
         Add-Type -AssemblyName System.Windows.Forms
         $form = New-Object System.Windows.Forms.Form
@@ -1391,7 +1269,7 @@ function getFilesRecursively(dir, relativeParentPath = '') {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.log(`ℹ️  Antigravity CLI daemon is already running on port ${PORT}. Reusing it.`);
+    console.log(`ℹ️  WikiTree local service is already running on port ${PORT}. Reusing it.`);
     process.exit(0);
   }
   throw err;
@@ -1399,7 +1277,7 @@ server.on('error', (err) => {
 
 server.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`🚀 Antigravity CLI Server Daemon started on port ${PORT}`);
+  console.log(`🚀 WikiTree local service started on port ${PORT}`);
   console.log(`🔗 API endpoint: http://localhost:${PORT}`);
   console.log(`📂 Tracking workspace: ${process.cwd()}`);
   console.log(`====================================================`);

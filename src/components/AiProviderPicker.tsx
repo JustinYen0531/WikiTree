@@ -89,7 +89,7 @@ export function AiProviderPicker({ url, selection, onChange, onReadyChange, disa
         {error || state?.message || '確認連線中…'}
       </div>
       {authUrl && state?.status === 'pending' && <a href={authUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">開啟官方登入頁面</a>}
-      {selection.provider !== 'agy' && state?.status !== 'unsupported' && (
+      {state?.status !== 'unsupported' && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {state?.status !== 'pending' && <button type="button" className="btn" disabled={disabled || working} onClick={() => void action('login')}>
             {working ? '連線中…' : state?.status === 'connected' ? '重新登入' : '登入／重新連線'}

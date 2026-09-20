@@ -1,4 +1,4 @@
-// Launches the Vite dev server and the Antigravity CLI daemon together,
+// Launches the Vite dev server and the WikiTree local service together,
 // so `npm run dev` brings up everything the AI panel needs in one command.
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';

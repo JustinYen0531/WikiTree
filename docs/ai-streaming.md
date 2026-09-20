@@ -1,13 +1,9 @@
-# AI 即時回覆
+# AI 串流回覆
 
-桌面版送出問題後，側邊欄會立即顯示等待狀態與秒數。Antigravity 一有回覆文字，就更新同一則訊息，不等整段完成。
+桌面版送出問題後，側邊欄會立即顯示等待狀態。OpenAI Codex App Server 一有回覆文字，就會更新同一則訊息，不必等待整段完成。
 
-生成期間顯示全文；完成後再套用原有的說明／筆記呈現與套用按鈕。進行中的文字不提供套用，避免誤插入半成品。
+本機服務使用 NDJSON 把狀態、文字片段、完成與錯誤事件傳到前端。前端會保留已收到的文字，並在連線中斷時顯示真實錯誤。
 
-等待區域可展開查看目前狀態。這些是請求啟動、文字輸出與工具事件的狀態，並非內部思考。若 AI 尚未輸出文字，會維持等待顯示，不模擬打字或編造進度。
+先前專屬於 `agy` 的串流執行器已刪除。現在只有 OpenAI App Server 能產生 AI 回覆；探索模式仍使用相同的受限制執行邊界。
 
-按「停止」會中止請求。停止、斷線、逾時或 AI 錯誤都保留已收到的文字，並標示未完成。關閉 AI 面板會中止目前的請求。
-
-使用 `agy --output-format stream-json` 接收事件；最後的完整結果替換暫存文字，不重複附加。中文跨資料片段仍正確解碼。舊桌面服務會提示重新啟動。
-
-驗證：`node scripts/check-chat-stream.mjs`、`node scripts/check-workspaces.mjs`、`node --check agy-stream.cjs`、`node --check cli-server.cjs`、`npm run build`。以模擬輸出驗證完成前就能收到文字、中文解碼、結束事件、斷線與取消；沒有啟動真實 AI 請求或進行瀏覽器確認。
+驗證：`node scripts/check-chat-stream.mjs`、`node scripts/check-ai-providers.mjs`、`node --check cli-server.cjs`、`npm run build`。所有檢查使用模擬事件，不會啟動真實 AI 請求，也不進行瀏覽器視覺驗證。

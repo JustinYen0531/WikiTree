@@ -16,7 +16,7 @@ type TaskDraft = Partial<ExplorationTask> & { schedule: NonNullable<Partial<Expl
 const sourceCatalogById = new Map(explorationSourceCatalog.map(source => [source.id, source]));
 const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
 const emptyDraft = (): TaskDraft => ({
-  name: '', topic: '', instructions: '', provider: 'agy', model: 'default', itemCount: 5,
+  name: '', topic: '', instructions: '', provider: 'openai', model: 'default', itemCount: 5,
   notificationEnabled: false, status: 'active',
   schedule: { kind: 'manual', localTime: '09:00', daysOfWeek: [1, 2, 3, 4, 5], dayOfMonth: 1 },
   sources: { connectorIds: [...explorationPresets[0].sourceIds], customUrls: [], directUrls: [], excludedDomains: [] },
@@ -134,7 +134,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
     await act(() => explorationApi.saveTask(workspace, editor), editor.id ? '探索任務已更新。' : '探索任務已建立。');
     setEditor(null);
   };
-  const updateSelection = useCallback((selection: AiSelection) => setEditor(current => current ? { ...current, provider: selection.provider as 'agy' | 'openai', model: selection.model } : current), []);
+  const updateSelection = useCallback((selection: AiSelection) => setEditor(current => current ? { ...current, provider: selection.provider as 'openai', model: selection.model } : current), []);
   const updateReady = useCallback((ready: boolean) => setAiReady(ready), []);
 
   if (!workspace) return (
@@ -180,12 +180,12 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
               </button>
               {tasks.map(task => <div key={task.id} className={`exploration-task-row ${selectedTask === task.id ? 'active' : ''}`}>
                 <button className="task-main" onClick={() => setSelectedTask(task.id)}>
-                  <span><strong>{task.name}</strong><small>{task.status === 'paused' ? '已暫停' : displayTime(task.nextRunAt)}</small></span><ChevronRight size={13} />
+                  <span><strong>{task.name}</strong><small>{task.legacyProviderRemoved ? '舊 AI 連線已停用，請重新設定' : task.status === 'paused' ? '已暫停' : displayTime(task.nextRunAt)}</small></span><ChevronRight size={13} />
                 </button>
                 <div className="task-actions">
-                  <button title="立即執行" onClick={() => void act(() => explorationApi.runTask(workspace, task.id), '探索已開始，完成後會進入素材流。')}><Play size={12} /></button>
+                  {!task.legacyProviderRemoved && <button title="立即執行" onClick={() => void act(() => explorationApi.runTask(workspace, task.id), '探索已開始，完成後會進入素材流。')}><Play size={12} /></button>}
                   <button title="編輯任務" onClick={() => editTask(task)}><Settings2 size={12} /></button>
-                  <button title={task.status === 'paused' ? '恢復' : '暫停'} onClick={() => void act(() => explorationApi.saveTask(workspace, { ...task, status: task.status === 'paused' ? 'active' : 'paused' }), task.status === 'paused' ? '任務已恢復。' : '任務已暫停。')}>{task.status === 'paused' ? <Play size={12} /> : <Pause size={12} />}</button>
+                  {!task.legacyProviderRemoved && <button title={task.status === 'paused' ? '恢復' : '暫停'} onClick={() => void act(() => explorationApi.saveTask(workspace, { ...task, status: task.status === 'paused' ? 'active' : 'paused' }), task.status === 'paused' ? '任務已恢復。' : '任務已暫停。')}>{task.status === 'paused' ? <Play size={12} /> : <Pause size={12} />}</button>}
                 </div>
               </div>)}
             </> : runs.map(run => <button key={run.id} className="exploration-run-row" onClick={() => { setSelectedTask(run.taskId); setFilter('all'); }}>
@@ -246,6 +246,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
       {editor && <div className="exploration-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setEditor(null); }}>
         <form className="exploration-task-editor" onSubmit={event => { event.preventDefault(); void saveTask(); }}>
           <header><div><span>探索任務</span><h2>{editor.id ? '調整探索路線' : '建立一條自動探索路線'}</h2></div><button type="button" onClick={() => setEditor(null)}><X size={16} /></button></header>
+          {editor.legacyProviderRemoved && <div className="exploration-notice error"><span>這個任務原本使用的 Antigravity 連線已停用，目前保持暫停。請在下方確認 OpenAI 模型後再儲存。</span></div>}
           <div className="task-form-grid">
             <div className="task-field wide">
               <label htmlFor="exploration-task-name"><span>任務名稱</span><small>可自己輸入，也可從 20 個興趣領域挑選</small></label>
@@ -284,11 +285,11 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
             <details className="task-advanced-settings wide" open={advancedOpen} onToggle={event => setAdvancedOpen(event.currentTarget.open)}>
               <summary>
                 <span><strong>進階設定</strong><small>AI 模型、來源範圍與網址限制</small></span>
-                <em>{editor.provider === 'openai' ? 'OpenAI' : 'Google Gemini'} · {(editor.sources.connectorIds || []).length} 個一般來源</em>
+                <em>OpenAI · {(editor.sources.connectorIds || []).length} 個一般來源</em>
                 <ChevronRight size={14} />
               </summary>
               <div className="advanced-settings-body">
-                <div><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: editor.provider || 'agy', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
+                <div><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: 'openai', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
                 <fieldset><legend>{selectedPreset.label}的建議來源</legend><small className="source-scope-note">選擇興趣時會自動套用，你仍可個別取消。</small><div className="connector-grid">{sourceOptions.map(source => <label key={source.id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(source.id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), source.id] : (editor.sources.connectorIds || []).filter(value => value !== source.id) } })} />{source.label}</label>)}</div></fieldset>
                 <label>指定網站／RSS（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.customUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, customUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
                 <label>硬性網址（填寫後只看這些網址）<textarea className="form-input" rows={2} value={(editor.sources.directUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, directUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>

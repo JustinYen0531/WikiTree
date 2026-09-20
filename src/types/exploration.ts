@@ -1,4 +1,4 @@
-export type ExplorationProvider = 'agy' | 'openai';
+export type ExplorationProvider = 'openai';
 export type ExplorationTaskStatus = 'active' | 'paused' | 'archived';
 export type ExplorationScheduleKind = 'manual' | 'daily' | 'weekdays' | 'weekly' | 'monthly';
 export type ExplorationRunStatus = 'pending' | 'running' | 'complete' | 'completed' | 'complete_with_shortfall' | 'failed' | 'skipped';
@@ -26,6 +26,7 @@ export interface ExplorationTask {
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
+  legacyProviderRemoved?: boolean;
   nextRunAt?: string | null;
 }
 

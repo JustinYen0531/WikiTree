@@ -17,7 +17,7 @@ const store = new ExplorationStore({ root: path.join(root, 'data'), now: () => f
 const fixture = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'fixtures', 'exploration', 'mock-run.json'), 'utf8'));
 
 function task(name, schedule) {
-  return store.saveTask(workspace, { name, topic: `${name} topic`, itemCount: 1, schedule, provider: 'agy' });
+  return store.saveTask(workspace, { name, topic: `${name} topic`, itemCount: 1, schedule, provider: 'openai' });
 }
 
 try {
@@ -53,7 +53,7 @@ try {
   assert.equal(dueTasks(store, fixed).some(entry => entry.task.id === daily.id), false);
   console.log('PASS serial execution and same-slot deduplication');
 
-  const runnerTask = store.saveTask(workspace, { name: 'runner', topic: 'runner topic', itemCount: 1, schedule: { kind: 'manual' }, provider: 'agy', sources: { connectorIds: ['smithsonian'] } });
+  const runnerTask = store.saveTask(workspace, { name: 'runner', topic: 'runner topic', itemCount: 1, schedule: { kind: 'manual' }, provider: 'openai', sources: { connectorIds: ['smithsonian'] } });
   let attempts = 0;
   let generatedPrompt = '';
   const run = await runExploration({
@@ -77,7 +77,7 @@ try {
   assert.match(generatedPrompt, /不可為湊數擴大範圍/);
   const saved = store.getItem(workspace, run.itemIds[0]);
   assert.equal(saved.origin, 'scheduled_ai_exploration');
-  assert.equal(saved.source.provenance.generatedBy, 'agy');
+  assert.equal(saved.source.provenance.generatedBy, 'openai');
   assert.equal(saved.sourceSupported.includes('directly'), true);
   assert.equal(saved.editorialSynthesis.includes('may'), true);
   console.log('PASS mock AI retry, parsing, URL checks, lineage and separated claims');
@@ -93,6 +93,18 @@ try {
   assert.match(shortRun.shortfallReason, /要求 3 筆，實際保存 0 筆/);
   console.log('PASS honest shortfall without fabricated filler');
 
+  assert.throws(() => store.saveTask(workspace, { name: 'removed', topic: 'removed provider', provider: 'agy' }), /已停用/);
+  const legacyWorkspace = path.join(root, 'legacy-workspace');
+  fs.mkdirSync(legacyWorkspace);
+  store.registerWorkspace(legacyWorkspace);
+  fs.writeFileSync(store.tasksFile(legacyWorkspace), JSON.stringify([{ ...daily, id: 'legacy-agy-task', provider: 'agy', model: 'default', status: 'active' }]));
+  const legacyTask = store.getTask(legacyWorkspace, 'legacy-agy-task');
+  assert.equal(legacyTask.status, 'paused');
+  assert.equal(legacyTask.provider, 'openai');
+  assert.equal(legacyTask.legacyProviderRemoved, true);
+  assert.equal(dueTasks(store, fixed).some(entry => entry.task.id === 'legacy-agy-task'), false);
+  console.log('PASS removed Antigravity tasks are paused and cannot be newly saved');
+
   const providerSource = fs.readFileSync(path.join(process.cwd(), 'ai-providers.cjs'), 'utf8');
   assert.match(providerSource, /web_search="live"/);
   assert.match(providerSource, /You may use web search only/);
@@ -103,6 +115,8 @@ try {
   assert.match(adminScript, /StartWhenAvailable:\$false/);
   assert.match(adminScript, /LogonType Interactive/);
   const serverSource = fs.readFileSync(path.join(process.cwd(), 'cli-server.cjs'), 'utf8');
+  const runtimeSource = fs.readFileSync(path.join(process.cwd(), 'exploration-runtime.cjs'), 'utf8');
+  assert.doesNotMatch(serverSource + runtimeSource, /runAgy|agy-stream|\/api\/open-terminal|AGY_PATH/);
   for (const route of ['tasks', 'runs', 'items', 'basket', 'scheduler']) assert.match(serverSource, new RegExp(`/api/exploration/${route}`));
   for (const flag of ['scheduledExploration', 'explorationScheduler', 'sourceBasket']) assert.match(serverSource, new RegExp(flag));
   console.log('PASS restricted AI mode, Windows coordinator and local API contracts');

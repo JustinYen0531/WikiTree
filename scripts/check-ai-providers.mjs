@@ -12,12 +12,12 @@ const { trustedAiRequest } = require('../ai-security.cjs');
 const quickPickerSource = readFileSync(new URL('../src/components/AiQuickModelPicker.tsx', import.meta.url), 'utf8');
 const providerOptionsSource = readFileSync(new URL('../src/utils/aiProviderOptions.ts', import.meta.url), 'utf8');
 const pluginSource = readFileSync(new URL('../src/components/AntigravityPlugin.tsx', import.meta.url), 'utf8');
-assert.match(providerOptionsSource, /id: 'agy', name: 'Google Gemini'/);
-assert.doesNotMatch(providerOptionsSource, /Google.*Gemini.*google|\['google'/i);
+assert.doesNotMatch(providerOptionsSource, /agy|Antigravity|Google Gemini/i);
+assert.match(providerOptionsSource, /id: 'openai', name: 'OpenAI · Codex'/);
 assert.equal(pluginSource.split('<AiProviderPicker').length - 1, 1);
 assert.ok(pluginSource.indexOf('<AiProviderPicker') > pluginSource.indexOf('設定面板'));
 assert.equal(pluginSource.indexOf('<AiProviderPicker'), pluginSource.lastIndexOf('<AiProviderPicker'));
-console.log('PASS provider picker is unique, named Google Gemini, and rendered inside the settings panel');
+console.log('PASS provider picker exposes only the approved OpenAI connection');
 
 assert.equal(pluginSource.split('<AiQuickModelPicker').length - 1, 1);
 assert.ok(pluginSource.indexOf('<AiQuickModelPicker') > pluginSource.indexOf('arborist-composer-tools'));
@@ -85,14 +85,10 @@ class FakeRpc extends EventEmitter {
 }
 const manager = new AiProviders({ root, rpcFactory: () => { const client = new FakeRpc(); clients.push(client); return client; } });
 try {
-  assert.deepEqual(PROVIDERS.map(provider => provider.id), ['agy', 'openai']);
-  assert.equal(PROVIDERS.find(provider => provider.id === 'agy').name, 'Google Gemini');
-  assert.equal(PROVIDERS.some(provider => provider.id === 'google'), false);
-  const legacyGoogle = await manager.state('agy');
-  assert.equal(legacyGoogle.status, 'connected');
-  assert.equal(legacyGoogle.models[0].id, 'default');
+  assert.deepEqual(PROVIDERS.map(provider => provider.id), ['openai']);
+  await assert.rejects(manager.state('agy'), /有效/);
   await assert.rejects(manager.state('google'), /有效/);
-  console.log('PASS Anti-Gravity is exposed once as Google Gemini; duplicate Gemini provider is unavailable');
+  console.log('PASS removed Google and Antigravity provider ids are rejected');
   assert.equal((await manager.state('openai')).status, 'disconnected');
   await assert.rejects(manager.run('openai', 'test-model', 'private note', () => {}, new AbortController().signal), /先登入/);
   assert.equal((await manager.login('openai')).status, 'pending');
@@ -121,7 +117,7 @@ try {
   console.log('PASS Codex login gating, real model selection, privacy, streaming, concurrency and Stop');
 
   await assert.rejects(manager.run('unknown', 'test-model', 'note', () => {}, new AbortController().signal), /有效/);
-  console.log('PASS only Google Gemini and OpenAI Codex remain; unknown providers never fall back');
+  console.log('PASS only OpenAI Codex remains; unknown providers never fall back');
   for (const provider of ['openai']) {
     const env = subscriptionEnv(provider, root);
     assert.equal(env.OPENAI_API_KEY, undefined);

@@ -1,19 +1,9 @@
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { AiProviders } = require('./ai-providers.cjs');
-const { runAgyStream } = require('./agy-stream.cjs');
 const { runExploration } = require('./exploration-runner.cjs');
 const { notifyWindows } = require('./exploration-notify.cjs');
-
-function resolveAgyPath() {
-  const local = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  const candidates = process.platform === 'win32'
-    ? [path.join(local, 'agy', 'bin', 'agy.exe')]
-    : [path.join(os.homedir(), '.local', 'bin', 'agy'), '/usr/local/bin/agy'];
-  return candidates.find(candidate => fs.existsSync(candidate)) || (process.platform === 'win32' ? 'agy.exe' : 'agy');
-}
 
 async function withProviderLock(root, action) {
   fs.mkdirSync(root, { recursive: true });
@@ -35,7 +25,6 @@ async function withProviderLock(root, action) {
 function createExplorationExecutor(options) {
   const store = options.store;
   const providers = options.aiProviders || new AiProviders();
-  const agyPath = options.agyPath || resolveAgyPath();
   const notify = options.notify || notifyWindows;
   return async ({ workspace, task, scheduledFor = null, origin = 'scheduled_ai_exploration', runId }) => {
     const generate = (prompt, emit) => withProviderLock(store.rootPath(), async () => {
@@ -43,7 +32,6 @@ function createExplorationExecutor(options) {
       fs.mkdirSync(session, { recursive: true, mode: 0o700 });
       const controller = new AbortController();
       try {
-        if (task.provider === 'agy') return await runAgyStream(agyPath, prompt, session, emit, controller.signal, 180000);
         return await providers.runExploration(task.provider, task.model, prompt, emit, controller.signal);
       } finally {
         const sessionsRoot = path.resolve(store.rootPath(), 'sessions');
@@ -68,4 +56,4 @@ function createExplorationExecutor(options) {
   };
 }
 
-module.exports = { createExplorationExecutor, resolveAgyPath, withProviderLock };
+module.exports = { createExplorationExecutor, withProviderLock };

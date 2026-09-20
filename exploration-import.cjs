@@ -28,7 +28,7 @@ function importLegacyBrew(store, workspace, brewRoot) {
   if (!fs.existsSync(dailyDir)) throw new Error('找不到舊 Brew 的 daily 資料夾。');
   let task = store.listTasks(workspace, { includeArchived: true }).find(item => item.origin === 'legacy_brew_import');
   if (!task) {
-    task = store.saveTask(workspace, { name: '舊 Brew 歷史', topic: '從舊 Brew 匯入的探索歷史', status: 'archived', schedule: { kind: 'manual' }, provider: 'agy', model: 'imported' });
+    task = store.saveTask(workspace, { name: '舊 Brew 歷史', topic: '從舊 Brew 匯入的探索歷史', status: 'archived', schedule: { kind: 'manual' }, provider: 'openai', model: 'imported' });
     const tasks = store.listTasks(workspace, { includeArchived: true });
     const index = tasks.findIndex(item => item.id === task.id);
     tasks[index].origin = 'legacy_brew_import';

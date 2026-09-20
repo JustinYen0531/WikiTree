@@ -14,6 +14,5 @@ export interface AiProviderState {
 }
 
 export const AI_PROVIDER_OPTIONS = [
-  { id: 'agy', name: 'Google Gemini', shortName: 'Gemini' },
   { id: 'openai', name: 'OpenAI · Codex', shortName: 'OpenAI' },
 ] as const;

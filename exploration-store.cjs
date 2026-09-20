@@ -107,7 +107,9 @@ function normalizeTask(input = {}, previous = null, now = new Date()) {
   const topic = text(input.topic ?? previous?.topic, 2000);
   if (!topic) throw new Error('探索題目不能是空白。');
   const name = text(input.name ?? previous?.name, 120) || topic.slice(0, 32);
-  const provider = ['agy', 'openai'].includes(input.provider ?? previous?.provider) ? (input.provider ?? previous?.provider) : 'agy';
+  const requestedProvider = input.provider ?? previous?.provider ?? 'openai';
+  if (requestedProvider !== 'openai') throw new Error('Antigravity 連線已停用，請重新選擇 OpenAI 模型。');
+  const provider = 'openai';
   const status = TASK_STATUSES.has(input.status ?? previous?.status) ? (input.status ?? previous?.status) : 'active';
   const sources = input.sources || previous?.sources || {};
   return {
@@ -131,6 +133,17 @@ function normalizeTask(input = {}, previous = null, now = new Date()) {
     createdAt,
     updatedAt: now.toISOString(),
     archivedAt: status === 'archived' ? (previous?.archivedAt || now.toISOString()) : null,
+  };
+}
+
+function disableRemovedProvider(task) {
+  if (!task || task.provider !== 'agy') return task;
+  return {
+    ...task,
+    provider: 'openai',
+    model: 'default',
+    status: task.status === 'archived' ? 'archived' : 'paused',
+    legacyProviderRemoved: true,
   };
 }
 
@@ -167,7 +180,9 @@ class ExplorationStore {
 
   listTasks(workspace, { includeArchived = false } = {}) {
     const tasks = readJson(this.tasksFile(workspace), []);
-    return (Array.isArray(tasks) ? tasks : []).filter(task => includeArchived || task.status !== 'archived');
+    return (Array.isArray(tasks) ? tasks : [])
+      .map(disableRemovedProvider)
+      .filter(task => includeArchived || task.status !== 'archived');
   }
 
   getTask(workspace, id) {
@@ -381,6 +396,7 @@ module.exports = {
   defaultRoot,
   normalizeSchedule,
   normalizeTask,
+  disableRemovedProvider,
   normalizeWorkspacePath,
   readJson,
   redactText,
