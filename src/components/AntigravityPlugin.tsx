@@ -109,6 +109,17 @@ export interface ChatSession {
   updatedAt: number;
 }
 
+interface BoundSessionGroup {
+  groupKey: string;
+  noteName: string;
+  sessions: ChatSession[];
+  latestUpdatedAt: number;
+}
+
+type ConversationListRow =
+  | { type: 'note-group'; group: BoundSessionGroup }
+  | { type: 'session'; session: ChatSession; nested: boolean };
+
 function getNoteName(path?: string): string {
   if (!path) return '未命名筆記';
   const parts = path.split('/');
@@ -325,8 +336,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   // 對話標題即時編輯狀態（在列表清單中）
   const [listEditingSessionId, setListEditingSessionId] = useState<string | null>(null);
   const [listEditingTitle, setListEditingTitle] = useState('');
-  // 對話卡片收合狀態（只收起次要資訊，保留標題與隸屬文件）
-  const [collapsedSessionIds, setCollapsedSessionIds] = useState<Set<string>>(() => new Set());
   // 對話集合收合狀態
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(() => new Set());
 
@@ -354,6 +363,38 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
       });
     }
   }, [currentNotePath, isFloatingForCreation]);
+
+  // 文件隸屬對話在集合內再依相同文件分組
+  const boundSessionGroups = React.useMemo<BoundSessionGroup[]>(() => {
+    const noteGroups = new Map<string, BoundSessionGroup>();
+
+    sessions.filter((session) => !session.isFloating).forEach((session) => {
+      const noteName = session.noteName && !['歷史備份', '全域對話'].includes(session.noteName)
+        ? session.noteName
+        : (session.notePath ? getNoteName(session.notePath) : getNoteName(currentNotePath));
+      const key = session.notePath || noteName;
+      const existing = noteGroups.get(key);
+
+      if (existing) {
+        existing.sessions.push(session);
+        existing.latestUpdatedAt = Math.max(existing.latestUpdatedAt, session.updatedAt);
+      } else {
+        noteGroups.set(key, {
+          groupKey: `__bound_note__:${key}`,
+          noteName,
+          sessions: [session],
+          latestUpdatedAt: session.updatedAt,
+        });
+      }
+    });
+
+    return Array.from(noteGroups.values())
+      .map((group) => ({
+        ...group,
+        sessions: [...group.sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+      }))
+      .sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
+  }, [sessions, currentNotePath]);
 
   // 專屬對話集中成單一集合，自由浮動對話固定置於最底部
   const groupedSessions = React.useMemo(() => {
@@ -386,16 +427,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
     return groups;
   }, [sessions]);
-
-  const toggleSessionCollapsed = (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCollapsedSessionIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(sessionId)) next.delete(sessionId);
-      else next.add(sessionId);
-      return next;
-    });
-  };
 
   const toggleGroupCollapsed = (groupKey: string) => {
     setCollapsedGroupKeys((previous) => {
@@ -1463,7 +1494,17 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                   </button>
                 </div>
               ) : (
-                groupedSessions.map((group) => (
+                groupedSessions.map((group) => {
+                  const sessionRows: ConversationListRow[] = group.isFloatingGroup
+                    ? group.sessions.map((session) => ({ type: 'session', session, nested: false }))
+                    : boundSessionGroups.flatMap((noteGroup) => [
+                        { type: 'note-group' as const, group: noteGroup },
+                        ...(collapsedGroupKeys.has(noteGroup.groupKey)
+                          ? []
+                          : noteGroup.sessions.map((session) => ({ type: 'session' as const, session, nested: true }))),
+                      ]);
+
+                  return (
                   <div
                     key={group.groupKey}
                     style={{
@@ -1561,14 +1602,67 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
 
                     {/* 集合底下的所有對話欄卡片 */}
                     {!collapsedGroupKeys.has(group.groupKey) && <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {group.sessions.map((session) => {
+                      {sessionRows.map((row) => {
+                        if (row.type === 'note-group') {
+                          const noteGroupCollapsed = collapsedGroupKeys.has(row.group.groupKey);
+                          return (
+                            <div
+                              key={row.group.groupKey}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '8px',
+                                padding: '5px 8px',
+                                borderRadius: '5px',
+                                backgroundColor: 'rgba(34, 197, 94, 0.045)',
+                                borderLeft: '2px solid rgba(34, 197, 94, 0.55)',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                                <FileText size={11} color="#22c55e" style={{ flexShrink: 0 }} />
+                                <span
+                                  title={row.group.noteName}
+                                  style={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: 'var(--text-primary)',
+                                  }}
+                                >
+                                  {row.group.noteName}
+                                </span>
+                                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                  ({row.group.sessions.length})
+                                </span>
+                              </div>
+                              <button
+                                className="theme-toggle-btn"
+                                title={noteGroupCollapsed ? `展開 ${row.group.noteName}` : `收合 ${row.group.noteName}`}
+                                aria-label={noteGroupCollapsed ? `展開 ${row.group.noteName}` : `收合 ${row.group.noteName}`}
+                                aria-expanded={!noteGroupCollapsed}
+                                onClick={() => toggleGroupCollapsed(row.group.groupKey)}
+                                style={{
+                                  padding: '2px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: 'var(--text-secondary)',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {noteGroupCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        const session = row.session;
                         const isSelected = activeSessionId === session.id;
                         const isGenerating = generatingSessionId === session.id;
                         const isEditingThisTitle = listEditingSessionId === session.id;
-                        const isCollapsed = collapsedSessionIds.has(session.id);
-                        const boundNoteName = session.noteName && !['歷史備份', '全域對話'].includes(session.noteName)
-                          ? session.noteName
-                          : (session.notePath ? getNoteName(session.notePath) : getNoteName(currentNotePath));
 
                         return (
                           <div
@@ -1586,6 +1680,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               flexDirection: 'column',
                               gap: '6px',
                               transition: 'all 0.15s ease',
+                              marginLeft: row.nested ? '8px' : undefined,
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-hover, rgba(255,255,255,0.04))';
@@ -1707,18 +1802,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                 )}
                                 <button
                                   className="theme-toggle-btn"
-                                  title={isCollapsed ? '展開對話資訊' : '收合對話資訊'}
-                                  aria-label={isCollapsed ? '展開對話資訊' : '收合對話資訊'}
-                                  aria-expanded={!isCollapsed}
-                                  onClick={(e) => toggleSessionCollapsed(session.id, e)}
-                                  style={{ padding: '3px', opacity: 0.6 }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
-                                >
-                                  {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
-                                </button>
-                                <button
-                                  className="theme-toggle-btn"
                                   title="刪除此對話欄"
                                   onClick={(e) => handleDeleteSession(session.id, e)}
                                   style={{ padding: '3px', opacity: 0.6 }}
@@ -1730,34 +1813,8 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               </div>
                             </div>
 
-                            {/* 專屬對話僅在卡片標題下方標示隸屬文件 */}
-                            {!session.isFloating && (
-                              <div
-                                title={boundNoteName}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  minWidth: 0,
-                                  color: '#22c55e',
-                                  fontSize: '10.5px',
-                                }}
-                              >
-                                <FileText size={10} style={{ flexShrink: 0 }} />
-                                <span
-                                  style={{
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  隸屬文件：{boundNoteName}
-                                </span>
-                              </div>
-                            )}
-
                             {/* 若為自由浮動對話，顯示當前操作目標標籤 */}
-                            {session.isFloating && !isCollapsed && (
+                            {session.isFloating && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
                                 <span
                                   style={{
@@ -1783,7 +1840,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                             )}
 
                             {/* 訊息統計與時間 */}
-                            {!isCollapsed && <div
+                            <div
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1803,13 +1860,14 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                   {new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </span>
-                            </div>}
+                            </div>
                           </div>
                         );
                       })}
                     </div>}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
