@@ -325,6 +325,10 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
   // 對話標題即時編輯狀態（在列表清單中）
   const [listEditingSessionId, setListEditingSessionId] = useState<string | null>(null);
   const [listEditingTitle, setListEditingTitle] = useState('');
+  // 對話卡片收合狀態（只收起次要資訊，保留標題與隸屬文件）
+  const [collapsedSessionIds, setCollapsedSessionIds] = useState<Set<string>>(() => new Set());
+  // 對話集合收合狀態
+  const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(() => new Set());
 
   // 建立新對話詢問彈窗狀態
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -351,60 +355,56 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
     }
   }, [currentNotePath, isFloatingForCreation]);
 
-  // 依照隸屬文件對對話進行分組索引（自由浮動對話置於最底部）
+  // 專屬對話集中成單一集合，自由浮動對話固定置於最底部
   const groupedSessions = React.useMemo(() => {
-    const specificMap = new Map<string, { noteName: string; notePath: string; sessions: ChatSession[]; latestUpdatedAt: number }>();
-    const floatingSessions: ChatSession[] = [];
+    const specificSessions = sessions
+      .filter((session) => !session.isFloating)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    const floatingSessions = sessions
+      .filter((session) => session.isFloating)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    const groups = [];
 
-    sessions.forEach((s) => {
-      if (s.isFloating) {
-        floatingSessions.push(s);
-        return;
-      }
-
-      const key = s.notePath || s.noteName || '__default__';
-      let name = s.noteName;
-      if (!name || name === '歷史備份' || name === '全域對話') {
-        name = s.notePath ? getNoteName(s.notePath) : (currentNotePath ? getNoteName(currentNotePath) : '未命名筆記');
-      }
-      const existing = specificMap.get(key);
-      if (existing) {
-        existing.sessions.push(s);
-        if (s.updatedAt > existing.latestUpdatedAt) {
-          existing.latestUpdatedAt = s.updatedAt;
-        }
-      } else {
-        specificMap.set(key, {
-          noteName: name,
-          notePath: s.notePath || '',
-          sessions: [s],
-          latestUpdatedAt: s.updatedAt,
-        });
-      }
-    });
-
-    const specificGroups = Array.from(specificMap.entries()).map(([key, value]) => ({
-      groupKey: key,
-      isFloatingGroup: false,
-      ...value,
-      sessions: [...value.sessions].sort((a, b) => b.updatedAt - a.updatedAt),
-    })).sort((a, b) => b.latestUpdatedAt - a.latestUpdatedAt);
-
-    // 自由浮動對話群組：固定放置於最下方
-    if (floatingSessions.length > 0) {
-      const sortedFloating = [...floatingSessions].sort((a, b) => b.updatedAt - a.updatedAt);
-      specificGroups.push({
-        groupKey: '__floating_workspace_group__',
-        noteName: '自由浮動對話（不限固定文件）',
-        notePath: '',
-        isFloatingGroup: true,
-        sessions: sortedFloating,
-        latestUpdatedAt: sortedFloating[0]?.updatedAt || 0,
+    if (specificSessions.length > 0) {
+      groups.push({
+        groupKey: '__note_bound_group__',
+        noteName: '文件隸屬對話',
+        isFloatingGroup: false,
+        sessions: specificSessions,
       });
     }
 
-    return specificGroups;
-  }, [sessions, currentNotePath]);
+    // 自由浮動對話群組：固定放置於最下方
+    if (floatingSessions.length > 0) {
+      groups.push({
+        groupKey: '__floating_workspace_group__',
+        noteName: '自由浮動對話',
+        isFloatingGroup: true,
+        sessions: floatingSessions,
+      });
+    }
+
+    return groups;
+  }, [sessions]);
+
+  const toggleSessionCollapsed = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedSessionIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      return next;
+    });
+  };
+
+  const toggleGroupCollapsed = (groupKey: string) => {
+    setCollapsedGroupKeys((previous) => {
+      const next = new Set(previous);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
 
   const startListTitleEdit = (session: ChatSession, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -496,27 +496,6 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
         ? '已建立【自由浮動對話】，可隨時切換操作筆記！'
         : `已建立專屬對話（隸屬於：${nName}）`,
     });
-  };
-
-  // 快速建立專屬對話（無需彈窗）
-  const handleCreateNewSessionDirect = (targetPath?: string, targetName?: string) => {
-    const nPath = targetPath !== undefined ? targetPath : currentNotePath;
-    const nName = targetName || getNoteName(nPath);
-    const newSession: ChatSession = {
-      id: 'session-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      title: `${nName.replace(/\.md$/i, '')} 對話`,
-      notePath: nPath || '',
-      noteName: nName,
-      isFloating: false,
-      interactionMode: 'ask',
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    setSessions((prev) => [newSession, ...prev]);
-    setActiveSessionId(newSession.id);
-    setSessionView('chat');
-    flash({ kind: 'info', text: `已建立新對話（隸屬於：${nName}）` });
   };
 
   // 專屬對話解除綁定（單向轉為自由浮動對話）
@@ -1530,7 +1509,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                           }}
                           title={group.noteName}
                         >
-                          {group.isFloatingGroup ? '🌐 自由浮動對話（不限固定文件）' : `隸屬文件：${group.noteName}`}
+                          {group.noteName}
                         </span>
                         <span
                           style={{
@@ -1544,33 +1523,52 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                         </span>
                       </div>
 
-                      <button
-                        className="theme-toggle-btn"
-                        title={group.isFloatingGroup ? '建立自由浮動對話' : `在「${group.noteName}」下新增專屬對話`}
-                        onClick={() => {
-                          if (group.isFloatingGroup) handleOpenCreateModal(undefined, undefined, true);
-                          else handleCreateNewSessionDirect(group.notePath, group.noteName);
-                        }}
-                        style={{
-                          padding: '2px 6px',
-                          fontSize: '10.5px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          color: group.isFloatingGroup ? '#6366f1' : 'var(--text-secondary)',
-                        }}
-                      >
-                        <Plus size={11} />
-                        <span>新增</span>
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+                        <button
+                          className="theme-toggle-btn"
+                          title={group.isFloatingGroup ? '建立自由浮動對話' : '建立文件隸屬對話'}
+                          onClick={() => handleOpenCreateModal(undefined, undefined, group.isFloatingGroup)}
+                          style={{
+                            padding: '2px 6px',
+                            fontSize: '10.5px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                            color: group.isFloatingGroup ? '#6366f1' : 'var(--text-secondary)',
+                          }}
+                        >
+                          <Plus size={11} />
+                          <span>新增</span>
+                        </button>
+                        <button
+                          className="theme-toggle-btn"
+                          title={collapsedGroupKeys.has(group.groupKey) ? `展開${group.noteName}` : `收合${group.noteName}`}
+                          aria-label={collapsedGroupKeys.has(group.groupKey) ? `展開${group.noteName}` : `收合${group.noteName}`}
+                          aria-expanded={!collapsedGroupKeys.has(group.groupKey)}
+                          onClick={() => toggleGroupCollapsed(group.groupKey)}
+                          style={{
+                            padding: '2px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {collapsedGroupKeys.has(group.groupKey) ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* 該文件索引底下的所有對話欄卡片 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {/* 集合底下的所有對話欄卡片 */}
+                    {!collapsedGroupKeys.has(group.groupKey) && <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {group.sessions.map((session) => {
                         const isSelected = activeSessionId === session.id;
                         const isGenerating = generatingSessionId === session.id;
                         const isEditingThisTitle = listEditingSessionId === session.id;
+                        const isCollapsed = collapsedSessionIds.has(session.id);
+                        const boundNoteName = session.noteName && !['歷史備份', '全域對話'].includes(session.noteName)
+                          ? session.noteName
+                          : (session.notePath ? getNoteName(session.notePath) : getNoteName(currentNotePath));
 
                         return (
                           <div
@@ -1709,6 +1707,18 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                 )}
                                 <button
                                   className="theme-toggle-btn"
+                                  title={isCollapsed ? '展開對話資訊' : '收合對話資訊'}
+                                  aria-label={isCollapsed ? '展開對話資訊' : '收合對話資訊'}
+                                  aria-expanded={!isCollapsed}
+                                  onClick={(e) => toggleSessionCollapsed(session.id, e)}
+                                  style={{ padding: '3px', opacity: 0.6 }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                                >
+                                  {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                                </button>
+                                <button
+                                  className="theme-toggle-btn"
                                   title="刪除此對話欄"
                                   onClick={(e) => handleDeleteSession(session.id, e)}
                                   style={{ padding: '3px', opacity: 0.6 }}
@@ -1720,8 +1730,34 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                               </div>
                             </div>
 
+                            {/* 專屬對話僅在卡片標題下方標示隸屬文件 */}
+                            {!session.isFloating && (
+                              <div
+                                title={boundNoteName}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  minWidth: 0,
+                                  color: '#22c55e',
+                                  fontSize: '10.5px',
+                                }}
+                              >
+                                <FileText size={10} style={{ flexShrink: 0 }} />
+                                <span
+                                  style={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  隸屬文件：{boundNoteName}
+                                </span>
+                              </div>
+                            )}
+
                             {/* 若為自由浮動對話，顯示當前操作目標標籤 */}
-                            {session.isFloating && (
+                            {session.isFloating && !isCollapsed && (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10.5px' }}>
                                 <span
                                   style={{
@@ -1747,7 +1783,7 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                             )}
 
                             {/* 訊息統計與時間 */}
-                            <div
+                            {!isCollapsed && <div
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1767,11 +1803,11 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
                                   {new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </span>
-                            </div>
+                            </div>}
                           </div>
                         );
                       })}
-                    </div>
+                    </div>}
                   </div>
                 ))
               )}
