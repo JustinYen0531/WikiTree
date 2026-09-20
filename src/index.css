@@ -3398,70 +3398,77 @@ textarea:focus {
   display: flex;
   min-height: 28px;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
-.arborist-composer-tools-label,
-.arborist-mode-description {
-  color: var(--text-secondary);
-  font-family: 'Roboto Mono', 'Noto Sans TC', monospace;
-  font-size: 9.5px;
-}
-
-.arborist-composer-tools-label {
-  letter-spacing: 0.04em;
-}
-
-.arborist-mode-switch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(68px, 1fr));
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-}
-
-.arborist-mode-switch button {
+.arborist-mode-toggle {
+  position: relative;
   display: inline-flex;
+  width: 86px;
   min-height: 26px;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 0;
-  border-right: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font: 600 10.5px/1 'Noto Sans TC', sans-serif;
   cursor: pointer;
 }
 
-.arborist-mode-switch button:last-child {
-  border-right: 0;
+.arborist-mode-toggle-swap {
+  color: var(--text-muted);
+  transition: color 140ms ease, transform 140ms ease;
 }
 
-.arborist-mode-switch button:hover:not(:disabled),
-.arborist-mode-switch button:focus-visible {
-  color: var(--text-primary);
-  background: var(--bg-secondary);
+.arborist-mode-toggle::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: 180px;
+  padding: 5px 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font: 500 9.5px/1.35 'Noto Sans TC', sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 120ms ease, transform 120ms ease;
 }
 
-.arborist-mode-switch button:focus-visible {
+.arborist-mode-toggle:hover:not(:disabled),
+.arborist-mode-toggle:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.arborist-mode-toggle:hover:not(:disabled)::after,
+.arborist-mode-toggle:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.arborist-mode-toggle:hover:not(:disabled) .arborist-mode-toggle-swap,
+.arborist-mode-toggle:focus-visible .arborist-mode-toggle-swap {
+  color: var(--accent);
+  transform: rotate(90deg);
+}
+
+.arborist-mode-toggle:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 2px;
 }
 
-.arborist-mode-switch button.active {
-  background: var(--accent);
-  color: var(--bg-primary);
+.arborist-mode-toggle[data-mode='edit'] {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
-.arborist-mode-switch button:disabled {
+.arborist-mode-toggle:disabled {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-.arborist-mode-description {
-  min-width: 140px;
-  flex: 1;
 }
 
 .arborist-answer {
@@ -3489,12 +3496,6 @@ textarea:focus {
   font-size: 12px;
   line-height: 1.6;
   overflow-wrap: anywhere;
-}
-
-@media (max-width: 520px) {
-  .arborist-mode-description {
-    flex-basis: 100%;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

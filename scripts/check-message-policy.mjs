@@ -37,9 +37,13 @@ try {
   assert.match(component, /kind: 'status'[\s\S]*?操作目標已切換/);
   assert.match(component, /if \(isStatusMessage\(msg\)\)/);
   assert.match(component, /if \(!canInsertKnowledgeNote\(msg\)\) return null;/);
-  assert.match(component, /role="tablist" aria-label="對話方式"/);
-  assert.match(component, />\s*詢問\s*<\/button>/);
-  assert.match(component, />\s*編修\s*<\/button>/);
+  const modeToolbar = component.match(/<div className="arborist-composer-tools">([\s\S]*?)<\/div>\s*<div style=/)?.[1] || '';
+  assert.equal((modeToolbar.match(/<button/g) || []).length, 1);
+  assert.match(modeToolbar, /className="arborist-mode-toggle"/);
+  assert.match(modeToolbar, /data-tooltip=/);
+  assert.match(modeToolbar, /changeConversationMode\(conversationMode === 'ask' \? 'edit' : 'ask'\)/);
+  assert.doesNotMatch(component, /arborist-composer-tools-label/);
+  assert.doesNotMatch(component, /arborist-mode-description/);
   assert.match(component, /interactionMode: requestInteractionMode/);
   assert.match(component, /msg\.kind === 'answer'/);
 
@@ -50,11 +54,11 @@ try {
   assert.match(server, /【詢問模式】/);
   assert.match(server, /不得假設使用者要建立或修改筆記/);
   assert.match(providers, /options\.mode === 'ask'/);
-  assert.match(css, /\.arborist-mode-switch/);
+  assert.match(css, /\.arborist-mode-toggle::after/);
   console.log('PASS only completed knowledge-note messages can expose note actions');
   console.log('PASS current and saved target-switch notices render as non-insertable status messages');
   console.log('PASS ask answers remain separate from edit-mode note actions');
-  console.log('PASS the composer exposes a two-option ask/edit switch');
+  console.log('PASS the composer exposes one compact ask/edit toggle with a hover hint');
 } finally {
   await vite.close();
 }

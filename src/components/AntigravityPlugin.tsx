@@ -2941,36 +2941,19 @@ export const AntigravityPlugin: React.FC<AntigravityPluginProps> = ({
               </button>
             </div>
             <div className="arborist-composer-tools">
-              <span className="arborist-composer-tools-label">對話方式</span>
-              <div className="arborist-mode-switch" role="tablist" aria-label="對話方式">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={conversationMode === 'ask'}
-                  className={conversationMode === 'ask' ? 'active' : ''}
-                  onClick={() => changeConversationMode('ask')}
-                  disabled={loading}
-                  title="直接回答問題，不產生筆記操作"
-                >
-                  <MessageSquare size={12} />
-                  詢問
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={conversationMode === 'edit'}
-                  className={conversationMode === 'edit' ? 'active' : ''}
-                  onClick={() => changeConversationMode('edit')}
-                  disabled={loading}
-                  title="產生可預覽、確認後才能寫入的筆記修改"
-                >
-                  <Edit2 size={12} />
-                  編修
-                </button>
-              </div>
-              <span className="arborist-mode-description">
-                {conversationMode === 'ask' ? '直接回答，不產生筆記操作' : '產生可預覽的筆記修改'}
-              </span>
+              <button
+                type="button"
+                className="arborist-mode-toggle"
+                data-mode={conversationMode}
+                data-tooltip={`切換為「${conversationMode === 'ask' ? '編修' : '詢問'}」`}
+                aria-label={`目前為${conversationMode === 'ask' ? '詢問' : '編修'}模式，點擊切換為${conversationMode === 'ask' ? '編修' : '詢問'}模式`}
+                onClick={() => changeConversationMode(conversationMode === 'ask' ? 'edit' : 'ask')}
+                disabled={loading}
+              >
+                {conversationMode === 'ask' ? <MessageSquare size={12} /> : <Edit2 size={12} />}
+                <span>{conversationMode === 'ask' ? '詢問' : '編修'}</span>
+                <RefreshCw size={10} className="arborist-mode-toggle-swap" aria-hidden="true" />
+              </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)' }}>
               <span>按 Enter 送出 • 支援拖放/「+」圖片與參考檔案</span>
