@@ -77,6 +77,8 @@ function normalizeImportPath(value) {
 }
 
 function normalizeDestination(value) {
+  // The folder picker uses an empty string for the library root.
+  if (value === '') return '';
   if (!value) return '收件苗圃';
   return normalizeImportPath(value);
 }
