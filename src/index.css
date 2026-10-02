@@ -3686,6 +3686,28 @@ textarea:focus {
 .workspace-folder-message { padding: 10px; font-size: 12px; color: var(--text-secondary); }
 
 /* Personal style studio */
+.style-format-switch { width: min(1120px, calc(100% - 48px)); margin: 24px auto 0; display: flex; gap: 8px; }
+.style-format-switch button { flex: 1; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; text-align: left; font: 600 13px var(--font-mono); }
+.style-format-switch button[aria-pressed="true"] { color: var(--text-primary); border-color: var(--accent); background: var(--accent-bg); }
+.style-format-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.style-format-switch small { font: 400 11px var(--font-sans); }
+.style-format-description { width: min(1120px, calc(100% - 48px)); margin: 14px auto 0; color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+.html-theme-gallery { grid-template-columns: minmax(0, 1fr); }
+.html-adaptive-card { cursor: default; }
+.html-adaptive-card:hover { transform: none; }
+.html-adaptive-preview { background: #faf8f3; }
+.html-adaptive-preview .theme-card-sidebar { background: #e7ece8; }
+.html-adaptive-preview .theme-card-page { background: #faf8f3; }
+.html-adaptive-preview .theme-card-page i { background: #263b37; }
+.html-adaptive-preview .theme-card-page i:nth-child(2), .html-adaptive-preview .theme-card-accent { background: #27675b; }
+
+/* Lecture tokens live on this container only; Markdown palettes stay on :root. */
+.app-container[data-reading-style="html-adaptive"] { background: var(--bg-primary); color: var(--text-primary); }
+.app-container[data-reading-style="html-adaptive"] .app-sidebar { background: var(--bg-sidebar); }
+.app-container[data-reading-style="html-adaptive"] .main-view-container { background: var(--bg-primary); }
+.app-container[data-reading-style="html-adaptive"] .top-navbar,
+.app-container[data-reading-style="html-adaptive"] .html-note-reader-info { background: var(--bg-secondary); }
+
 .style-studio {
   height: 100%;
   overflow-y: auto;

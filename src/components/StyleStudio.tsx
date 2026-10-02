@@ -1,19 +1,22 @@
 import { Check, Palette, Sparkles, Sprout } from 'lucide-react';
+import { useState } from 'react';
 import { THEMES, type ThemeId } from '../utils/themes';
 
 type StyleStudioProps = {
   theme: ThemeId;
   onThemeChange: (theme: ThemeId) => void;
+  initialFormat?: 'markdown' | 'html';
 };
 
-export function StyleStudio({ theme, onThemeChange }: StyleStudioProps) {
+export function StyleStudio({ theme, onThemeChange, initialFormat = 'markdown' }: StyleStudioProps) {
+  const [format, setFormat] = useState(initialFormat);
   return (
     <main className="style-studio">
       <header className="style-studio-header">
         <div>
           <span className="style-studio-eyebrow"><Palette size={13} /> PERSONAL STYLE</span>
           <h1>讓你的知識森林有自己的氣候</h1>
-          <p>選一種最像你的閱讀氛圍。套用後，筆記、苗圃與工作介面會一起改變，並在下次開啟時保留。</p>
+          <p>Markdown 有自己的閱讀氛圍；HTML 讓外圍介面跟著講義配色。兩種風格各自生效。</p>
         </div>
         <div className="style-future-badge"><Sparkles size={14} /> 個人空間的第一片葉</div>
       </header>
@@ -26,7 +29,14 @@ export function StyleStudio({ theme, onThemeChange }: StyleStudioProps) {
         </div>
       </section>
 
-      <section className="theme-gallery" aria-label="選擇風格">
+      <div className="style-format-switch" role="group" aria-label="選擇文件風格分類">
+        <button type="button" aria-pressed={format === 'markdown'} onClick={() => setFormat('markdown')}>Markdown <small>七種風格</small></button>
+        <button type="button" aria-pressed={format === 'html'} onClick={() => setFormat('html')}>HTML <small>自適應</small></button>
+      </div>
+
+      {format === 'markdown' ? <>
+      <p className="style-format-description">選擇 Markdown 筆記與工作介面的風格，會保存在這台裝置。預設為 WikiTree Original。</p>
+      <section className="theme-gallery" aria-label="選擇 Markdown 風格">
         {THEMES.map(option => {
           const selected = option.id === theme;
           return (
@@ -61,9 +71,27 @@ export function StyleStudio({ theme, onThemeChange }: StyleStudioProps) {
           );
         })}
       </section>
+      </> : <>
+      <p className="style-format-description">打開 HTML 講義就自動生效，不需要每次重新套用。</p>
+      <section className="theme-gallery html-theme-gallery" aria-label="HTML 風格">
+        <article className="theme-card active html-adaptive-card">
+          <span className="theme-card-preview html-adaptive-preview" aria-hidden="true">
+            <span className="theme-card-sidebar" />
+            <span className="theme-card-page"><i /><i /><i /></span>
+            <span className="theme-card-accent" />
+          </span>
+          <span className="theme-card-copy">
+            <span className="theme-card-title"><strong>自適應</strong><span className="theme-selected"><Check size={12} /> 自動啟用</span></span>
+            <small>跟隨目前講義的配色</small>
+            <p>側欄、頂部列與閱讀外圍，會配合講義的底色、文字與醒目色。講義排版、顏色與互動維持原樣。</p>
+            <p>切回 Markdown 就恢復你選的風格；讀不到講義配色時，使用穩定的暖白配色。</p>
+          </span>
+        </article>
+      </section>
+      </>}
 
       <footer className="style-studio-footer">
-        第一版會把選擇保存在這台裝置上；個人封面與公開展示會在後續版本從這裡繼續生長。
+        Markdown 風格保存在這台裝置上；HTML 自適應隨目前講義生效。個人封面與公開展示會在後續版本從這裡繼續生長。
       </footer>
     </main>
   );

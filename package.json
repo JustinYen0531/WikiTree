@@ -17,6 +17,7 @@
     "check:exploration:ui": "node scripts/check-exploration-ui.mjs",
     "check:exploration": "npm run check:exploration:core && npm run check:exploration:scheduler && npm run check:exploration:ui",
     "check:themes": "node scripts/check-themes.mjs",
+    "check:html-theme": "node scripts/check-html-theme.mjs",
     "check:library": "node scripts/check-library.mjs",
     "check:html": "node scripts/check-html-reader.mjs",
     "check:launcher": "node scripts/check-launcher.mjs",

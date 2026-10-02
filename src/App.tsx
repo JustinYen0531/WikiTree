@@ -39,6 +39,7 @@ import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
 import { HtmlNoteReader } from './components/HtmlNoteReader';
 import { isHtmlNote, renamedNoteName } from './utils/noteFormat';
+import { readingAppearance, type HtmlPalette } from './utils/htmlTheme';
 import { VersionHistory } from './components/VersionHistory';
 import { PublishNoteModal } from './components/PublishNoteModal';
 import { LoginModal } from './components/LoginModal';
@@ -296,12 +297,16 @@ function App() {
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'source' | 'split'>('wysiwyg');
   const [theme, setTheme] = useState<ThemeId>(readSavedTheme);
+  const [htmlAppearance, setHtmlAppearance] = useState<{ path: string; content: string; root: FileSystemDirectoryHandle | string; palette: HtmlPalette }>();
 
   // Snapshots (VCS) state
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   const isSaved = content === originalContent;
   const isHtmlReading = !!activeFile && isHtmlNote(activeFile.name);
+  const htmlVisible = isHtmlReading && !!rootHandle && !showHistoryPanel && !['explore', 'skills', 'exploration', 'style'].includes(sidebarTab);
+  const currentHtmlPalette = htmlAppearance?.path === activeFile?.path && htmlAppearance?.content === content && htmlAppearance?.root === rootHandle ? htmlAppearance.palette : undefined;
+  const appearance = readingAppearance(theme, htmlVisible, currentHtmlPalette);
 
   // Initialize theme
   useEffect(() => {
@@ -794,7 +799,7 @@ function App() {
   }
 
   return (
-    <div className={`app-container${sidebarHidden ? ' sidebar-hidden' : ''}`}>
+    <div className={`app-container${sidebarHidden ? ' sidebar-hidden' : ''}`} data-reading-style={appearance.mode} style={appearance.style}>
       {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
       <CustomCursor />
       {sidebarHidden && (
@@ -856,7 +861,7 @@ function App() {
             onHandoff={handoff => { setExplorationHandoff(handoff); setSidebarTab('antigravity'); }}
           />
         ) : sidebarTab === 'style' ? (
-          <StyleStudio theme={theme} onThemeChange={setTheme} />
+          <StyleStudio theme={theme} onThemeChange={setTheme} initialFormat={isHtmlReading ? 'html' : 'markdown'} />
         ) : !rootHandle ? (
           <div className="workspace-empty-state">
             <div className="empty-state-card" style={{ maxWidth: '600px', width: '90%', padding: '32px' }}>
@@ -1001,6 +1006,7 @@ function App() {
               <HtmlNoteReader
                 key={`${activeWorkspaceId}:${activeFile.path}`}
                 content={content} path={activeFile.path} root={rootHandle}
+                onPaletteChange={palette => setHtmlAppearance({ path: activeFile.path, content, root: rootHandle, palette })}
                 onNavigate={path => {
                   const find = (nodes: FileNode[]): FileNode | undefined => {
                     for (const node of nodes) {

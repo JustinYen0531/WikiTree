@@ -55,7 +55,7 @@ const nurseryPosition = sidebar.indexOf("activeTab === 'exploration'");
 const stylePosition = sidebar.indexOf("activeTab === 'style'", nurseryPosition);
 assert.ok(nurseryPosition >= 0 && stylePosition > nurseryPosition, '風格 must appear after 探索苗圃 in the Orbit navigation.');
 assert.match(sidebar, /<strong>風格<\/strong><small>打造你的森林樣貌<\/small>/, 'Style navigation label is missing.');
-assert.match(app, /<StyleStudio theme=\{theme\} onThemeChange=\{setTheme\} \/>/, 'Style Studio is not connected to the app theme state.');
+assert.match(app, /<StyleStudio theme=\{theme\} onThemeChange=\{setTheme\} initialFormat=\{isHtmlReading \? 'html' : 'markdown'\} \/>/, 'Style Studio is not connected to the app theme state and reading format.');
 assert.match(app, /localStorage\.setItem\(THEME_STORAGE_KEY, theme\)/, 'Theme selection must persist locally.');
 assert.match(app, /localStorage\.setItem\(THEME_DEFAULT_MIGRATION_KEY, '1'\)/, 'Default-theme migration must be recorded locally.');
 assert.doesNotMatch(app, /setTheme\(theme === 'dark'/, 'The legacy binary theme toggle must not remain.');

@@ -1,4 +1,5 @@
 import { cliWorkspaceHeaders } from './cliWorkspace';
+import { htmlColorBridgeScript } from './htmlTheme';
 
 const LOCAL_BASE = 'https://wikitree-lecture.invalid/';
 const ASSET_EXTENSIONS = /\.(css|m?js|png|jpe?g|gif|webp|svg|ico|avif|woff2?|ttf|otf|mp3|wav|ogg|mp4|webm)$/i;
@@ -134,6 +135,10 @@ export async function prepareHtmlLecture(
     }
   });`;
   doc.head.append(bridge);
+  const colorBridge = doc.createElement('script');
+  colorBridge.dataset.wikitreeColorBridge = 'true';
+  colorBridge.textContent = htmlColorBridgeScript();
+  doc.head.append(colorBridge);
   return { srcDoc: '<!DOCTYPE html>\n' + doc.documentElement.outerHTML, urls, missing: [...missing] };
 }
 

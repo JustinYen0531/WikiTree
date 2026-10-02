@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { prepareHtmlLecture, readLectureAsset } from '../utils/htmlReader';
+import { discoverHtmlPalette, type HtmlPalette } from '../utils/htmlTheme';
 import './HtmlNoteReader.css';
 
 type Props = {
@@ -7,9 +8,10 @@ type Props = {
   path: string;
   root: FileSystemDirectoryHandle | string;
   onNavigate: (path: string) => void;
+  onPaletteChange: (palette: HtmlPalette) => void;
 };
 
-export function HtmlNoteReader({ content, path, root, onNavigate }: Props) {
+export function HtmlNoteReader({ content, path, root, onNavigate, onPaletteChange }: Props) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [state, setState] = useState<{ content: string; path: string; root: Props['root']; result?: { srcDoc: string; missing: string[] }; error?: string }>();
   const current = state?.content === content && state.path === path && state.root === root ? state : undefined;
@@ -34,12 +36,13 @@ export function HtmlNoteReader({ content, path, root, onNavigate }: Props) {
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
-      if (event.source !== frame.current?.contentWindow || event.data?.type !== 'wikitree-html-navigation') return;
-      if (typeof event.data.path === 'string') onNavigate(event.data.path);
+      if (!frame.current || event.source !== frame.current.contentWindow) return;
+      if (event.data?.type === 'wikitree-html-colors') onPaletteChange(discoverHtmlPalette(event.data.samples));
+      else if (event.data?.type === 'wikitree-html-navigation' && typeof event.data.path === 'string') onNavigate(event.data.path);
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [onNavigate]);
+  }, [onNavigate, onPaletteChange]);
 
   return (
     <section className="html-note-reader" aria-label="HTML 講義閱讀">
