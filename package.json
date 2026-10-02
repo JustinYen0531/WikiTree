@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node dev-all.mjs",
     "app": "node launcher.mjs",
+    "try:html": "node html-reader-launcher.mjs",
     "dev:web": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -17,6 +18,7 @@
     "check:exploration": "npm run check:exploration:core && npm run check:exploration:scheduler && npm run check:exploration:ui",
     "check:themes": "node scripts/check-themes.mjs",
     "check:library": "node scripts/check-library.mjs",
+    "check:html": "node scripts/check-html-reader.mjs",
     "check:launcher": "node scripts/check-launcher.mjs",
     "check:message-policy": "node scripts/check-message-policy.mjs",
     "check:guided-knowledge": "node scripts/check-guided-knowledge-skill.mjs",
@@ -42,6 +44,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "linkedom": "^0.18.13",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

@@ -1,15 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import { FileText, FolderInput, Import, ShieldCheck, X } from 'lucide-react';
 import type { FileNode } from '../utils/fileSystem';
-import { collectLibraryFolders, importFilesToLibrary, type LibraryImportResult } from '../utils/library';
+import { collectLibraryFolders, importFilesToLibrary, canImportLibraryFile, isLibraryNote, type LibraryImportResult } from '../utils/library';
 
 type ImportToWikiTreeModalProps = {
   files: FileNode[];
   onClose: () => void;
   onImported: (result: LibraryImportResult) => void;
 };
-
-const supportedNote = (file: File) => /\.(md|markdown|txt)$/i.test(file.name);
 
 export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWikiTreeModalProps) {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -19,7 +17,9 @@ export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWi
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const folders = useMemo(() => collectLibraryFolders(files), [files]);
+  const supportedNote = (file: File) => canImportLibraryFile(file, selection);
   const supported = selection.filter(supportedNote);
+  const noteCount = supported.filter(file => isLibraryNote(file.name)).length;
   const skippedCount = selection.length - supported.length;
 
   const choose = (next: FileList | null) => {
@@ -65,15 +65,15 @@ export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWi
             <button type="button" className="btn" onClick={() => folderInput.current?.click()} disabled={busy}>
               <FolderInput size={14} /> 選擇資料夾
             </button>
-            <input ref={fileInput} hidden type="file" multiple accept=".md,.markdown,.txt,text/markdown,text/plain" onChange={event => choose(event.target.files)} />
+            <input ref={fileInput} hidden type="file" multiple accept=".md,.markdown,.txt,.html,.htm,.css,.js,.mjs,.png,.jpg,.jpeg,.gif,.webp,.svg,.ico,.avif,.woff,.woff2,.ttf,.otf,.mp3,.wav,.ogg,.mp4,.webm" onChange={event => choose(event.target.files)} />
             <input ref={folderInput} hidden type="file" multiple {...({ webkitdirectory: '', directory: '' } as Record<string, string>)} onChange={event => choose(event.target.files)} />
           </div>
 
           {selection.length > 0 ? (
             <div className="library-import-preview">
               <div className="library-import-summary">
-                <strong>準備收進 {supported.length} 份筆記</strong>
-                {skippedCount > 0 && <small>另外 {skippedCount} 個非文字檔會略過</small>}
+                <strong>準備收進 {noteCount} 份筆記{supported.length > noteCount ? `與 ${supported.length - noteCount} 個附件` : ''}</strong>
+                {skippedCount > 0 && <small>另外 {skippedCount} 個不支援的檔案會略過</small>}
               </div>
               <div className="library-import-list">
                 {selection.slice(0, 12).map((file, index) => (
@@ -88,7 +88,7 @@ export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWi
             </div>
           ) : (
             <div className="library-import-empty">
-              選擇 Markdown、純文字文件，或包含這些筆記的整個資料夾。
+              選擇 HTML 講義、Markdown 或純文字文件。有圖片或互動附件的講義，請選擇整個資料夾；HTML 會保留原檔格式，放進獨立資料夾。
             </div>
           )}
 
@@ -105,7 +105,7 @@ export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWi
         <footer>
           <button type="button" className="btn" onClick={onClose} disabled={busy}>取消</button>
           <button type="button" className="btn btn-primary" onClick={() => void confirmImport()} disabled={!supported.length || busy}>
-            <Import size={14} /> {busy ? '正在收進…' : `收進 ${supported.length || ''} 份筆記`}
+            <Import size={14} /> {busy ? '正在收進…' : `收進 ${noteCount || ''} 份筆記`}
           </button>
         </footer>
       </section>

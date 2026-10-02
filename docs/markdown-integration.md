@@ -9,7 +9,7 @@
 1. 在專案資料夾執行 `npm run dev`，使用終端機顯示的本機網址。
 2. 開啟筆記資料夾，載入 `examples/Markdown功能示範.md`。
 3. 編輯模式可看提醒框、公式與流程圖區塊；切換分割預覽可看整篇排版。
-4. 開啟資料夾中的 Notion HTML 匯出檔，會建立 Markdown 副本；同名時加編號，原始 HTML 保留。匯入不會搬移圖片附件。
+4. 開啟資料夾中的 HTML 會直接原樣閱讀。若要編輯文字，點「轉成 Markdown 副本」並確認後才建立副本；同名時加編號，原始 HTML 保留。副本無法保留完整排版與互動。詳見 [HTML 講義閱讀](html-note-reading.md)。
 5. 線上探索中展開公開筆記，可預覽全文或下載 Markdown 副本。這一步需要已設定的線上服務與既有公開筆記。
 
 驗證命令：`node scripts/check-markdown.mjs`、`npm run build`、`git diff --check`。不執行瀏覽器驗證。

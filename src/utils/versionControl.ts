@@ -1,4 +1,5 @@
 import { cliWorkspaceHeaders } from './cliWorkspace';
+import { isLibraryNote } from './library';
 import {
   getDirectoryHandleByPath,
   createFile,
@@ -87,6 +88,8 @@ export async function getFlatFileState(
   async function traverse(nodes: FileNode[]) {
     for (const node of nodes) {
       if (node.kind === 'file') {
+        // Binary lecture attachments must never pass through text snapshots.
+        if (!isLibraryNote(node.name)) continue;
         try {
           const content = await readFileContent(node.handle);
           flatState.set(node.path, content);
@@ -119,6 +122,7 @@ export async function getFileStateAtSnapshot(
   for (let i = 0; i <= targetIndex; i++) {
     const snap = snapshots[i];
     for (const change of snap.changes) {
+      if (!isLibraryNote(change.path)) continue;
       if (change.type === 'deleted') {
         state.delete(change.path);
       } else {

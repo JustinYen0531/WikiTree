@@ -13,11 +13,13 @@ const currentStatus = {
   version: '1.3.0',
   managedLibrary: true,
   libraryImport: true,
+  htmlNoteReader: true,
 };
 
 assert.equal(sameWorkspace(oldStatus, workspace), true);
 assert.equal(isCompatibleCliStatus(oldStatus, workspace), false);
 assert.equal(isCompatibleCliStatus(currentStatus, workspace), true);
+assert.equal(isCompatibleCliStatus({ ...currentStatus, htmlNoteReader: false }, workspace), false);
 assert.equal(isCompatibleCliStatus({ ...currentStatus, workspace: 'C:\\other' }, workspace), false);
 console.log('PASS launcher rejects stale or foreign WikiTree cores and accepts the managed-library core');
 

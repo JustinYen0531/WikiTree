@@ -16,7 +16,7 @@ const procs = [
   // `critical: false` -> if the CLI exits (e.g. a daemon is already running on
   // this port) we keep the web server alive instead of tearing everything down.
   { name: 'cli ', color: '\x1b[36m', cmd: node, args: ['cli-server.cjs'], critical: false },
-  { name: 'web ', color: '\x1b[35m', cmd: node, args: [viteBin], critical: true },
+  { name: 'web ', color: '\x1b[35m', cmd: node, args: [viteBin, ...(process.env.WIKITREE_WEB_PORT ? ['--host', 'localhost', '--port', process.env.WIKITREE_WEB_PORT, '--strictPort'] : [])], critical: true },
 ];
 
 const children = [];

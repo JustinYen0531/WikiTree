@@ -22,10 +22,12 @@ import {
   Sprout,
   Palette,
   Import,
+  PanelLeftClose,
 } from 'lucide-react';
 import { FileNode } from '../utils/fileSystem';
 import type { WorkspaceFolder } from '../utils/workspaceMemory';
 import { isSupabaseConfigured } from '../utils/supabase';
+import { isLibraryNote } from '../utils/library';
 
 interface SidebarProps {
   workspaceFolders: WorkspaceFolder[];
@@ -52,6 +54,7 @@ interface SidebarProps {
   onLogout?: () => void;
   onTriggerLogin?: () => void;
   managedLibrary?: boolean;
+  onCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -79,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   onTriggerLogin,
   managedLibrary = false,
+  onCollapse,
 }) => {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set());
@@ -221,6 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <span className="node-label">{node.name.replace(/\.md$/i, '')}</span>
+          {!isDirectory && !isLibraryNote(node.name) && <small title="請開啟對應 HTML 講義閱讀">附件</small>}
 
           <div className="node-actions" style={{ display: folder.id === activeWorkspaceId && !workspaceBusy ? undefined : 'none' }}>
             {isDirectory && (
@@ -275,6 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <BookOpen size={16} style={{ color: 'var(--accent)' }} />
           {isWorkshopTab ? (managedLibrary ? '我的 WIKITREE' : (workspaceName || 'WIKITREE 尚未就緒')) : 'WIKITREE ORBIT'}
         </span>
+        {onCollapse && <button className="theme-toggle-btn" onClick={onCollapse} aria-label="收起左側清單" title="收起左側清單"><PanelLeftClose size={16} /></button>}
       </div>
 
       {/* Primary Navigation */}

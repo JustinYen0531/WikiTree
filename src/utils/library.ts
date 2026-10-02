@@ -16,6 +16,11 @@ export type LibraryImportResult = {
 
 const getCliUrl = () => localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080';
 
+export const isLibraryNote = (name: string) => /\.(md|markdown|txt|html?)$/i.test(name);
+export const isLectureAttachment = (name: string) => /\.(css|m?js|png|jpe?g|gif|webp|svg|ico|avif|woff2?|ttf|otf|mp3|wav|ogg|mp4|webm)$/i.test(name);
+export const canImportLibraryFile = (file: File, files: File[]) => isLibraryNote(file.name) ||
+  (files.some(item => /\.html?$/i.test(item.name)) && isLectureAttachment(file.name));
+
 export async function getManagedLibrary(): Promise<LibraryInfo> {
   const response = await fetch(`${getCliUrl()}/api/library`, { headers: { Accept: 'application/json' } });
   const data = await response.json();
@@ -40,17 +45,19 @@ export async function importFilesToLibrary(files: File[], destination: string): 
   if (!files.length) throw new Error('請先選擇要收進 WikiTree 的文件。');
   if (files.length > 500) throw new Error('一次最多收進 500 個文件。');
 
-  const supported = files.filter(file => /\.(md|markdown|txt)$/i.test(file.name));
+  const supported = files.filter(file => canImportLibraryFile(file, files));
   const unsupported = files.filter(file => !supported.includes(file));
-  if (!supported.length) throw new Error('這批內容沒有可收進的 Markdown 或純文字文件。');
+  if (!supported.length) throw new Error('這批內容沒有可收進的 HTML、Markdown 或純文字文件。');
 
   const totalBytes = supported.reduce((sum, file) => sum + file.size, 0);
   if (totalBytes > 15_000_000) throw new Error('這批文件超過 15 MB，請分次收進 WikiTree。');
 
-  const prepared = await Promise.all(supported.map(async file => ({
-    path: file.webkitRelativePath || file.name,
-    content: await file.text(),
-  })));
+  const prepared = await Promise.all(supported.map(async file => {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 8192) binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+    return { path: file.webkitRelativePath || file.name, base64: btoa(binary) };
+  }));
 
   const response = await fetch(`${getCliUrl()}/api/library/import`, {
     method: 'POST',
@@ -62,7 +69,7 @@ export async function importFilesToLibrary(files: File[], destination: string): 
   return {
     ...data,
     skipped: [
-      ...unsupported.map(file => ({ path: file.webkitRelativePath || file.name, reason: '第一版只收進 Markdown 與純文字文件。' })),
+      ...unsupported.map(file => ({ path: file.webkitRelativePath || file.name, reason: '只支援筆記與 HTML 講義附件。' })),
       ...(data.skipped || []),
     ],
   };

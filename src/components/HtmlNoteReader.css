@@ -1,0 +1,10 @@
+.html-note-reader { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.html-note-reader-info { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 12px; }
+.html-note-reader-info span { color: var(--text-primary); font-weight: 600; }
+.html-note-reader iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: white; color-scheme: normal; }
+.html-note-reader-warning { padding: 8px 18px; color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.html-note-reader-warning ul { max-height: 100px; overflow: auto; }
+.html-note-reader > p { padding: 18px; color: var(--text-secondary); }
+.app-container.sidebar-hidden > .app-sidebar { display: none; }
+.sidebar-reopen { position: fixed; top: 12px; left: 8px; z-index: 50; padding: 6px; }
+.sidebar-hidden .top-navbar { padding-left: 48px; }

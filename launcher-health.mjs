@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-export const REQUIRED_CLI_CAPABILITIES = ['managedLibrary', 'libraryImport'];
+export const REQUIRED_CLI_CAPABILITIES = ['managedLibrary', 'libraryImport', 'htmlNoteReader'];
 
 export function sameWorkspace(status, workspaceRoot) {
   if (!status?.workspace || !workspaceRoot) return false;

@@ -7,7 +7,8 @@ import {
   FolderPlus,
   Sparkles,
   X,
-  Edit2
+  Edit2,
+  PanelLeftOpen
 } from 'lucide-react';
 
 import { supabase, isSupabaseConfigured } from './utils/supabase';
@@ -36,6 +37,8 @@ import {
 // Import components
 import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
+import { HtmlNoteReader } from './components/HtmlNoteReader';
+import { isHtmlNote, renamedNoteName } from './utils/noteFormat';
 import { VersionHistory } from './components/VersionHistory';
 import { PublishNoteModal } from './components/PublishNoteModal';
 import { LoginModal } from './components/LoginModal';
@@ -59,7 +62,7 @@ import {
   THEME_STORAGE_KEY,
   type ThemeId,
 } from './utils/themes';
-import { getManagedLibrary, type LibraryImportResult, type LibraryInfo } from './utils/library';
+import { getManagedLibrary, isLibraryNote, type LibraryImportResult, type LibraryInfo } from './utils/library';
 
 function App() {
   const [showSplash, setShowSplash] = useState(() => {
@@ -109,6 +112,7 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [showLibraryImport, setShowLibraryImport] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
 
   // Toast Notification State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -297,6 +301,7 @@ function App() {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
 
   const isSaved = content === originalContent;
+  const isHtmlReading = !!activeFile && isHtmlNote(activeFile.name);
 
   // Initialize theme
   useEffect(() => {
@@ -315,7 +320,7 @@ function App() {
   // Helper to recursively find the first file node in the tree
   const findFirstFile = (nodes: FileNode[]): FileNode | null => {
     for (const node of nodes) {
-      if (node.kind === 'file') return node;
+      if (node.kind === 'file' && isLibraryNote(node.name)) return node;
       if (node.kind === 'directory' && node.children) {
         const first = findFirstFile(node.children);
         if (first) return first;
@@ -325,7 +330,8 @@ function App() {
   };
 
   // Open a note
-  const openFile = async (file: FileNode, fileRoot = rootHandle, skipConfirm = false) => {
+  const openFile = async (file: FileNode, _fileRoot = rootHandle, skipConfirm = false) => {
+    if (!isLibraryNote(file.name)) { showToast('這是講義附件，請開啟對應的 HTML 講義閱讀。', 'info'); return; }
     if (!skipConfirm && !isSaved) {
       if (!confirm('您目前編輯的筆記有未儲存的變更。確定要捨棄這些修改嗎？')) {
         return;
@@ -334,30 +340,9 @@ function App() {
 
     try {
       const text = await readFileContent(file.handle as FileSystemFileHandle);
-      if (/\.html?$/i.test(file.name) && fileRoot) {
-        const { title, markdown } = notionHtmlToMarkdown(text);
-        const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/[. ]+$/, '') || '匯入筆記';
-        const parentPath = file.path.split('/').slice(0, -1).join('/');
-        const existingFiles = await getFilesRecursively(fileRoot!);
-        const paths = new Set<string>();
-        const collect = (nodes: FileNode[]) => nodes.forEach(node => {
-          paths.add(node.path.toLowerCase());
-          if (node.children) collect(node.children);
-        });
-        collect(existingFiles);
-        let mdName = `${baseName}.md`;
-        const fullPath = (name: string) => parentPath ? `${parentPath}/${name}` : name;
-        for (let n = 2; paths.has(fullPath(mdName).toLowerCase()); n++) mdName = `${baseName} (${n}).md`;
-        const parentDir = await getDirectoryHandleByPath(fileRoot!, parentPath, { create: true });
-        const newHandle = await createFile(parentDir, mdName);
-        await writeFileContent(newHandle, markdown);
-        setFiles(await getFilesRecursively(fileRoot!));
-        setActiveFile({ name: mdName, path: fullPath(mdName), kind: 'file', handle: newHandle });
-        setContent(markdown);
-        setOriginalContent(markdown);
-        showToast(`已轉成 ${mdName}，原始 HTML 已保留`);
-        return;
-      }
+      setPendingInsertNote(null);
+      setPendingDiff(null);
+      setIsEditingFileName(false);
       setActiveFile(file);
       setContent(text);
       setOriginalContent(text);
@@ -367,9 +352,40 @@ function App() {
     }
   };
 
+  const handleConvertHtmlCopy = async () => {
+    if (!activeFile || !rootHandle || !isHtmlReading) return;
+    if (!confirm('要建立可編輯的 Markdown 副本嗎？\n原 HTML 會保留；副本無法完整保留原排版與互動。')) return;
+    try {
+        const { title, markdown } = notionHtmlToMarkdown(content);
+        const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/[. ]+$/, '') || '匯入筆記';
+        const parentPath = activeFile.path.split('/').slice(0, -1).join('/');
+        const existingFiles = await getFilesRecursively(rootHandle);
+        const paths = new Set<string>();
+        const collect = (nodes: FileNode[]) => nodes.forEach(node => {
+          paths.add(node.path.toLowerCase());
+          if (node.children) collect(node.children);
+        });
+        collect(existingFiles);
+        let mdName = `${baseName}.md`;
+        const fullPath = (name: string) => parentPath ? `${parentPath}/${name}` : name;
+        for (let n = 2; paths.has(fullPath(mdName).toLowerCase()); n++) mdName = `${baseName} (${n}).md`;
+        const parentDir = await getDirectoryHandleByPath(rootHandle, parentPath, { create: true });
+        const newHandle = await createFile(parentDir, mdName);
+        await writeFileContent(newHandle, markdown);
+        setFiles(await getFilesRecursively(rootHandle));
+        setActiveFile({ name: mdName, path: fullPath(mdName), kind: 'file', handle: newHandle });
+        setContent(markdown);
+        setOriginalContent(markdown);
+        showToast(`已轉成 ${mdName}，原始 HTML 已保留`);
+    } catch (e) {
+      console.error('HTML conversion failed', e);
+      showToast('未能建立 Markdown 副本。', 'error');
+    }
+  };
+
   // Save current note content
   const handleSaveFile = async (overrideContent?: string) => {
-    if (!rootHandle || !activeFile) return;
+    if (!rootHandle || !activeFile || isHtmlReading) return;
     const targetContent = overrideContent !== undefined ? overrideContent : content;
 
     try {
@@ -562,6 +578,7 @@ function App() {
   // Rename file/folder
   const handleRename = async (node: FileNode, newName: string) => {
     if (!rootHandle) return;
+    if (node.kind === 'file' && isHtmlNote(node.name)) newName = renamedNoteName(node.name, newName);
 
     try {
       const parts = node.path.split('/');
@@ -577,8 +594,9 @@ function App() {
       setFiles(fileList);
 
       // If active file was renamed, update it
-      if (activeFile?.path === node.path) {
-        const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+      if (activeFile && (activeFile.path === node.path || (node.kind === 'directory' && activeFile.path.startsWith(`${node.path}/`)))) {
+        const renamedPath = parentPath ? `${parentPath}/${newName}` : newName;
+        const newPath = renamedPath + activeFile.path.slice(node.path.length);
         // Find renamed node in the newly read fileList
         const findNode = (nodes: FileNode[]): FileNode | null => {
           for (const n of nodes) {
@@ -616,7 +634,7 @@ function App() {
       setIsEditingFileName(false);
       return;
     }
-    const finalName = trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
+    const finalName = renamedNoteName(activeFile.name, trimmed);
     if (finalName === activeFile.name) {
       setIsEditingFileName(false);
       return;
@@ -641,7 +659,7 @@ function App() {
       await deleteEntry(parentDir, name);
 
       // If deleted active file, clear active file
-      if (activeFile?.path === node.path) {
+      if (activeFile?.path === node.path || (node.kind === 'directory' && activeFile?.path.startsWith(`${node.path}/`))) {
         setActiveFile(null);
         setContent('');
         setOriginalContent('');
@@ -724,7 +742,7 @@ function App() {
     const list: string[] = [];
     function traverse(nodes: FileNode[]) {
       for (const node of nodes) {
-        if (node.kind === 'file') list.push(node.path);
+        if (node.kind === 'file' && isLibraryNote(node.name)) list.push(node.path);
         else if (node.children) traverse(node.children);
       }
     }
@@ -776,9 +794,14 @@ function App() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container${sidebarHidden ? ' sidebar-hidden' : ''}`}>
       {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
       <CustomCursor />
+      {sidebarHidden && (
+        <button className="btn sidebar-reopen" onClick={() => setSidebarHidden(false)} aria-label="展開左側清單" title="展開左側清單">
+          <PanelLeftOpen size={17} />
+        </button>
+      )}
       {/* Sidebar - file explorer & search */}
       <Sidebar 
         workspaceFolders={workspaceFolders}
@@ -808,6 +831,7 @@ function App() {
         onLogout={handleLogout}
         onTriggerLogin={() => setShowLoginModal(true)}
         managedLibrary={!!managedLibrary}
+        onCollapse={() => setSidebarHidden(true)}
       />
 
       {showLibraryImport && typeof rootHandle === 'string' && (
@@ -941,10 +965,15 @@ function App() {
                   空白新文件
                 </button>
 
-                {activeFile && (
+                {activeFile && !isHtmlReading && (
                   <button className="btn" onClick={() => void runFileOperation(() => handleSaveFile())} disabled={isSaved}>
                     <Save size={14} />
                     固定葉片
+                  </button>
+                )}
+                {isHtmlReading && (
+                  <button className="btn" disabled={workspaceBusy} onClick={() => void runFileOperation(handleConvertHtmlCopy)}>
+                    轉成 Markdown 副本
                   </button>
                 )}
                 
@@ -959,7 +988,7 @@ function App() {
                   </button>
                 )}
 
-                <button className="btn btn-primary" onClick={() => setShowPublishModal(true)}>
+                <button className="btn btn-primary" disabled={isHtmlReading} title={isHtmlReading ? '請先建立 Markdown 副本再發布' : undefined} onClick={() => setShowPublishModal(true)}>
                   <Globe size={14} />
                   發送訊號
                 </button>
@@ -968,7 +997,24 @@ function App() {
             </div>
 
             {/* Note Editor View */}
-            {activeFile ? (
+            {activeFile && isHtmlReading && rootHandle ? (
+              <HtmlNoteReader
+                key={`${activeWorkspaceId}:${activeFile.path}`}
+                content={content} path={activeFile.path} root={rootHandle}
+                onNavigate={path => {
+                  const find = (nodes: FileNode[]): FileNode | undefined => {
+                    for (const node of nodes) {
+                      if (node.kind === 'file' && node.path === path && isHtmlNote(node.name)) return node;
+                      const nested = node.children && find(node.children);
+                      if (nested) return nested;
+                    }
+                  };
+                  const note = find(files);
+                  if (note) void runFileOperation(() => openFile(note));
+                  else showToast('這份連結講義尚未收進 WikiTree。', 'info');
+                }}
+              />
+            ) : activeFile ? (
               <Editor
                 key={`${activeWorkspaceId}:${activeFile.path}`}
                 content={content}
@@ -1032,6 +1078,7 @@ function App() {
             currentNoteContent={content}
             availableFiles={files}
             onApplyContent={(newContent) => {
+              if (isHtmlReading) { showToast('HTML 正在原樣閱讀；請建立 Markdown 副本後再插入內容。', 'info'); return; }
               setPendingInsertNote(newContent);
               showToast('🌱 已在編輯器生成待插入綠色區塊，可移動選擇位置！', 'success');
             }}
@@ -1039,10 +1086,12 @@ function App() {
             referenceHandoff={explorationHandoff}
             onReferenceHandoffConsumed={() => setExplorationHandoff(null)}
             onAppendContent={(added) => {
+              if (isHtmlReading) { showToast('HTML 正在原樣閱讀；請建立 Markdown 副本後再附加內容。', 'info'); return; }
               setContent((prev) => (prev ? `${prev}\n\n${added}` : added));
               showToast('🌱 已將內容附加至筆記末尾，請記得儲存！', 'success');
             }}
             onApplyDiff={(diffInfo) => {
+              if (isHtmlReading) { showToast('HTML 正在原樣閱讀；請建立 Markdown 副本後再編輯。', 'info'); return; }
               setPendingDiff(diffInfo);
               showToast('🔀 已在編輯器生成對稱 Diff 修整區塊！', 'success');
             }}

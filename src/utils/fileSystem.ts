@@ -318,9 +318,11 @@ export async function renameEntry(
 
   if (kind === 'file') {
     const fileHandle = handle as FileSystemFileHandle;
-    const content = await readFileContent(fileHandle);
+    const content = await fileHandle.getFile();
     const newFileHandle = await parentDirHandle.getFileHandle(newName, { create: true });
-    await writeFileContent(newFileHandle, content);
+    const writable = await newFileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
     await parentDirHandle.removeEntry(oldName);
   } else {
     throw new Error('Renaming directories is not supported in this browser version.');

@@ -14,6 +14,7 @@ const { createExplorationExecutor } = require('./exploration-runtime.cjs');
 const { nextRunAt } = require('./exploration-scheduler.cjs');
 const { installScheduler, schedulerStatus, uninstallScheduler } = require('./exploration-scheduler-admin.cjs');
 const { ensureLibrary, importNotes } = require('./library-service.cjs');
+const { readHtmlAsset } = require('./html-assets.cjs');
 
 const explorationStore = new ExplorationStore();
 const executeExploration = createExplorationExecutor({ store: explorationStore, aiProviders });
@@ -26,7 +27,7 @@ function decodeBuffer(buf) {
   return decoder.decode(buf);
 }
 
-const PORT = 18080;
+const PORT = Number(process.env.WIKITREE_CLI_PORT || 18080);
 
 let defaultWorkspace = process.cwd();
 
@@ -232,6 +233,14 @@ function loadAllSkills(workspacePath) {
 
 // Local HTTP service used by the WikiTree desktop interface.
 const server = http.createServer((req, res) => {
+  // Sandboxed lectures have an opaque origin. They must never use the app API.
+  // The file-based splash may still read the harmless readiness endpoint.
+  const readinessRequest = req.method === 'GET' && new URL(req.url, 'http://localhost').pathname === '/api/status';
+  if (!readinessRequest && (req.headers.origin === 'null' || req.headers['sec-fetch-site'] === 'cross-site')) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: '講義內容不能存取 WikiTree 的筆記服務。' }));
+    return;
+  }
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
@@ -274,6 +283,15 @@ const server = http.createServer((req, res) => {
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(value));
   };
+
+  if (requestUrl.pathname === '/api/workspace/html-asset' && req.method === 'POST') {
+    void readJsonBody(req).then(payload => {
+      const asset = readHtmlAsset(currentWorkspace, payload.path);
+      res.writeHead(200, { 'Content-Type': asset.type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      res.end(asset.bytes);
+    }).catch(error => json(400, { error: error.message }));
+    return;
+  }
 
   if (requestUrl.pathname === '/api/library' && req.method === 'GET') {
     try {
@@ -399,10 +417,11 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'connected',
-      version: '1.3.0',
+      version: '1.3.1',
       scopedWorkspaces: true,
       managedLibrary: true,
       libraryImport: true,
+      htmlNoteReader: true,
       streamingChat: true,
       aiProviders: true,
       scheduledExploration: true,

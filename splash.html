@@ -280,7 +280,7 @@
           })
         ]);
         const cliStatus = await cliResponse.json();
-        if (!webResponse || !cliResponse.ok || !cliStatus.managedLibrary || !cliStatus.libraryImport) {
+        if (!webResponse || !cliResponse.ok || !cliStatus.managedLibrary || !cliStatus.libraryImport || !cliStatus.htmlNoteReader) {
           throw new Error('WikiTree 核心尚未就緒');
         }
         isServerReady = true;

@@ -2,9 +2,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { ASSET_TYPES } = require('./html-assets.cjs');
 
 const LIBRARY_VERSION = 1;
-const SUPPORTED_NOTE_EXTENSIONS = new Set(['.md', '.markdown', '.txt']);
+const SUPPORTED_NOTE_EXTENSIONS = new Set(['.md', '.markdown', '.txt', '.html', '.htm']);
 
 function resolveLibraryPath(options = {}) {
   const configured = options.configuredPath || process.env.WIKITREE_LIBRARY_PATH;
@@ -83,13 +84,13 @@ function normalizeDestination(value) {
 function asMarkdownPath(relativePath) {
   const extension = path.extname(relativePath).toLowerCase();
   if (!SUPPORTED_NOTE_EXTENSIONS.has(extension)) return null;
-  return extension === '.md' ? relativePath : `${relativePath.slice(0, -extension.length)}.md`;
+  return ['.md', '.html', '.htm'].includes(extension) ? relativePath : `${relativePath.slice(0, -extension.length)}.md`;
 }
 
 function uniqueTarget(fileSystem, targetPath) {
   if (!fileSystem.existsSync(targetPath)) return targetPath;
   const extension = path.extname(targetPath);
-  const stem = targetPath.slice(0, -extension.length);
+  const stem = extension ? targetPath.slice(0, -extension.length) : targetPath;
   for (let index = 2; index < 10_000; index += 1) {
     const candidate = `${stem} (${index})${extension}`;
     if (!fileSystem.existsSync(candidate)) return candidate;
@@ -112,29 +113,45 @@ function importNotes(payload, options = {}) {
   }
   fileSystem.mkdirSync(destinationPath, { recursive: true });
 
+  const htmlFile = files.find(item => /\.html?$/i.test(item?.path || ''));
+  let bundlePath = destinationPath;
+  let sourcePrefix = '';
+  if (htmlFile) {
+    // One fresh bundle preserves relative references even on repeated imports.
+    const source = normalizeImportPath(htmlFile.path);
+    const firstPart = source.split('/')[0];
+    if (files.every(item => normalizeImportPath(item.path).startsWith(`${firstPart}/`))) sourcePrefix = `${firstPart}/`;
+    const bundleName = sourcePrefix ? firstPart : path.basename(source, path.extname(source)) || 'HTML 講義';
+    bundlePath = uniqueTarget(fileSystem, path.join(destinationPath, bundleName));
+    fileSystem.mkdirSync(bundlePath, { recursive: true });
+  }
+
   const imported = [];
   const skipped = [];
   for (const item of files) {
     const relativeSource = normalizeImportPath(item?.path);
-    const markdownPath = asMarkdownPath(relativeSource);
+    const extension = path.extname(relativeSource).toLowerCase();
+    const markdownPath = asMarkdownPath(relativeSource) || (htmlFile && ASSET_TYPES[extension] ? relativeSource : null);
     if (!markdownPath) {
-      skipped.push({ path: relativeSource, reason: '第一版只收進 Markdown 與純文字文件。' });
+      skipped.push({ path: relativeSource, reason: '只支援筆記與 HTML 講義附件。' });
       continue;
     }
-    if (typeof item.content !== 'string') throw new Error(`${relativeSource} 沒有可讀取的文字內容。`);
-    if (Buffer.byteLength(item.content, 'utf8') > 2_000_000) {
-      skipped.push({ path: relativeSource, reason: '文件超過 2 MB。' });
+    if (typeof item.content !== 'string' && typeof item.base64 !== 'string') throw new Error(`${relativeSource} 沒有可讀取的內容。`);
+    const bytes = typeof item.base64 === 'string' ? Buffer.from(item.base64, 'base64') : Buffer.from(item.content, 'utf8');
+    if (bytes.length > 20_000_000) {
+      skipped.push({ path: relativeSource, reason: '文件超過 20 MB。' });
       continue;
     }
 
-    const requestedTarget = path.resolve(destinationPath, ...markdownPath.split('/'));
+    const importPath = sourcePrefix ? markdownPath.slice(sourcePrefix.length) : markdownPath;
+    const requestedTarget = path.resolve(bundlePath, ...importPath.split('/'));
     const relativeTarget = path.relative(library.path, requestedTarget);
     if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
       throw new Error('匯入文件不能離開 WikiTree。');
     }
     fileSystem.mkdirSync(path.dirname(requestedTarget), { recursive: true });
     const target = uniqueTarget(fileSystem, requestedTarget);
-    fileSystem.writeFileSync(target, item.content, 'utf8');
+    fileSystem.writeFileSync(target, bytes);
     imported.push(path.relative(library.path, target).replace(/\\/g, '/'));
   }
 
