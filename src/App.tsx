@@ -111,6 +111,7 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [showLibraryImport, setShowLibraryImport] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -133,6 +134,10 @@ function App() {
   useEffect(() => {
     if (isSupabaseConfigured() && supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecovery(true);
+          setShowLoginModal(true);
+        }
         if (session?.user) {
           const metadata = session.user.user_metadata || {};
           const loggedUser = {
@@ -766,8 +771,10 @@ function App() {
         />
         {showLoginModal && (
           <LoginModal 
-            onClose={() => setShowLoginModal(false)}
+            onClose={() => { setShowLoginModal(false); setPasswordRecovery(false); }}
             onLoginSuccess={handleLoginSuccess}
+            passwordRecovery={passwordRecovery}
+            onPasswordResetComplete={() => setPasswordRecovery(false)}
           />
         )}
         {toast && (
@@ -1122,8 +1129,10 @@ function App() {
       {/* NCCU Local Account Modal */}
       {showLoginModal && (
         <LoginModal 
-          onClose={() => setShowLoginModal(false)}
+          onClose={() => { setShowLoginModal(false); setPasswordRecovery(false); }}
           onLoginSuccess={handleLoginSuccess}
+          passwordRecovery={passwordRecovery}
+          onPasswordResetComplete={() => setPasswordRecovery(false)}
         />
       )}
 

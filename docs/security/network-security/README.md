@@ -52,3 +52,7 @@ summary: "將探索苗圃的模型呼叫改用官方 OpenAI SDK，並把 API 金
 ## Summary Capsule
 
 探索苗圃採用官方 OpenAI SDK，是為了讓模型請求使用 OpenAI API 的官方介面並降低對本機 Codex 協定的耦合。API key 留在本機後端環境，探索功能與一般 Codex 登入路徑分開；既有來源核實及素材保存防線繼續生效。
+
+## Supabase 密碼重設前置條件
+
+忘記密碼流程改用 Supabase Auth 寄送重設連結。WikiTree 目前以帳號組成 `@g.nccu.edu.tw` 學校信箱；使用者需已啟用並能收取該信箱。Supabase Auth 需允許 WikiTree 的 redirect URL；一般使用者收不到預設 Auth 郵件時，需在 Supabase 設定自訂 SMTP。這些雲端設定要等 `nccu hub` 專案恢復連線後才能確認。

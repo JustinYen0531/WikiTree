@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, LogIn, UserPlus, Shield, User, Lock, Smile, GraduationCap, School, HelpCircle, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { X, LogIn, UserPlus, Shield, User, Lock, Smile, GraduationCap, School, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../utils/supabase';
 
 interface LoginModalProps {
   onClose: () => void;
   onLoginSuccess: (user: { username: string; nickname: string; college: string; department: string; grade: string; isSupabaseUser?: boolean }) => void;
+  passwordRecovery?: boolean;
+  onPasswordResetComplete?: () => void;
 }
 
 const NCCU_ACADEMIC_UNITS: Record<string, string[]> = {
@@ -75,20 +77,13 @@ const GRADE_LEVELS = [
   "博士班"
 ];
 
-const DEFAULT_HINT_QUESTIONS = [
-  "我最喜歡的一道菜是？",
-  "我的第一隻寵物名字是？",
-  "我小學六年級班導師的名字是？",
-  "我最喜歡的一本書是？",
-  "我出生的城市是？",
-  "自訂密碼提示問題..."
-];
-
 export const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onLoginSuccess,
+  passwordRecovery = false,
+  onPasswordResetComplete,
 }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
   const [isLoading, setIsLoading] = useState(false);
 
   // Login states
@@ -104,18 +99,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [selectedCollege, setSelectedCollege] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
-  const [regHintQuestion, setRegHintQuestion] = useState(DEFAULT_HINT_QUESTIONS[0]);
-  const [regCustomHintQuestion, setRegCustomHintQuestion] = useState('');
-  const [regHintAnswer, setRegHintAnswer] = useState('');
-
-  // Forgot Password workflow states
   const [forgotUsername, setForgotUsername] = useState('');
-  const [forgotStep, setForgotStep] = useState<1 | 2 | 3>(1);
-  const [forgotQuestion, setForgotQuestion] = useState('');
-  const [forgotAnswerInput, setForgotAnswerInput] = useState('');
-  const [revealedPassword, setRevealedPassword] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [showRevealedPassword, setShowRevealedPassword] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+
+  useEffect(() => {
+    if (passwordRecovery) setActiveTab('reset');
+  }, [passwordRecovery]);
 
   // Handle department updates when college changes
   useEffect(() => {
@@ -212,14 +203,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     e.preventDefault();
     const cleanUser = regUsername.trim();
     const cleanNick = regNickname.trim();
-    const cleanAnswer = regHintAnswer.trim();
-    
-    const finalHintQuestion = regHintQuestion === "自訂密碼提示問題..." 
-      ? regCustomHintQuestion.trim() 
-      : regHintQuestion;
-
-    if (!cleanUser || !regPassword || !cleanNick || !selectedCollege || !selectedDepartment || !selectedGrade || !finalHintQuestion || !cleanAnswer) {
-      alert('請填寫所有必要欄位（包含密碼提示問題與答案）。');
+    if (!cleanUser || !regPassword || !cleanNick || !selectedCollege || !selectedDepartment || !selectedGrade) {
+      alert('請填寫所有必要欄位。');
       return;
     }
 
@@ -275,20 +260,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             alert(`⚠️ 帳戶已建立，但資料存入 profiles 失敗：${profileError.message}\n\n請截圖此訊息回報。`);
           }
 
-          const { error: securityError } = await supabase
-            .from('user_security')
-            .insert({
-              id: signUpData.user.id,
-              username: cleanUser,
-              hint_question: finalHintQuestion,
-              hint_answer: cleanAnswer.toLowerCase(),
-              recovery_password: regPassword,
-            });
-
-          if (securityError) {
-            console.warn('user_security insert error:', securityError.message);
-          }
-
           alert('🎉 帳戶註冊成功！已同步至 Supabase 雲端資料庫。請在登入分頁輸入您的帳號密碼。');
           
           // Reset inputs
@@ -296,8 +267,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           setRegPassword('');
           setRegConfirmPassword('');
           setRegNickname('');
-          setRegHintAnswer('');
-          setRegCustomHintQuestion('');
           
           // Switch back to login view
           setActiveTab('login');
@@ -329,8 +298,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       college: selectedCollege,
       department: selectedDepartment,
       grade: selectedGrade,
-      hintQuestion: finalHintQuestion,
-      hintAnswer: cleanAnswer.toLowerCase(), // Store in lowercase for easier matching
     };
 
     accounts.push(newAccount);
@@ -343,125 +310,64 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setRegPassword('');
     setRegConfirmPassword('');
     setRegNickname('');
-    setRegHintAnswer('');
-    setRegCustomHintQuestion('');
     
     // Switch back to login view
     setActiveTab('login');
     setUsername(cleanUser);
   };
 
-  // Forgot Password workflow: Step 1 (Find account and get question)
-  const handleForgotStep1 = async (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUser = forgotUsername.trim();
     if (!cleanUser) {
       alert('請輸入帳號');
       return;
     }
-
-    if (isSupabaseConfigured() && supabase) {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.rpc('get_user_hint_question', {
-          username_input: cleanUser
-        });
-
-        if (error) {
-          alert(`查詢提示問題失敗: ${error.message}\n(若您尚未建立 SQL 表格，請參考專案根目錄的 supabase_setup.sql 並至 Supabase 執行)`);
-          setIsLoading(false);
-          return;
-        }
-
-        if (!data) {
-          alert('找不到該帳戶，或該帳戶未設定密碼提示問題。');
-          setIsLoading(false);
-          return;
-        }
-
-        setForgotQuestion(data);
-        setForgotStep(2);
-      } catch (err: any) {
-        alert(`查詢發生錯誤: ${err.message || err}`);
-      } finally {
-        setIsLoading(false);
-      }
+    if (!isSupabaseConfigured() || !supabase) {
+      setForgotMessage('此帳號目前使用本機登入，尚無安全的自助密碼重設方式。');
       return;
     }
 
-    const savedAccounts = localStorage.getItem('antigravity_local_accounts');
-    const accounts = savedAccounts ? JSON.parse(savedAccounts) : [];
-    
-    const matched = accounts.find((acc: any) => acc.username.toLowerCase() === cleanUser.toLowerCase());
-
-    if (!matched) {
-      alert('找不到該帳戶，請確認帳號是否輸入正確。');
-      return;
+    setIsLoading(true);
+    setForgotMessage('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        `${cleanUser.toLowerCase()}@g.nccu.edu.tw`,
+        { redirectTo: window.location.origin },
+      );
+      if (error) throw error;
+      setForgotMessage('若帳號存在且學校信箱可收信，系統會寄出密碼重設連結。');
+    } catch (error) {
+      setForgotMessage('無法確認重設信是否寄出。若帳號存在且信箱可收信，請檢查收件匣或稍後再試。');
+    } finally {
+      setIsLoading(false);
     }
-
-    if (!matched.hintQuestion || !matched.hintAnswer) {
-      alert('該帳戶註冊時未設定密碼提示問題，無法以此方法找回密碼。');
-      return;
-    }
-
-    setForgotQuestion(matched.hintQuestion);
-    setForgotStep(2);
   };
 
-  // Forgot Password workflow: Step 2 (Verify answer and reveal password)
-  const handleForgotStep2 = async (e: React.FormEvent) => {
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanAnswerInput = forgotAnswerInput.trim().toLowerCase();
-    if (!cleanAnswerInput) {
-      alert('請輸入提示答案');
+    if (resetPassword.length < 8) {
+      alert('新密碼至少需要 8 個字元。');
       return;
     }
-
-    if (isSupabaseConfigured() && supabase) {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.rpc('verify_hint_and_get_password', {
-          username_input: forgotUsername.trim(),
-          answer_input: cleanAnswerInput
-        });
-
-        if (error) {
-          alert(`驗證失敗: ${error.message}`);
-          setIsLoading(false);
-          return;
-        }
-
-        if (data) {
-          setRevealedPassword(data);
-          setForgotStep(3);
-        } else {
-          alert('提示答案不正確，驗證失敗！');
-        }
-      } catch (err: any) {
-        alert(`驗證發生錯誤: ${err.message || err}`);
-      } finally {
-        setIsLoading(false);
-      }
+    if (resetPassword !== resetPasswordConfirm) {
+      alert('兩次輸入的新密碼不一致。');
       return;
     }
+    if (!supabase) return;
 
-    const savedAccounts = localStorage.getItem('antigravity_local_accounts');
-    const accounts = savedAccounts ? JSON.parse(savedAccounts) : [];
-    
-    const matched = accounts.find((acc: any) => acc.username.toLowerCase() === forgotUsername.trim().toLowerCase());
-
-    if (matched && matched.hintAnswer === cleanAnswerInput) {
-      setRevealedPassword(matched.password);
-      setForgotStep(3);
-    } else {
-      alert('提示答案不正確，驗證失敗！');
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: resetPassword });
+      if (error) throw error;
+      alert('密碼已更新，請使用新密碼登入。');
+      onPasswordResetComplete?.();
+      onClose();
+    } catch (error) {
+      alert(error instanceof Error ? `密碼更新失敗：${error.message}` : '密碼更新失敗，請重新開啟重設連結。');
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleCopyPassword = () => {
-    navigator.clipboard.writeText(revealedPassword);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -518,7 +424,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <Shield size={18} style={{ color: 'var(--accent)' }} />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '0.08em' }}>
-              {activeTab === 'forgot' ? 'RECOVER ACCESS' : 'WIKITREE ACCESS'}
+              {activeTab === 'forgot' ? 'RESET PASSWORD' : activeTab === 'reset' ? 'SET NEW PASSWORD' : 'WIKITREE ACCESS'}
             </h3>
           </div>
           <button 
@@ -542,6 +448,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </button>
         </div>
 
+        {activeTab !== 'reset' && <>
         {/* Tabs switcher */}
         <div style={{
           display: 'flex',
@@ -594,6 +501,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             建立新帳戶
           </button>
         </div>
+        </>}
 
         {/* Modal Content */}
         <div style={{ padding: '24px', maxHeight: '68vh', overflowY: 'auto' }}>
@@ -602,7 +510,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
-                請登入您的本機政大 Hub 帳戶。資料將安全儲存於您的本機電腦上。
+                登入政大 Hub 帳戶。Supabase 未設定時會使用此瀏覽器的本機帳號。
               </p>
 
               {/* Username Input */}
@@ -642,10 +550,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     type="button"
                     onClick={() => {
                       setActiveTab('forgot');
-                      setForgotStep(1);
                       setForgotUsername(username);
-                      setForgotAnswerInput('');
-                      setRevealedPassword('');
+                      setForgotMessage('');
                     }}
                     style={{
                       background: 'transparent',
@@ -911,88 +817,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 />
               </div>
 
-              {/* Divider for Security Questions */}
-              <div style={{ 
-                margin: '10px 0 4px 0', 
-                borderTop: '1px dashed var(--border-color)',
-                paddingTop: '10px'
-              }} />
-
-              {/* Password Hint Question Dropdown */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <HelpCircle size={12} />
-                  密碼提示問題 *
-                </label>
-                <select
-                  value={regHintQuestion}
-                  onChange={(e) => setRegHintQuestion(e.target.value)}
-                  required
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-primary)',
-                    color: 'var(--text-primary)',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                >
-                  {DEFAULT_HINT_QUESTIONS.map((q) => (
-                    <option key={q} value={q}>{q}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Custom Hint Question Input (Conditional) */}
-              {regHintQuestion === "自訂密碼提示問題..." && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)' }}>
-                    請輸入您自訂的提示問題 *
-                  </label>
-                  <input 
-                    type="text"
-                    placeholder="例如：我第一隻狗狗的名字是？"
-                    value={regCustomHintQuestion}
-                    onChange={(e) => setRegCustomHintQuestion(e.target.value)}
-                    required
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Password Hint Answer */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <HelpCircle size={12} />
-                  提示問題答案 *
-                </label>
-                <input 
-                  type="text"
-                  placeholder="請輸入答案以供日後找回密碼"
-                  value={regHintAnswer}
-                  onChange={(e) => setRegHintAnswer(e.target.value)}
-                  required
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-
               <button 
                 type="submit"
                 className="btn btn-primary"
@@ -1018,235 +842,44 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </form>
           )}
 
-          {/* TAB 3: FORGOT PASSWORD (HINT QUESTION VERIFICATION) */}
           {activeTab === 'forgot' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
-                請填寫您的帳號以取得密碼提示問題，並透過輸入正確的答案來找回密碼。
+            <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
+                輸入帳號後，系統會把密碼重設連結寄到該帳號的學校信箱。若帳號存在且信箱可收信才會收到信件。
               </p>
-
-              {/* STEP 1: Enter Username */}
-              {forgotStep === 1 && (
-                <form onSubmit={handleForgotStep1} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <User size={13} style={{ color: 'var(--text-secondary)' }} />
-                      請輸入帳號
-                    </label>
-                    <input 
-                      type="text"
-                      placeholder="您的註冊帳號 (學號)"
-                      value={forgotUsername}
-                      onChange={(e) => setForgotUsername(e.target.value)}
-                      required
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13.5px',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setActiveTab('login')} 
-                      className="btn btn-secondary" 
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px' }}
-                    >
-                      返回登入
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary" 
-                      disabled={isLoading}
-                      style={{ 
-                        flex: 1, 
-                        padding: '10px', 
-                        borderRadius: '8px', 
-                        fontSize: '13px', 
-                        fontWeight: '600',
-                        opacity: isLoading ? 0.7 : 1,
-                        cursor: isLoading ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {isLoading ? '查詢中...' : '確認帳號'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* STEP 2: Answer Question */}
-              {forgotStep === 2 && (
-                <form onSubmit={handleForgotStep2} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.055)', 
-                    border: '1px solid var(--border-color)', 
-                    borderRadius: '3px', 
-                    padding: '12px 16px' 
-                  }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <HelpCircle size={12} />
-                      您的密碼提示問題：
-                    </div>
-                    <div style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                      {forgotQuestion}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                      提示問題的答案：
-                    </label>
-                    <input 
-                      type="text"
-                      placeholder="請輸入答案"
-                      value={forgotAnswerInput}
-                      onChange={(e) => setForgotAnswerInput(e.target.value)}
-                      required
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13.5px',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setForgotStep(1)} 
-                      className="btn btn-secondary" 
-                      style={{ flex: 1, padding: '10px', borderRadius: '8px', fontSize: '13px' }}
-                    >
-                      上一步
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary" 
-                      disabled={isLoading}
-                      style={{ 
-                        flex: 1, 
-                        padding: '10px', 
-                        borderRadius: '8px', 
-                        fontSize: '13px', 
-                        fontWeight: '600',
-                        opacity: isLoading ? 0.7 : 1,
-                        cursor: isLoading ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      {isLoading ? '驗證中...' : '驗證答案'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* STEP 3: Reveal Password Success */}
-              {forgotStep === 3 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center', padding: '10px 0' }}>
-                  <div style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.055)',
-                    border: '1px solid var(--success-border)',
-                    borderRadius: '3px',
-                    padding: '20px 16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}>
-                    <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: 'bold' }}>
-                      ACCESS VERIFIED
-                    </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      您的登入密碼為：
-                    </span>
-                    
-                    {/* Password display container */}
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '8px', 
-                      backgroundColor: 'var(--bg-secondary)',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      width: '100%',
-                      maxWidth: '240px',
-                      justifyContent: 'space-between'
-                    }}>
-                      <code style={{ 
-                        fontSize: '16px', 
-                        fontWeight: '700', 
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-mono)'
-                      }}>
-                        {showRevealedPassword ? revealedPassword : '•'.repeat(revealedPassword.length)}
-                      </code>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setShowRevealedPassword(!showRevealedPassword)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-secondary)',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            display: 'flex'
-                          }}
-                        >
-                          {showRevealedPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCopyPassword}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: copied ? 'var(--success)' : 'var(--text-secondary)',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            display: 'flex'
-                          }}
-                        >
-                          {copied ? <Check size={14} /> : <Copy size={14} />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button 
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setActiveTab('login');
-                      setUsername(forgotUsername);
-                      setPassword(revealedPassword);
-                    }}
-                    style={{ 
-                      width: '100%', 
-                      padding: '11px', 
-                      fontSize: '13.5px', 
-                      borderRadius: '8px',
-                      fontWeight: '600'
-                    }}
-                  >
-                    帶入密碼並返回登入
-                  </button>
-                </div>
-              )}
-
-            </div>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '600' }}>
+                使用者帳號
+                <input type="text" value={forgotUsername} onChange={event => setForgotUsername(event.target.value)} required
+                  placeholder="您的註冊帳號" className="form-input" />
+              </label>
+              {forgotMessage && <p role="status" style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>{forgotMessage}</p>}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" onClick={() => setActiveTab('login')} className="btn btn-secondary" style={{ flex: 1 }}>返回登入</button>
+                <button type="submit" className="btn btn-primary" disabled={isLoading} style={{ flex: 1 }}>
+                  {isLoading ? '寄送中…' : '寄送重設連結'}
+                </button>
+              </div>
+            </form>
           )}
 
+          {activeTab === 'reset' && (
+            <form onSubmit={handlePasswordReset} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>
+                請設定新密碼。完成後，原密碼就不能再登入。
+              </p>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '600' }}>
+                新密碼
+                <input type="password" autoComplete="new-password" value={resetPassword} onChange={event => setResetPassword(event.target.value)} required minLength={8} className="form-input" />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12.5px', fontWeight: '600' }}>
+                再輸入一次新密碼
+                <input type="password" autoComplete="new-password" value={resetPasswordConfirm} onChange={event => setResetPasswordConfirm(event.target.value)} required minLength={8} className="form-input" />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                {isLoading ? '更新中…' : '更新密碼'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
