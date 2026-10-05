@@ -318,6 +318,12 @@ const server = http.createServer((req, res) => {
     const mutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
     if (mutation && !trustedAiRequest(req)) { json(403, { error: '探索苗圃的變更僅限本機 WikiTree 操作。' }); return; }
 
+    if (requestUrl.pathname === '/api/exploration/ai' && req.method === 'GET') {
+      if (!trustedAiRequest(req)) { json(403, { error: '探索苗圃 AI 設定僅限本機 WikiTree 操作。' }); return; }
+      void aiProviders.explorationState().then(state => json(200, state));
+      return;
+    }
+
     if (requestUrl.pathname === '/api/exploration/tasks' && req.method === 'GET') {
       const includeArchived = requestUrl.searchParams.get('includeArchived') === 'true';
       const tasks = explorationStore.listTasks(currentWorkspace, { includeArchived }).map(task => ({ ...task, nextRunAt: nextRunAt(task) }));

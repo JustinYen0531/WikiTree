@@ -4,7 +4,8 @@ import {
   ExternalLink, History, Inbox, Pause, Play, Plus, RefreshCw, Search, Settings2,
   Sparkles, Star, Tags, Trash2, X,
 } from 'lucide-react';
-import { AiProviderPicker, type AiSelection } from './AiProviderPicker';
+import { ExplorationAiPicker } from './ExplorationAiPicker';
+import type { AiSelection } from '../utils/aiProviderOptions';
 import explorationPresets from '../data/exploration-presets.json';
 import explorationSourceCatalog from '../data/exploration-source-catalog.json';
 import { explorationApi } from '../utils/explorationApi';
@@ -289,7 +290,7 @@ export function ExplorationNursery({ workspacePath, onHandoff }: {
                 <ChevronRight size={14} />
               </summary>
               <div className="advanced-settings-body">
-                <div><AiProviderPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: 'openai', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
+                <div><ExplorationAiPicker url={localStorage.getItem('antigravity_cli_url') || 'http://localhost:18080'} selection={{ provider: 'openai', model: editor.model || 'default' }} onChange={updateSelection} onReadyChange={updateReady} disabled={false} /></div>
                 <fieldset><legend>{selectedPreset.label}的建議來源</legend><small className="source-scope-note">選擇興趣時會自動套用，你仍可個別取消。</small><div className="connector-grid">{sourceOptions.map(source => <label key={source.id}><input type="checkbox" checked={editor.sources.connectorIds?.includes(source.id)} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, connectorIds: event.target.checked ? [...(editor.sources.connectorIds || []), source.id] : (editor.sources.connectorIds || []).filter(value => value !== source.id) } })} />{source.label}</label>)}</div></fieldset>
                 <label>指定網站／RSS（每行一個）<textarea className="form-input" rows={2} value={(editor.sources.customUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, customUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
                 <label>硬性網址（填寫後只看這些網址）<textarea className="form-input" rows={2} value={(editor.sources.directUrls || []).join('\n')} onChange={event => setEditor({ ...editor, sources: { ...editor.sources, directUrls: event.target.value.split('\n').map(value => value.trim()).filter(Boolean) } })} /></label>
