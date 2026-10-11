@@ -1,0 +1,524 @@
+{
+  "title": "Chapter 3 original quiz and wrong-answer review",
+  "recorded_on": "2026-10-11",
+  "exam_date": null,
+  "source": "User-pasted quiz text plus explicitly supplied wrong choices",
+  "source_sha256": "71f14c03bcdf9be0703146515a489cf0ba146853f1ba5defc954508c3a4624d2",
+  "score": 80.0,
+  "points": 100.0,
+  "inference_notice": "Wrong-answer diagnoses are hypotheses authored by the handout writer; not confirmed by the learner.",
+  "questions": [
+    {
+      "number": 1,
+      "stem": "Which of the following is a limitation of the statement of financial position?",
+      "options": {
+        "A": "All of these choices are correct.",
+        "B": "Many items that are of financial value are omitted.",
+        "C": "Current fair value may not be reported.",
+        "D": "Judgments and estimates are used."
+      },
+      "correct": "A",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 正確：B、C、D 都是限制，所以選 All of these choices are correct。",
+        "B 本身正確：有財務價值的項目不一定符合資產認列條件，例如自行建立的品牌；因此不能只選 B。",
+        "C 本身正確：報表採用不同衡量基礎，帳面金額未必就是報導日 fair value。",
+        "D 本身正確：備抵損失、耐用年限等需要 judgments and estimates，並非所有數字都完全客觀。"
+      ],
+      "review": {
+        "title": "報表的限制",
+        "text": "有價值 ≠ 可以認列；帳面價值 ≠ 必然是 fair value；估計 ≠ 數字沒有用。碰到 All 題，先獨立檢查每個選項。",
+        "chapter_anchor": "lo1"
+      }
+    },
+    {
+      "number": 2,
+      "stem": "The statement of financial position is useful for analyzing all of the following except",
+      "options": {
+        "A": "profitability.",
+        "B": "liquidity.",
+        "C": "financial flexibility.",
+        "D": "solvency."
+      },
+      "correct": "A",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 正確：題目問 except；獲利能力主要需看期間收入、費用與損益，單一日的餘額不夠。",
+        "B 不選：liquidity 是短期付款能力，可從流動資產與流動負債取得線索。",
+        "C 不選：financial flexibility 是因應機會或突發需要的財務調整能力；資源與負債結構可提供線索。",
+        "D 不選：solvency 是長期償債能力，負債與權益結構有助判斷。"
+      ],
+      "review": {
+        "title": "某一日與一段期間",
+        "text": "財務狀況表是 stock／餘額；獲利需要期間的 flow／收入與費用。計算 ROA 可用資產餘額搭配淨利，並不與本題衝突。",
+        "chapter_anchor": "lo1"
+      }
+    },
+    {
+      "number": 3,
+      "stem": "Statement of financial position information is useful for all of the following except to",
+      "options": {
+        "A": "evaluate capital structure",
+        "B": "assess future cash flows",
+        "C": "compute rates of return",
+        "D": "analyze cash inflows and outflows for the period"
+      },
+      "correct": "D",
+      "selected": "B",
+      "result": "答錯",
+      "score": 0.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 不選：負債與權益比例可用來 evaluate capital structure。",
+        "B 不選：應收款、存貨、到期負債等可幫助 assess future cash flows；有助評估不等於單靠它就能精準預測。",
+        "C 不選：資產或權益餘額可作 rates of return 的分母，搭配損益資料計算；題目只問資訊是否有用。",
+        "D 正確：題目問 except；本期實際現金流入、流出由 statement of cash flows 呈現，財務狀況表不直接交代收付過程。"
+      ],
+      "review": {
+        "title": "有助預測，不等於記錄流量",
+        "text": "對照下方錯題診斷。看到 useful information，不要自動加上「只用這張報表就一定能算出」的限制。",
+        "chapter_anchor": "lo1"
+      },
+      "diagnosis": {
+        "title": "把「財報不是預言機」推成「不能幫助預測」",
+        "thought": "猜測一：你可能想「財務狀況表是現在的照片，怎麼會知道 future cash flows？」於是選 B。這個直覺抓對了報表的時間性，但把「不能直接看到未來」擴大成「對評估未來完全沒用」。",
+        "attraction": "B 的 future 很顯眼，又和「某一日的餘額」形成反差，所以容易看起來像 except。另一個猜測是：你記得現金流量表處理現金，便把所有含 cash flows 的選項都排除；B 和 D 都含現金，但只有 D 指本期實際流入流出的分析。",
+        "breakdown": "應收帳款能提示未來可能收多少，存貨能提示銷售與變現資源，到期負債能提示未來付現壓力。因此財務狀況表有助 assess，但不保證預測準確。D 的 for the period 問的是這段時間現金實際怎麼走，這是現金流量表直接說明的內容。",
+        "example": "講義補充例：年末應收款 100、下月到期負債 80，能讓你思考下月收付款的壓力；但無法單從這兩筆餘額知道今年客戶到底付了多少現金、公司付了多少款。",
+        "cue": "圈出 assess future 與 analyze … for the period：前者是借助餘額推估，後者是整理期間現金活動。再確認題目有 except，選不屬於本表直接用途的 D。",
+        "check": "如果只知道今年與去年年末現金都為 50，能否知道今年總共收了多少、付了多少？",
+        "answer": "No. The same ending cash balance can result from different gross cash inflows and outflows.",
+        "check_zh": "不能。收到 10 又付出 10，或收到 1,000 又付出 1,000，期末都可能一樣；餘額不足以交代過程。"
+      }
+    },
+    {
+      "number": 4,
+      "stem": "The statement of financial position",
+      "options": {
+        "A": "Uses fair value for most assets and liabilities.",
+        "B": "Makes very limited use of judgments and estimates.",
+        "C": "Omits many items that are of financial value.",
+        "D": "All of the choices are correct regarding the statement of financial position."
+      },
+      "correct": "C",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：不能說大多數資產、負債都使用 fair value；存在成本、攤銷後成本等衡量基礎。",
+        "B 錯：估計與判斷並不少，例如減損與折舊年限。",
+        "C 正確：許多有價值的項目因不符認列條件而未列入，不表示它們沒有價值。",
+        "D 錯：A、B 並不正確，不能選 All。"
+      ],
+      "review": {
+        "title": "限制的辨認",
+        "text": "以常見的歷史成本、減損與估計例子反駁 A、B；不要把報表想成所有市場價值的完整清單。",
+        "chapter_anchor": "lo1"
+      }
+    },
+    {
+      "number": 5,
+      "stem": "The net assets of a business are equal to",
+      "options": {
+        "A": "total assets minus total shareholders' equity.",
+        "B": "total assets plus total liabilities.",
+        "C": "current assets minus current liabilities.",
+        "D": "total assets minus total liabilities."
+      },
+      "correct": "D",
+      "selected": "A",
+      "result": "答錯",
+      "score": 0.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：Assets − Equity = Liabilities；減掉股東權益後得到的是負債。",
+        "B 錯：負債是他人的請求權，計算 net assets 要扣除，不能加回。",
+        "C 錯：Current assets − Current liabilities = Working capital（營運資金），範圍只含流動項目。",
+        "D 正確：Net assets = Total assets − Total liabilities = Equity。"
+      ],
+      "review": {
+        "title": "扣除的是誰的請求權",
+        "text": "先寫 Assets = Liabilities + Equity，再移項。Net assets 保留股東的剩餘權益；working capital 只比較流動項目。",
+        "chapter_anchor": "equity-liabilities"
+      },
+      "diagnosis": {
+        "title": "記住「資產減掉一塊」，但把應扣除的對象換了",
+        "thought": "猜測一：你可能知道 net assets 要做減法，卻把 shareholders' equity 當成應該先扣掉的資金來源。猜測二：你把「公司本身的淨資產」想成「排除股東那份後剩下的東西」。這兩種想法都會讓 A 看起來合理。",
+        "attraction": "A 同時出現 total assets、minus、equity，都是背公式時常遇到的字；而 net assets 和 equity 又確實有關。只辨認關鍵字、沒確認等號兩邊，就容易把 Assets − Liabilities = Equity 的方向記反。",
+        "breakdown": "股東是剩餘請求權人。先用全部資產扣掉必須履行的負債，剩下才是股東權益。扣掉股東權益反而留下債權人的那一份：Assets − Equity = Liabilities。這裡是在談帳面上的淨額，不保證資產立即出售後就能分到這筆現金。",
+        "example": "講義補充例：Assets 100、Liabilities 40、Equity 60。Net assets = 100 − 40 = 60；你選的 A 會算成 100 − 60 = 40，那是 liabilities。",
+        "cue": "把「淨資產」翻成「扣完債務，股東還剩多少？」先寫 A = L + E，再求 E = A − L；不要只記得 minus。",
+        "check": "資產 250、負債 90，net assets 是多少？如果資產減股東權益，會得到什麼？",
+        "answer": "Net assets are 160. Assets minus shareholders' equity equal liabilities, which are 90.",
+        "check_zh": "淨資產 160；250 − 160 = 90 是負債。用簡單數字代回去，可以抓到公式方向反了。"
+      }
+    },
+    {
+      "number": 6,
+      "stem": "The current assets section of the statement of financial position should include",
+      "options": {
+        "A": "patents.",
+        "B": "inventory.",
+        "C": "goodwill.",
+        "D": "machinery."
+      },
+      "correct": "B",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：patents 是無形資產，通常列非流動資產。",
+        "B 正確：inventory 在正常營業週期中出售或耗用，通常是流動資產。",
+        "C 錯：goodwill 通常是非流動項目，且不是待售商品存貨。",
+        "D 錯：machinery 通常是長期供營運使用的 PPE，不是流動資產。"
+      ],
+      "review": {
+        "title": "營業週期與資產用途",
+        "text": "inventory 的流動分類看正常營業週期，不是保證每筆存貨 12 個月內出售；機器若是設備製造商的待售商品，情境不同。",
+        "chapter_anchor": "current-assets"
+      }
+    },
+    {
+      "number": 7,
+      "stem": "Equity or debt securities held to finance future construction of additional plants should be classified on a balance sheet as",
+      "options": {
+        "A": "long-term investments.",
+        "B": "intangible assets.",
+        "C": "property, plant, and equipment.",
+        "D": "current assets."
+      },
+      "correct": "A",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 正確：持有證券作為未來擴廠的長期資金安排，依本题預設列 long-term investments。",
+        "B 錯：股票、債券屬金融工具，不因沒有實體就歸入 intangible assets。",
+        "C 錯：未來用途是建廠，不代表現在持有的證券已經變成廠房設備。",
+        "D 錯：題意是為未來擴廠保留的長期投資；實務仍需依用途、限制與流動分類條件判斷，不能只憑 securities 一字。"
+      ],
+      "review": {
+        "title": "現在持有什麼，比未來拿來做什麼更先判斷",
+        "text": "現在持有的是 securities，未來才要建厂；不能提前分類為 PPE。限制用途與預期變現期仍需判讀。",
+        "chapter_anchor": "noncurrent-assets"
+      }
+    },
+    {
+      "number": 8,
+      "stem": "A generally accepted method of valuation is\n\n\n1. prepaid expenses at fair value.\n2. accounts receivable at net realizable value.\n3. inventories at lower-of-cost-or-net realizable value.",
+      "options": {
+        "A": "1",
+        "B": "2 and 3",
+        "C": "3",
+        "D": "2"
+      },
+      "correct": "B",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：1 錯，prepaid expenses 通常按尚未耗用的成本列示，而非一律按 fair value。",
+        "B 正確：依教材用語，2 與 3 正確；應收款呈現預期可收回的淨額，存貨採成本與 NRV 孰低。",
+        "C 錯：3 正確，但漏掉依本題教材用語也正確的 2。",
+        "D 錯：2 正確，但漏掉 3。"
+      ],
+      "review": {
+        "title": "NRV 的教材用語與準則範圍",
+        "text": "存貨採 cost 與 net realizable value 孰低。應收款的「net realizable value」是教材的淨可收回金額說法；實務 IFRS 9 要依工具分類衡量並考量 expected credit losses，不是把 IAS 2 的規則照搬給應收款。",
+        "chapter_anchor": "current-assets"
+      }
+    },
+    {
+      "number": 9,
+      "stem": "Which item below is not a current liability?",
+      "options": {
+        "A": "The currently maturing portion of long-term debt",
+        "B": "Unearned revenue",
+        "C": "Treasury shares",
+        "D": "Trade accounts payable"
+      },
+      "correct": "C",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 不選：長期借款即將到期的部分，符合流動條件時是流動負債。",
+        "B 不選：unearned revenue 是已收款但尚未履約的義務；本題預設在正常週期內履行。並非所有預收收入都一定是流動。",
+        "C 正確：treasury shares 是自己公司的庫藏股，扣減權益，不是負債。",
+        "D 不選：trade accounts payable 通常在正常營業週期支付，列流動負債。"
+      ],
+      "review": {
+        "title": "義務和權益減項",
+        "text": "庫藏股是 equity 的減項；預收收入則是尚未履約的義務。看科目性質，再判斷流動與非流動。",
+        "chapter_anchor": "equity-liabilities"
+      }
+    },
+    {
+      "number": 10,
+      "stem": "Treasury shares should be reported as a(n)",
+      "options": {
+        "A": "investment.",
+        "B": "current asset.",
+        "C": "other asset.",
+        "D": "reduction of equity."
+      },
+      "correct": "D",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：買回自己的股份不是持有另一公司的投資。",
+        "B 錯：庫藏股不是流動資產；自己的股份不是自己對外持有的資源。",
+        "C 錯：也不列 other asset。",
+        "D 正確：庫藏股為 reduction of equity（權益減項）。"
+      ],
+      "review": {
+        "title": "自己股份與別人股份",
+        "text": "買別人股份通常取得投資資產；買回自己股份通常减少權益。這個区别也是第 15 題的關鍵。",
+        "chapter_anchor": "equity-liabilities"
+      }
+    },
+    {
+      "number": 11,
+      "stem": "Which of the following should be reported for share capital?",
+      "options": {
+        "A": "All of these choices are correct.",
+        "B": "The shares authorized",
+        "C": "The shares issued",
+        "D": "The shares outstanding"
+      },
+      "correct": "A",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 正確：authorized、issued、outstanding 都是 share capital 的相關揭露資訊。",
+        "B 本身正確：authorized 是公司可發行股數的上限；但不是唯一要揭露的資訊。",
+        "C 本身正確：issued 是已發行股數；但還要區分 outstanding。",
+        "D 本身正確：outstanding 通常是 issued 減 treasury shares；三者不一定相等。"
+      ],
+      "review": {
+        "title": "三種股數不要混成一個數",
+        "text": "講義補充例：authorized 1,000、issued 800、treasury 100，則 outstanding 700。是股數揭露，不是把三個數都當成財務狀況表上的金額；可在報表或附註揭露。",
+        "chapter_anchor": "equity-liabilities"
+      }
+    },
+    {
+      "number": 12,
+      "stem": "Which of the following is not an acceptable major asset classification?",
+      "options": {
+        "A": "Reserves",
+        "B": "Investments",
+        "C": "Property, plant, and equipment",
+        "D": "Current assets"
+      },
+      "correct": "A",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 正確：題目問 not；reserves 不是可接受的主要資產分類。要看上下文，它可能是權益中的準備或其他專門用語。",
+        "B 不選：investments 是教材可接受的主要資產分類。",
+        "C 不選：PPE 是長期供生產或營運使用的資產分類。",
+        "D 不選：current assets 是主要資產分類。"
+      ],
+      "review": {
+        "title": "資產大類與準備項目",
+        "text": "看到 reserve 先問它的上下文；它不是與 current assets、PPE 並列的主要資產分類，不要只因名稱看起來像儲備資源就選入。",
+        "chapter_anchor": "noncurrent-assets"
+      }
+    },
+    {
+      "number": 13,
+      "stem": "The statement of cash flows provides answers to all of the following questions except",
+      "options": {
+        "A": "what was the change in the cash balance during the period?",
+        "B": "what was the cash used for during the period?",
+        "C": "where did the cash come from during the period?",
+        "D": "what is the impact of inflation on the cash balance at the end of the year?"
+      },
+      "correct": "D",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 不選：現金流量表能說明期間現金餘額的變動。",
+        "B 不選：它呈現現金用到哪裡，例如購置設備與還本。",
+        "C 不選：它呈現現金從哪裡來，例如營業收款、借款。",
+        "D 正確：它不直接衡量年末現金因 inflation 而損失多少購買力；特殊物價調整議題另有規範。"
+      ],
+      "review": {
+        "title": "現金金額與購買力",
+        "text": "現金流量表追蹤收付與餘額；同樣 €100 能買多少東西，是購買力問題。不要混成同一張表直接回答的問題。",
+        "chapter_anchor": "lo3"
+      }
+    },
+    {
+      "number": 14,
+      "stem": "Making and collecting loans and disposing of property, plant, and equipment are",
+      "options": {
+        "A": "operating activities.",
+        "B": "financing activities.",
+        "C": "liquidity activities.",
+        "D": "investing activities."
+      },
+      "correct": "D",
+      "selected": "C",
+      "result": "答錯",
+      "score": 0.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：本題預設一般非金融企業；借出款項及收回本金、出售 PPE，通常不是日常營業收付。",
+        "B 錯：公司向外借款及償還自己的借款本金才是 financing；making loans 是公司把錢借給別人。",
+        "C 錯：liquidity 是分析短期付款能力的概念，不是第四種現金活動。",
+        "D 正確：一般非金融企業對外放款、收回放款本金，以及出售 PPE，屬 investing activities。"
+      ],
+      "review": {
+        "title": "先分活動，再用流量分析 liquidity",
+        "text": "三種正式分類只有 operating、investing、financing。loan 題先問「公司是借給別人，還是向別人借？」利息不是這裡的本金，金融機構放款可能屬營業。",
+        "chapter_anchor": "lo3"
+      },
+      "diagnosis": {
+        "title": "把「變成現金」的直覺當成活動分類名稱",
+        "thought": "猜測一：你可能看到 collecting loans 與 disposing of PPE，想到「把東西收回、賣掉，讓公司更有現金」，於是把 liquidity activities 當作「增加流動性」那類。猜測二：loan 與 PPE 看起來性質不同，你不確定三類哪一類能同時包含它們，C 像是能把它們包在一起的新類別。",
+        "attraction": "liquidity 是本章真的教過的專有名詞，不是亂造的英文；把它放在 activities 前面，就很像正式分類。選項正是利用「熟悉、聽起來合理」讓人跳過檢查分類表。",
+        "breakdown": "Liquidity 是分析公司的短期付現能力；operating、investing、financing 才是現金流量表的三種分類。一般非金融企業借錢給別人，取得一項放款債權；收回本金是收回該投資，出售 PPE 是處分長期資產，所以一起歸 investing。",
+        "example": "講義補充例：公司借出本金 30，之後收回本金 20，這兩筆一般列投資流出 30、投資流入 20，合計 −10；若是公司向銀行借 30，才是籌資流入。銀行以放款為主要業務時可屬營業，利息須另行判斷。",
+        "cue": "先列出三類 O／I／F，再問「錢是拿去日常營運、取得／處分長期資源，還是向股東或債權人籌集／返還？」看到 loan 再確認公司站在借出或借入的哪一邊。",
+        "check": "一般製造公司：①借給另一家公司 50；②向銀行借 50。兩筆各是什麼活動？",
+        "answer": "The loan made to another company is an investing outflow. The bank borrowing is a financing inflow.",
+        "check_zh": "①投資流出；②籌資流入。金額一樣、都叫借款，方向與公司的角色不同，分類就不同。"
+      }
+    },
+    {
+      "number": 15,
+      "stem": "In preparing a statement of cash flows, sale of treasury stock at an amount greater than cost would be classified as a(n)",
+      "options": {
+        "A": "extraordinary activity.",
+        "B": "financing activity.",
+        "C": "operating activity.",
+        "D": "investing activity."
+      },
+      "correct": "B",
+      "selected": "D",
+      "result": "答錯",
+      "score": 0.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 錯：現金活動沒有 extraordinary activity 這個正式第四類。",
+        "B 正確：出售自己的庫藏股取得現金，屬與股東權益有關的 financing activity。",
+        "C 錯：價差不是營業收入；庫藏股交易也不因高於成本就改成營業活動。",
+        "D 錯：這是自己的股份；一般企業出售所持其他公司的投資，才通常屬 investing。"
+      ],
+      "review": {
+        "title": "先確認股份是哪家公司發行",
+        "text": "自己的 treasury stock 再出售：financing；一般企業持有別家公司長期股權投資再出售：investing。Greater than cost 不改變交易對象。",
+        "chapter_anchor": "lo3"
+      },
+      "diagnosis": {
+        "title": "看到「股票賣得比成本高」，套用一般投資的故事",
+        "thought": "猜測一：你可能把 treasury stock 理解成公司持有的股票投資，看到 sale … greater than cost，就想到「買低賣高」，因此選 D。猜測二：你其實知道是庫藏股，但答題時被價差吸引，先判斷有投資收益，忘了先問「這是誰發行的股票？」",
+        "attraction": "sale、stock、cost 三個字組合起來，很容易觸發「出售投資」的熟悉模式；greater than cost 又讓它像賺取投資報酬的題目。真正决定分類的 treasury 反而只有一個字，容易被略過。",
+        "breakdown": "Treasury stock 是公司買回自己的股份，是權益減項。再出售自己的股份取得現金，屬股东資金的變動，因此是 financing。高於成本的差額通常直接在權益處理，不是本題的投資收益，也不改變全筆收款的現金活動分類。",
+        "example": "講義補充例：先以 100 買回自己的股份，再以 120 售出。再次出售收到的整筆 120 是 financing inflow；20 的差額在權益內處理，不把 100 列籌資、20 列投資。若一般公司賣的是另一公司的長期股權投資，則通常是 investing。",
+        "cue": "先圈 treasury／own shares，再看 sale：自己的股權 → financing；持有別家公司的投資 → 通常 investing。最後才看價格高低，它不會把自己的股權交易變成投資活動。",
+        "check": "同樣收到 120：①出售本公司的庫藏股；②出售另一公司的長期股權投資。兩筆怎麼分？",
+        "answer": "Selling the company's own treasury shares is a financing inflow. Selling an investment in another company is generally an investing inflow.",
+        "check_zh": "①籌資流入；②通常投資流入。先看股份發行人，別先看有沒有價差。"
+      }
+    },
+    {
+      "number": 16,
+      "stem": "Preparing the statement of cash flows involves all of the following except determining the",
+      "options": {
+        "A": "change in cash during the period.",
+        "B": "cash provided by operations.",
+        "C": "cash provided by or used in investing and financing activities.",
+        "D": "current cash debt coverage."
+      },
+      "correct": "D",
+      "selected": null,
+      "result": "答對",
+      "score": 5.0,
+      "points": 5.0,
+      "option_explanations": [
+        "A 不選：要先掌握期初、期末現金差額，才能勾稽期間變動。",
+        "B 不選：cash provided by operations 是現金流量表的一部分。",
+        "C 不選：投資與籌資活動的現金流也要整理。",
+        "D 正確：current cash debt coverage 是分析比率，不是編製現金流量表必須決定的項目。"
+      ],
+      "review": {
+        "title": "編表與分析是兩個步驟",
+        "text": "Current cash debt coverage = Operating cash flow ÷ Average current liabilities；先有報表數字才能算比率，但編表不以這個比率作為必要項目。",
+        "chapter_anchor": "cash-analysis"
+      }
+    },
+    {
+      "number": 17,
+      "stem": "The following information is taken from Fulton Company's trial balance:\nLand held for speculation              €70,000\nResearch and development costs    35,000\nPlant expansion fund                       47,000\nFulton will report long-term investments of",
+      "options": {
+        "A": "€70,000.",
+        "B": "€82,000.",
+        "C": "€105,000.",
+        "D": "€117,000."
+      },
+      "correct": "D",
+      "selected": null,
+      "result": "答對",
+      "score": 10.0,
+      "points": 10.0,
+      "option_explanations": [
+        "A 錯：€70,000 只算投機持有土地，漏掉 €47,000 plant expansion fund。",
+        "B 錯：€82,000 不等於本題應納入的 €70,000 + €47,000。",
+        "C 錯：€105,000 = €70,000 + €35,000，把 R&D 納入且漏掉擴廠基金。",
+        "D 正確：Long-term investments = €70,000 + €47,000 = €117,000。"
+      ],
+      "review": {
+        "title": "先分類，再加總",
+        "text": "沿用教材將投機持有土地與擴廠基金列長期投資。實務中以資本增值為目的的土地可能適用 IAS 40 investment property，房地產商的待售土地可能是存貨，需依用途判斷。R&D 不屬本題長期投資：IAS 38 的研究支出費用化，符合條件的發展支出可認列無形資產，不能一概說全部 R&D 都要費用化。",
+        "chapter_anchor": "noncurrent-assets"
+      }
+    },
+    {
+      "number": 18,
+      "stem": "Lohmeyer Corporation reports:\nCash provided by operating activities    €250,000\nCash used by investing activities              110,000\nCash provided by financing activities       140,000\nBeginning cash balance                            120,000\nWhat is Lohmeyer's ending cash balance?",
+      "options": {
+        "A": "€620,000.",
+        "B": "€550,000.",
+        "C": "€330,000.",
+        "D": "€400,000."
+      },
+      "correct": "D",
+      "selected": null,
+      "result": "答對",
+      "score": 10.0,
+      "points": 10.0,
+      "option_explanations": [
+        "A 錯：€620,000 = 120,000 + 250,000 + 110,000 + 140,000；把 cash used by investing 當成流入了。",
+        "B 錯：€550,000 不符合期初現金加上三類淨流量的勾稽；不要憑 provided 次數猜總額。",
+        "C 錯：€330,000 不符合題目所列流入、流出與期初餘額，需逐项加減。",
+        "D 正確：€120,000 + €250,000 − €110,000 + €140,000 = €400,000。"
+      ],
+      "review": {
+        "title": "Cash used 是減號",
+        "text": "先算淨增加：250,000 − 110,000 + 140,000 = 280,000；再加期初 120,000 = 400,000。講義例中未列匯率變動影響，依提供數字勾稽。",
+        "chapter_anchor": "lo3"
+      }
+    }
+  ]
+}

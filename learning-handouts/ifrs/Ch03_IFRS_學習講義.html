@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="IFRS 第三章繁體中文學習講義：財務狀況表、現金流量表、附註與17個財務比率，附英文練習與原投影片頁碼。">
+  <title>Chapter 3｜Statement of Financial Position and Statement of Cash Flows｜IFRS 學習講義</title>
+  <style>
+    :root{--ink:#253449;--muted:#596a7b;--paper:#fffdf8;--line:#d9e0df;--accent:#1b6865;--deep:#103e45;--alert:#8b3b30}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.78 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}a{color:var(--accent)}a:hover{text-decoration-thickness:2px}h1,h2,h3,h4{line-height:1.35;color:var(--deep);margin:0 0 .8em}h1{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.035em}h2{font-size:1.85rem;border-bottom:1px solid var(--line);padding-bottom:.35em}h3{font-size:1.22rem;margin-top:1.65em}p{margin:.5em 0 1.05em}ul,ol{padding-left:1.45em}li{margin:.35em 0}strong{color:#183f47}code{font-family:Consolas,"Microsoft JhengHei",monospace;background:#edf3f1;padding:.1em .3em;border-radius:3px}
+    .quiz-wide{max-width:none!important}.quiz-item{border-top:2px solid var(--line);padding:1.2rem 0;scroll-margin-top:1rem}.quiz-item h3{display:flex;gap:1rem;align-items:baseline}.quiz-key{font-size:.83rem;color:var(--accent)}.quiz-columns{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) minmax(0,.9fr);gap:1rem}.quiz-columns>div{min-width:0}.quiz-columns h4{font-size:.87rem;border-bottom:1px solid var(--line);padding-bottom:.25rem}.choices{list-style:none;padding:0}.choices li{margin:.5rem 0}.option-notes{padding-left:1.1em;font-size:.94rem}.option-notes li{margin:.55rem 0}.quiz-review{background:#f9f2e4;padding:.75rem 1rem;border-radius:6px}.quiz-review p{font-size:.94rem}.hero{background:linear-gradient(135deg,#e8f1ec,#f9f0df);padding:4rem max(4vw,calc((100vw - 1320px)/2));border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem}.subtitle{font-size:1.18rem;max-width:70ch}.meta{color:var(--muted);font-size:.9rem}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:clamp(2rem,5vw,6rem);max-width:1500px;margin:auto;padding:3rem 4vw}.toc{position:sticky;top:1.2rem;align-self:start;max-height:calc(100vh - 2rem);overflow:auto;border-right:1px solid var(--line);padding-right:1.2rem}.toc b{display:block;margin-bottom:.7rem;color:var(--deep)}.toc a{display:block;padding:.32rem 0;text-decoration:none;font-size:.89rem}.toc a:hover{text-decoration:underline}main{min-width:0}section{margin-bottom:4.2rem;scroll-margin-top:1.5rem;max-width:860px}.lead{font-size:1.08rem;color:#405467}.slides{display:inline-block;color:var(--muted);font-size:.8rem;font-weight:700;letter-spacing:.04em;margin-bottom:.5rem}.note,.caution,.worked{padding:1rem 1.25rem;border-left:4px solid var(--accent);background:#edf5f2;margin:1.5rem 0}.caution{border-color:var(--alert);background:#fff2ed}.worked{border-color:#ba8650;background:#fbf3e5}.note h4,.caution h4,.worked h4{margin:0 0 .4em;font-size:1.02rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.tile{padding:1rem 1.15rem;border:1px solid var(--line);border-radius:8px;background:white}.tile h4{font-size:1rem;margin-bottom:.25rem}.tile p{margin:0}.table-wrap{overflow-x:auto;margin:1.2rem 0}table{border-collapse:collapse;width:100%;font-size:.94rem}th,td{border-bottom:1px solid var(--line);padding:.65rem .7rem;text-align:left;vertical-align:top}th{background:#eef3f0;color:var(--deep)}tbody tr:nth-child(even){background:#fbfaf6}.formula{font-family:Consolas,"Noto Sans TC",monospace;font-size:1rem;padding:.8rem 1rem;background:#f5f3ec;overflow:auto}.exam{border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0;background:#fff}.exam strong{display:block}.exam details{margin-top:.6rem}.exam summary,.learning-note summary{cursor:pointer;color:var(--accent);font-weight:700}.tip{color:var(--muted);font-size:.9rem}footer{color:var(--muted);font-size:.85rem;padding-bottom:3rem}a:focus-visible,summary:focus-visible{outline:3px solid #d58d40;outline-offset:3px}
+    @media(max-width:850px){.layout{display:block;padding:1.2rem 5vw}.toc{position:static;max-height:none;overflow-x:auto;display:flex;align-items:center;gap:1rem;white-space:nowrap;border-right:0;border-bottom:1px solid var(--line);padding:.6rem 0;margin-bottom:2rem}.toc b{margin:0}.toc a{flex:none}.grid{grid-template-columns:1fr}.quiz-columns{grid-template-columns:1fr}.hero{padding:2.5rem 5vw}}
+    @media print{.quiz-columns{grid-template-columns:1fr}body{font-size:11pt}.hero{padding:1rem 0}.layout{display:block;padding:0}.toc{display:none}a{color:inherit}}
+
+    .chapter-links{display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem;font-size:.9rem}.ratio-table td:nth-child(2){min-width:250px}.ratio-table td:first-child{min-width:150px}.summary-capsule{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}.summary-capsule b{color:var(--accent)}.learning-note{padding:1rem 1.2rem;background:#f7f2e7;border-radius:6px;margin:1.2rem 0}.num{font-variant-numeric:tabular-nums;white-space:nowrap}.study-check{list-style:none;padding:0}.study-check li{padding:.35rem 0}.study-check input{margin-right:.5rem;accent-color:var(--accent)}@media print{details> :not(summary){display:block!important}.exam{break-inside:avoid}.chapter-links{display:none}.table-wrap{overflow:visible}.ratio-table td:nth-child(2){min-width:0}}
+  </style>
+</head>
+<body>  <header class="hero">
+    <div class="eyebrow">Intermediate Accounting · IFRS · Chapter 3</div>
+    <h1>Statement of Financial Position<br>and Statement of Cash Flows</h1>
+    <p class="subtitle">財務狀況表與現金流量表：看懂公司手上的資源、欠下的義務，以及現金真正從哪裡來</p>
+    <p class="meta">依使用者提供的 <em>Ch03_Kieso_IFRS5E_PPT.pptx</em>（104 頁）整理。頁碼以原檔第一張為第 1 頁；另附你提供的 18 題原題詳解、四題錯題診斷（推測）及 20 題自編英文練習。沿用 ch01、ch02 的閱讀版型。</p>
+    <nav class="chapter-links" aria-label="相鄰章節"><a href="Ch01_IFRS_學習講義.html">← ch01 觀念與會計流程</a><a href="Ch02_IFRS_學習講義.html">← ch02 損益表與權益變動</a></nav>
+  </header>
+  <div class="layout">
+    <nav class="toc" aria-label="章節導覽"><b>本章導覽</b><a href="#start">讀法與本章主線</a><a href="#map">投影片地圖</a><a href="#lo1">1 財務狀況表</a><a href="#noncurrent-assets">非流動資產</a><a href="#current-assets">流動資產與營業週期</a><a href="#equity-liabilities">權益與負債</a><a href="#lo2">2 分類報表與完整例題</a><a href="#lo3">3 現金流量表</a><a href="#telemarketing">Telemarketing 四步驟</a><a href="#indirect-signs">間接法加減方向</a><a href="#nestor">Nestor 完整範例</a><a href="#cash-analysis">現金與償債能力</a><a href="#lo4">4 附註與揭露</a><a href="#lo5">5 十七個財務比率</a><a href="#lo6">6 IFRS 與 U.S. GAAP</a><a href="#standards-update">課件版本與準則更新</a><a href="#quiz-mistakes">你的四題錯題診斷</a><a href="#original-quiz">18 題原題詳解</a><a href="#review">20 題自編英文練習</a><a href="#glossary">英文術語速查</a><a href="#connections">跨章連結與自我檢查</a><a href="#sources">來源與核對</a></nav>
+    <main>
+      <section id="start">
+        <p class="lead">第二章回答「這段期間賺了多少？」第三章接著問兩件事：<strong>某一天擁有什麼、欠什麼？這段期間又實際收付了多少現金？</strong> 把這兩張報表連起來，才不會把有資產當成有現金，或把有淨利當成有能力付帳。</p>
+        <div class="grid"><div class="tile"><h4>Statement of financial position</h4><p>財務狀況表是<strong>某一日的餘額</strong>：Assets、liabilities、equity。標題常寫 <em>as at December 31</em>。</p></div><div class="tile"><h4>Statement of cash flows</h4><p>現金流量表是<strong>一段期間的現金變動</strong>：Operating、investing、financing。標題常寫 <em>for the year ended December 31</em>。</p></div></div>
+        <div class="note"><h4>讀法與考試英文</h4><p>中文說明推理，英文保留用於辨認題目、科目和作答。先讀 LO1、LO2 的分類，再做 Telemarketing 四步驟，接著讀 Nestor，最後整理比率。新增你提供的 18 題英文原題與中文詳解；先看四題錯題診斷（推測），再重做原題。另保留 20 題自編英文練習，兩者分開標示。</p></div>
+        <div class="caution"><h4>資料邊界</h4><p>這份講義重新撰寫說明與表格，不嵌入原投影片圖片。原檔 104 頁包含授權頁、封面、目錄、學習目標與版權頁；未找到額外講者備註。公司數字均用作<strong>課件歷史範例</strong>，不代表公司現在的財報。「講義補充」是協助理解的解釋或官方核對，不代表老師口頭講過；個人作答只記你明確補充的選項與貼上評分；錯因猜測清楚標示，未經你確認不當成你的心得或已理解紀錄。</p></div>
+        <p class="tip">本章的 LO*5 原本帶星號，屬財務比率補充／附錄；這裡完整保留。是否列入考試，仍依老師指定範圍。</p>
+      </section>
+
+      <section id="map">
+        <h2>投影片地圖</h2>
+        <div class="table-wrap"><table><thead><tr><th>範圍</th><th>原投影片</th><th>讀完應會回答</th></tr></thead><tbody>
+          <tr><td>導入與來源</td><td>1–4、104</td><td>第三章主題、六個 learning objectives、來源與使用界線。</td></tr>
+          <tr><td>LO1</td><td>5–40</td><td>財務狀況表有何用途和限制？資產、權益與負債如何分類、衡量與揭露？</td></tr>
+          <tr><td>LO2</td><td>41–43</td><td>Account form、report form 差在哪？Scientific Products 的總額如何勾稽？</td></tr>
+          <tr><td>LO3</td><td>44–73</td><td>三種現金活動如何分？Telemarketing 四步驟、Nestor、Hu 與 free cash flow 如何算？</td></tr>
+          <tr><td>LO4</td><td>74–90</td><td>附註補哪些資訊？帳齡、到期分析、資產變動表如何讀？抵銷與減項如何區分？</td></tr>
+          <tr><td>LO*5</td><td>91–95</td><td>四類比率、17 個指標的分子、分母、用途與限制。</td></tr>
+          <tr><td>LO6</td><td>96–103</td><td>IFRS 與 U.S. GAAP 的共同要求、排列與用語差異，以及 IFRS 18 更新。</td></tr>
+        </tbody></table></div>
+        <p class="tip">同一 LO 內再以小標題標頁碼。圖片中的表格與公式已另行讀取；簡報第 47 頁的三類活動說明也包含於下文。</p>
+      </section>
+
+      <section id="lo1">
+        <span class="slides">LO1 · 投影片 5–12</span><h2>財務狀況表：先看資源，再看資金來源</h2>
+        <p><strong>Statement of financial position（財務狀況表）</strong>也稱 <strong>balance sheet（資產負債表）</strong>。它在特定日期列示企業的資源、對債權人的義務，以及扣除負債後屬於權益持有人的剩餘權益。它提供判斷未來 cash flows 金額、時間和不確定性的資料，卻不是未來現金流的保證。（投影片 6）</p>
+        <p class="formula">Assets = Liabilities + Equity<br>Equity = Assets − Liabilities</p>
+        <h3>用途：同一張表可以回答不同問題</h3>
+        <div class="table-wrap"><table><thead><tr><th>用途／英文</th><th>要問什麼</th><th>閱讀方向</th></tr></thead><tbody>
+          <tr><td>Rates of return<br>報酬率</td><td>用了多少資產或股東資金，產生多少成果？</td><td>需把本表餘額與損益表的期間成果搭配。</td></tr>
+          <tr><td>Capital structure<br>資本結構</td><td>資源主要由借款、其他負債，還是股東資金支撐？</td><td>比較 liabilities 與 equity 的組成。</td></tr>
+          <tr><td>Liquidity<br>流動性</td><td>短期到期義務能否及時支付？資產多快轉成現金？</td><td>看流動資產的品質、流動負債與現金流。</td></tr>
+          <tr><td>Solvency<br>長期償債能力</td><td>長期能否清償負債、持續生存？</td><td>看全部債務負擔與可持續產生資金的能力。</td></tr>
+          <tr><td>Financial flexibility<br>財務彈性</td><td>遇到突發需求或機會時，能否調整現金流的金額和時間？</td><td>看現金餘裕、籌資能力、債務限制與資產運用。</td></tr>
+        </tbody></table></div>
+        <p>投影片 7 用圖像區分三個詞。<strong>Liquidity</strong> 偏短期；<strong>solvency</strong> 看長期生存與償債；<strong>financial flexibility</strong> 看面對變動能否調度資金。它們相關，但不能用一個 current ratio 就回答全部。</p>
+        <h3>限制：帳面價值不等於公司全部價值</h3>
+        <ul><li><strong>Historical cost（歷史成本）</strong>可能與今天的價值有落差。課件說多數資產負債按歷史成本報導，是概括提醒；實務是混合衡量基礎，須看各項準則，不能把每一項都當成成本。</li><li><strong>Judgments and estimates（判斷與估計）</strong>會影響壞帳、折舊年限、減損等金額，帳面餘額並非全部可直接觀察。</li><li><strong>Omitted items（未列入的價值）</strong>：員工能力、部分自創品牌等可能對企業有價值，卻不因有價值就能認列為資產。投影片 8 的圖指出員工價值未被納入。</li></ul>
+        <h3>三個要素：課件措辭與目前觀念架構</h3>
+        <div class="table-wrap"><table><thead><tr><th>要素</th><th>投影片 9–11 的說法（改寫）</th><th>官方核對補充</th></tr></thead><tbody>
+          <tr><td>Asset 資產</td><td>企業控制、源於過去事件、預期帶來未來經濟利益的資源。</td><td>現行 Framework 強調「由過去事件形成、企業控制的<strong>現時經濟資源</strong>」；經濟資源是有潛力產生利益的權利。</td></tr>
+          <tr><td>Liability 負債</td><td>過去事件形成的現時義務，清償預期導致資源流出。</td><td>現行 Framework 強調「由過去事件形成、移轉經濟資源的<strong>現時義務</strong>」。</td></tr>
+          <tr><td>Equity 權益</td><td>Assets 減去所有 liabilities 後的剩餘利益。</td><td>仍是 residual interest；不是某一包現金。</td></tr>
+        </tbody></table></div>
+        <p class="tip">投影片保留較舊的 expected benefits / expected outflow 措辭。若考題要求課件定義，辨認原用語；若問現行 Framework，使用上表補充。定義成立與能否認列仍需分開判斷。<a href="#src-framework">Conceptual Framework 官方資料</a>。</p>
+        <div class="summary-capsule"><b>本段收斂</b><p>財務狀況表是某一天的「資源與請求權」：資源由債權人及權益持有人支撐。判斷企業能否付帳，還要追問資產能否變現、負債何時到期。</p></div>
+      </section>
+
+      <section id="noncurrent-assets">
+        <span class="slides">LO1 · 投影片 12–20</span><h2>非流動資產：看用途，不只看外觀</h2>
+        <p><strong>Non-current assets（非流動資產）</strong>在課件分成 long-term investments、property, plant, and equipment、intangible assets、other assets。重要的是持有目的和使用方式：同樣一塊土地，長期自用、持作投資、供日常銷售，可能分到不同類別。</p>
+        <div class="table-wrap"><table><thead><tr><th>類別</th><th>內容與判斷</th><th>衡量／揭露重點</th></tr></thead><tbody>
+          <tr><td>Long-term investments<br>長期投資</td><td>長期持有的債券、股票、票據；非目前營業自用的有形資產；sinking / pension / expansion funds；未合併投資或 associates。</td><td>用途、投資性質與適用準則要辨認；不能因為叫「投資」就全部採同一衡量方法。（14–15）</td></tr>
+          <tr><td>Property, plant, and equipment (PPE)<br>不動產、廠房及設備</td><td>長期且有形、供正常營運使用，如土地、建築、機器、家具。（16–17）</td><td>成本或適用重估模式、累計折舊、減損與帳面金額；課件也提到天然資源的 depletion。</td></tr>
+          <tr><td>Intangible assets<br>無形資產</td><td>無實體、非金融工具，如 patents、copyrights、franchises、trademarks、customer lists。課件另列 goodwill。（18–19）</td><td>有限年限攤銷；非確定年限不按任意年數攤銷，需減損測試。Goodwill 的會計另按適用準則處理。</td></tr>
+          <tr><td>Other assets<br>其他資產</td><td>可能含長期預付、非流動應收、特定基金、受限制現金或證券。（20）</td><td>「其他」不代表不用說明；先排除應分到其他明確類別的項目。</td></tr>
+        </tbody></table></div>
+        <div class="note"><h4>講義補充：depreciation、depletion、amortization</h4><p><strong>Depreciation（折舊）</strong>用於有形資產可折舊金額的期間分攤；<strong>depletion（折耗）</strong>是課件用於礦藏等耗竭資源的名稱；<strong>amortization（攤銷）</strong>常用於有限年限無形資產。分攤不等於每年重新估價，也不表示本期又付了那筆購置現金。土地與建築通常須分開：土地一般無限使用年限而不折舊，建築物則折舊；有特殊有限年限的情況仍需另判斷。</p></div>
+        <p><strong>有限年限 limited useful life</strong> 的無形資產要在年限內攤銷，並依規定考慮減損；<strong>非確定年限 indefinite useful life</strong> 不等於永遠不會失去價值。IAS 38 規定這類無形資產不攤銷，至少每年進行減損測試；課件的「periodically assess」不能讀成完全可不測試。<a href="#src-ias38">IAS 38</a>。</p>
+        <h3>課件公司範例：主表讓你看總額，附註讓你看組成</h3>
+        <div class="table-wrap"><table><thead><tr><th>投影片／公司</th><th>可確認的課件數字</th><th>學習重點</th></tr></thead><tbody>
+          <tr><td>15 · Christian Dior</td><td>€638 million 的 joint ventures and associates；€3,481 million 的 non-current financial assets。</td><td>長期投資不是只列一個「股票」總數。</td></tr>
+          <tr><td>17 · AEON</td><td>PPE 各類金額合計 ¥2,755,110 million；另揭露累計折舊 ¥2,282,350 million。</td><td>分類有土地、建築、家具、車輛、租賃資產、在建工程。圖中 policy 說明按成本及直線法，並列不同年限；不能把個別公司的年限當作通用規則。</td></tr>
+          <tr><td>19 · Nokia</td><td>Goodwill €5,452 million + other intangible assets €3,353 million = total intangibles €8,805 million。</td><td>總額包含不同性質的項目，goodwill 仍須分辨。</td></tr>
+        </tbody></table></div>
+        <div class="caution"><h4>「待出售」不能一概放在非流動其他資產</h4><p>投影片 20 的 other assets 列了 property held for sale；這是概略清單。若符合 IFRS 5 的 <strong>held-for-sale</strong> 條件，須按該準則分類、衡量並單獨呈列，不能光憑清單放進一般非流動資產。<a href="#src-ifrs5">IFRS 5</a>。也不要把「持作未來開發的土地」直接等同於已符合 held-for-sale 條件。</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>分類先問「拿來做什麼」，衡量再問「適用哪個規則」。有形／無形、長期／短期，都不能代替用途與具體條件。</p></div>
+      </section>
+
+      <section id="current-assets">
+        <span class="slides">LO1 · 投影片 21–33</span><h2>流動資產：從現金出發，再回到現金</h2>
+        <h3>Operating cycle（營業週期）</h3>
+        <p>營業週期是取得材料或商品開始，到出售產品並收回現金為止的平均時間。課件圖中，買賣業是 <strong>Cash → merchandise inventory → sales → accounts receivable → cash</strong>；製造業多了 <strong>raw materials → work in process → finished goods</strong>，才出售並收款。它不是「固定一個月」，也不是會計年度長度。（投影片 21）</p>
+        <p>課件第 22 頁用「一年或營業週期，取較長」協助理解。<strong>完整判斷不只有這個口訣</strong>：正常營業週期內預期實現、出售或耗用；主要為交易而持有；預期在報導日後十二個月內實現；或符合未受長期使用限制條件的 cash / cash equivalent，均可能屬 current assets。正常週期無法清楚辨認時，假定十二個月。<a href="#src-current-assets">IAS 1 §§66–68 補充</a>。</p>
+        <div class="worked"><h4>講義自編分類練習</h4><p>某造船公司的正常營業週期是 18 個月，預期在該週期售出的在製船舶，可能仍屬 <strong>current inventory</strong>。但一般公司持有、兩年後才到期的普通長期投資，不能只因有人打算提前出售就套用同樣結論；須判斷持有目的與流動分類條件。</p></div>
+        <h3>五類流動資產與衡量基礎</h3>
+        <div class="table-wrap"><table><thead><tr><th>課件順序</th><th>意思</th><th>衡量及揭露</th></tr></thead><tbody>
+          <tr><td>Prepaid expenses<br>預付費用</td><td>先付現金，未來才取得／耗用服務，如保險、租金、廣告或 supplies。（23–24）</td><td>尚未耗用的成本先是資產；耗用後轉費用。不是所有先付的款項都立即當費用。</td></tr>
+          <tr><td>Inventories<br>存貨</td><td>商品、原料、在製品、成品等。（25–27）</td><td>課件與 IAS 2：成本與淨變現價值孰低；揭露 cost flow assumption，如 FIFO / weighted-average。</td></tr>
+          <tr><td>Receivables<br>應收款</td><td>對客戶或其他對象的收款權利。（28–29）</td><td>辨認主要類別、預期無法收回金額、non-trade receivables 與 collateral；看淨額與附註。</td></tr>
+          <tr><td>Short-term investments<br>短期投資</td><td>短期持有的金融投資。（30）</td><td>課件寫 generally fair value。實際仍依 IFRS 9 的業務模式、合約現金流等條件判斷，不能全部直接指定 FVTPL。</td></tr>
+          <tr><td>Cash and cash equivalents<br>現金與約當現金</td><td>現金、活期存款及符合條件的短期高度流動投資。（31–33）</td><td>現金通常以貨幣金額閱讀；課件第 22 頁的 fair value 是簡化總表，外幣、限制與約當現金判斷須另看。</td></tr>
+        </tbody></table></div>
+        <p><strong>Net realizable value (NRV，淨變現價值)</strong>是正常營業中估計售價，扣估計完成成本及出售所需成本；不是一律等於 fair value。<strong>FIFO / average cost</strong> 回答成本如何分派；<strong>lower of cost and NRV</strong> 回答期末是否需要減記，兩個問題不可混在一起。<a href="#src-ias2">IAS 2</a>。</p>
+        <h3>Cash equivalents：不是只看期末「還剩三個月」</h3>
+        <p>除了短期與高流動性，還要能轉換為已知金額現金、價值變動風險極低，用來滿足短期現金承諾。一般以<strong>取得日起到期不超過約三個月</strong>判斷。投影片 31 沒有寫清楚起算點；不能把年初買的兩年期投資，在年末剩三個月時自動改成 cash equivalent。<a href="#src-cash-equivalents">IAS 7 §§6–9</a>。</p>
+        <p><strong>Restricted cash（受限制現金）</strong>須揭露限制內容並依期限及條件分類。投影片 33 的 Vodafone 範例將 £182 million restricted deposits 放在非流動投資明細；它只是該範例的呈現，不代表所有受限制存款一律非流動，也不能把不能動用的錢當作隨時可支付營業帳款的資金。</p>
+        <h3>把主表與附註接起來</h3>
+        <div class="table-wrap"><table><thead><tr><th>頁碼／範例</th><th>數字與讀法</th></tr></thead><tbody>
+          <tr><td>24 · adidas</td><td>Other current assets 淨額 €725 million；附註預付 €242、其他稅款應收 €124、return assets €258、sundry €107，總額 €731，再扣 allowance €6。<strong>242 + 124 + 258 + 107 − 6 = 725</strong>。</td></tr>
+          <tr><td>26 · Ahold Delhaize</td><td>Inventories €3,196 million。主表連到附註，才看得到 cost / NRV 孰低及 FIFO / weighted-average 等政策。</td></tr>
+          <tr><td>27 · Acer</td><td>圖上 NT$ 欄（單位 millions）：原料 14,528,727、在製 49,437、成品 16,907,906、備品 4,544,547、在途 9,233,802，扣 obsolescence / NRV provision 5,236,224，淨額 40,028,195。這裡沿用課件數字與單位，不自行把它換成別的單位。</td></tr>
+          <tr><td>29 · RELX</td><td>Trade receivables €1,829 − allowance €87 = €1,742 million；再加 prepayments and accrued income €224、net finance lease receivable €49，共 €2,015 million。<strong>主表標籤可能包含多種類款項</strong>。</td></tr>
+          <tr><td>30 · AB InBev</td><td>€87 million current investments 在附註標為 financial assets at fair value through profit or loss (FVTPL)；要看類別，不能只讀「投資」。</td></tr>
+          <tr><td>32 · adidas</td><td>Cash €2,629 million；附註解釋包括銀行、庫存現金與短期銀行存款。</td></tr>
+        </tbody></table></div>
+        <div class="note"><h4>講義補充分錄：先付錢，之後才有費用</h4><p>假設年初支付一年保險 $12,000：<code>DR Prepaid Insurance 12,000 / CR Cash 12,000</code>。一個月耗用：<code>DR Insurance Expense 1,000 / CR Prepaid Insurance 1,000</code>。第一次有現金流出；第二次是非現金調整，讓資產與費用進正確期間。這和 ch01 的 adjusting entry 接起來。</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>Current 是分類，不保證今天能變現。Inventory 要售出、receivable 要收回、prepayment 是將來的服務；真正可立即支出的現金還要扣除使用限制。</p></div>
+      </section>
+
+      <section id="equity-liabilities">
+        <span class="slides">LO1 · 投影片 34–40</span><h2>權益與負債：誰提供資金，何時必須清償？</h2>
+        <h3>Equity 的六個常見項目</h3>
+        <div class="table-wrap"><table><thead><tr><th>英文科目</th><th>中文與意思</th><th>容易混淆之處</th></tr></thead><tbody>
+          <tr><td>Share capital</td><td>股本；課件以已發行 ordinary / preference shares 的面額或設定價值說明。</td><td>股本不等於公司全部市值，也不等於發行股份收到的全部金額。</td></tr>
+          <tr><td>Share premium</td><td>股本溢價；投入超過面額／設定價值的部分。</td><td>和 retained earnings 的來源不同。</td></tr>
+          <tr><td>Retained earnings</td><td>保留盈餘；累積未分配盈餘。</td><td>不是特定銀行存款；數字增加不保證現金同步增加。</td></tr>
+          <tr><td>Accumulated other comprehensive income (AOCI)</td><td>累積其他綜合損益。</td><td>接續 ch02 的 OCI；可能有累積損失，不能全部當正數。</td></tr>
+          <tr><td>Treasury shares</td><td>庫藏股；企業買回自己的股份。</td><td>權益減項，通常不是持有「另一家公司股票」的投資資產。</td></tr>
+          <tr><td>Non-controlling interest (NCI)</td><td>非控制權益；合併子公司中不屬母公司持有的權益。</td><td>列在合併權益，與母公司業主權益分開；不是一項營業費用。</td></tr>
+        </tbody></table></div>
+        <p>投影片 35 的 Ahold Delhaize 權益歸屬股東總額 €14,817 million，含 currency translation reserve −€60 million、cash flow hedging reserve −€2 million 等項目。<strong>Reserve（準備／公積／儲備）</strong>在此是權益組成的名稱，不能一看到 reserve 就認為是負債或保留的現金。投影片 36 的 Lenovo 另示範 reserves、perpetual securities、NCI 與相關 put option 的列報；複雜金融工具仍須依合約條件判斷，不憑名称保證屬權益。</p>
+        <h3>Non-current liabilities 與 current liabilities</h3>
+        <p>課件第 37 頁把非流動負債分成三種來源：<strong>融資安排</strong>（如長期借款／債券）、<strong>日常營運</strong>（如部分長期給付義務）、以及<strong>金額、收款對象或付款日仍有不確定性</strong>的義務。不要把不確定的義務直接等同於「不用認列」；是否有現時義務、需認列或揭露，依適用準則判斷。</p>
+        <p>第 39 頁流動負債常見購買商品或服務形成的 payables、預收尚未履約的 collections in advance，以及週期／一年內清償義務。<strong>Unearned revenue / contract liability</strong> 表示已收錢但還欠客戶商品或服務；收現不是收入認列的充分條件。</p>
+        <div class="caution"><h4>官方核對補充：負債分類不能只看「公司預計何時還」</h4><p>除正常週期、交易目的與十二個月內到期條件外，還要看<strong>報導日是否具有將清償遞延至少十二個月的實質權利</strong>。公司想晚點還不等於有這個權利。報導日或之前須遵守的 covenants，與報導日之後才須遵守的條件，對分類與附註的作用不同。2024 年起生效的修訂要求留意後者造成提前到期的風險揭露。<a href="#src-current-liabilities">IAS 1 負債條件</a>、<a href="#src-covenants">官方 covenants 說明</a>。</p></div>
+        <div class="worked"><h4>講義自編：同一筆長期借款要拆流動部分</h4><p>報導日借款本金 $100,000，其中 $20,000 在未來十二個月到期，其餘 $80,000 符合非流動條件。列 <strong>current portion of long-term debt $20,000</strong> 與 <strong>non-current debt $80,000</strong>。不要因合約原本叫「五年借款」就全列非流動。</p></div>
+        <p>投影片 38 的 Silver Fern Farms：long-term payables NZD603 thousand、finance leases 55、provisions 9,547，合計 <strong>NZD10,205 thousand</strong>。投影片 40 的 Siemens：current liabilities 總額 <strong>€47,874 million</strong>，明列 short-term debt and current maturities of long-term debt、trade payables、current provisions、tax liabilities 等。<strong>Provisions 可以流動或非流動</strong>，不能只看名稱分類。</p>
+        <div class="summary-capsule"><b>本段收斂</b><p>Equity 先辨來源與減項；liabilities 再辨義務與到期條件。資金「來自誰」和「何時要還」是不同問題。</p></div>
+      </section>
+
+      <section id="lo2">
+        <span class="slides">LO2 · 投影片 41–43</span><h2>編製分類財務狀況表</h2>
+        <p><strong>Classified statement of financial position</strong> 把不同性質項目分開，尤其區分 current / non-current，讓人看清資產與義務的時間結構。<strong>Account form（帳戶式）</strong>將 assets 放左，equity and liabilities 放右；<strong>report form（報告式）</strong>把各部分上下排列。兩者不是不同會計結果，總額要相同。（投影片 42–43）</p>
+        <p>IFRS 沒有強制全世界採完全相同的排列順序，但<strong>這不等於可以任意省略必要項目</strong>。一般用流動／非流動分類；若按流動性排列能提供可靠且更攸關資訊，IAS 1 有相應例外。不要把課件的 assets → equity → liabilities 排列當作唯一合法格式。<a href="#src-ias1">IAS 1</a>。</p>
+        <h3>Scientific Products：從明細走到平衡（投影片 43）</h3>
+        <p>原圖是一張完整 report-form statement；下列依資產、權益、負債重組成讀法表。金額皆為課件的 $，不是自編數字。</p>
+        <div class="table-wrap"><table><thead><tr><th>資產區</th><th>明細與算式</th><th>小計</th></tr></thead><tbody>
+          <tr><td>Long-term investments</td><td>Held-for-collection securities 82,000 + land held for future development 5,500</td><td class="num">$87,500</td></tr>
+          <tr><td>PPE</td><td>Land 125,000 + buildings (975,800 − accumulated depreciation 341,200) = 125,000 + 634,600</td><td class="num">$759,600</td></tr>
+          <tr><td>Intangible assets</td><td>Capitalized development costs 6,000 + goodwill 66,000 + other identifiable intangibles 28,000</td><td class="num">$100,000</td></tr>
+          <tr><td><strong>Total non-current assets</strong></td><td>87,500 + 759,600 + 100,000</td><td class="num"><strong>$947,100</strong></td></tr>
+          <tr><td>Current assets</td><td>Inventory 489,713 + prepaid expenses 16,252 + net receivables (165,824 − 1,850) + short-term investments 51,030 + cash and cash equivalents 52,485</td><td class="num">$773,454</td></tr>
+          <tr><td><strong>Total assets</strong></td><td>947,100 + 773,454</td><td class="num"><strong>$1,720,554</strong></td></tr>
+        </tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>權益與負債區</th><th>明細與算式</th><th>小計</th></tr></thead><tbody>
+          <tr><td>Equity attributable to owners</td><td>Share capital—preference 300,000 + ordinary 400,000 + share premium—preference 10,000 + ordinary 27,500 + retained earnings 170,482 − AOCI loss 8,650 − treasury shares 12,750</td><td class="num">$886,582</td></tr>
+          <tr><td><strong>Total equity</strong></td><td>Owners' equity 886,582 + NCI 13,500</td><td class="num"><strong>$900,082</strong></td></tr>
+          <tr><td>Non-current liabilities</td><td>Bonds due January 31, 2035: 425,000 + pension provisions 75,000</td><td class="num">$500,000</td></tr>
+          <tr><td>Current liabilities</td><td>Notes payable 80,000 + accounts payable 197,532 + interest payable 20,500 + salaries and wages payable 5,560 + warranty provisions 12,500 + customer deposits 4,380</td><td class="num">$320,472</td></tr>
+          <tr><td><strong>Total liabilities</strong></td><td>500,000 + 320,472</td><td class="num"><strong>$820,472</strong></td></tr>
+          <tr><td><strong>Total equity and liabilities</strong></td><td>900,082 + 820,472</td><td class="num"><strong>$1,720,554</strong></td></tr>
+        </tbody></table></div>
+        <div class="worked"><h4>做題順序：先分類，再扣減項，最後核對總額</h4><ol><li>把資產依用途、期限分類；別把未自用土地自動塞進 PPE。</li><li>Buildings 扣 accumulated depreciation；receivables 扣 allowance。兩者是<strong>資產評價減項</strong>，不是負債。</li><li>AOCI loss 與 treasury shares 減權益，NCI 加入合併 total equity。</li><li>負債分到流動或非流動，兩個 subtotal 加成 total liabilities。</li><li>驗算：<strong>$1,720,554 = $820,472 + $900,082</strong>。</li></ol></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>平衡只是必要條件；把 allowance 當負債、或把 treasury shares 當資產，可能湊得出平衡卻仍然分類錯。要同時檢查位置與加減方向。</p></div>
+      </section>
+
+      <section id="lo3">
+        <span class="slides">LO3 · 投影片 44–50</span><h2>現金流量表：現金從哪裡來、用到哪裡去？</h2>
+        <p><strong>Statement of cash flows（現金流量表）</strong>提供一段期間的現金及約當現金收付，回答來源、用途和餘額變動。它補足應計損益表：認列 revenue 不一定收了錢；認列 expense 不一定現在付了錢。（投影片 45–46）</p>
+        <h3>三種活動：先看交易性質，再看有無收付現金</h3>
+        <div class="table-wrap"><table><thead><tr><th>活動</th><th>主要意思</th><th>常見現金流入</th><th>常見現金流出</th></tr></thead><tbody>
+          <tr><td>Operating activities<br>營業活動</td><td>主要產生收入的活動，以及不屬投資或籌資的其他活動。</td><td>向客戶收取商品／服務款。</td><td>付供應商、薪資與營業支出；稅的分類仍看具體條件。</td></tr>
+          <tr><td>Investing activities<br>投資活動</td><td>取得、處分長期資產，以及非約當現金的其他投資。</td><td>出售 PPE、出售其他企業證券、收回借予他人的本金。</td><td>買 PPE、買其他企業投資、借款給他人。</td></tr>
+          <tr><td>Financing activities<br>籌資活動</td><td>改變投入權益和借款規模、組成的活動。</td><td>發行自己公司的股份、債券、借款。</td><td>償還借款本金、買回自己股份；本章作業將支付股利歸籌資。</td></tr>
+        </tbody></table></div>
+        <p>投影片 47 的概括語句把 financing 描述為涉及負債與權益的交易；這<strong>不是「凡負債變動都屬籌資」</strong>。支付商品賒購形成的 trade payable，通常仍是營業活動；一般借款本金才是籌資。投影片 49 的投資例子適用一般非金融公司的教學情境，交易目的／金融業主業等特殊情況應按 IAS 7 判斷。<a href="#src-ias7">IAS 7</a>。</p>
+        <div class="caution"><h4>課件作業條件：dividends paid 列 financing</h4><p>第 49 頁圖表的註腳明示：課件版本的 IFRS 允許支付股利列 operating 或 financing，但<strong>本章作業假設 financing activity</strong>。Telemarketing、Nestor 的答案依此編製。這是原教材的解題條件；我不會把它當成你對其他事項的指令。採用 IFRS 18 後的分類另見<a href="#standards-update">準則更新</a>。</p></div>
+        <h3>準備哪些資料？</h3>
+        <ul><li><strong>Comparative statements of financial position</strong>：期初、期末資產負債權益餘額，找出變動。</li><li><strong>Current income statement</strong>：本期淨利、折舊、攤銷、處分損益等。</li><li><strong>Selected transaction data</strong>：買賣資產、股份、借款與非現金交易明細。餘額差可能同時含多種原因，不能只憑差額決定現金流。</li></ul>
+        <p class="formula">Net change in cash = Operating cash flow + Investing cash flow + Financing cash flow<br>Ending cash = Beginning cash + Net change in cash</p>
+        <p class="tip">上式是課件簡化情境；若存在匯率變動等對現金及約當現金的影響，還須另行調節，不能把所有餘額差一律塞到三種活動裡。</p>
+        <div class="note"><h4>講義補充：direct method 與 indirect method</h4><p><strong>Direct method（直接法）</strong>列重大類別的收現／付現；<strong>indirect method（間接法）</strong>從損益出發，調整非現金、應計遞延及屬投資／籌資的損益項目，得出營業現金流。兩者若資料與處理一致，營業現金流淨額應相同。原簡報主要示範間接法。<a href="#src-ias7">官方說明</a>。</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>先排除「沒有收付現金」的投資／籌資交易，再將真正現金流依性質分類。三類合起來，才解釋期初現金怎麼走到期末。</p></div>
+      </section>
+
+      <section id="telemarketing">
+        <span class="slides">LO3 · 投影片 51–65</span><h2>Telemarketing：四步驟完整走一次</h2>
+        <p>Telemarketing 是 2026 年開始營運的服務公司。發行 50,000 股、每股 $1 面額取得 $50,000 現金；租用辦公空間與設備；六月買土地 $15,000；本年支付 dividends $14,000。課件的期初比較欄採<strong>開始前全為零</strong>；發股款是本期 financing inflow，不是另外再塞入期初現金。（投影片 51–53）</p>
+        <h3>先整理來源資料</h3>
+        <div class="table-wrap"><table><thead><tr><th>科目</th><th>期初</th><th>2026 年末</th><th>本期變動</th></tr></thead><tbody>
+          <tr><td>Land</td><td>$0</td><td>$15,000</td><td>增加 $15,000</td></tr>
+          <tr><td>Accounts receivable</td><td>$0</td><td>$41,000</td><td>增加 $41,000</td></tr>
+          <tr><td>Cash</td><td>$0</td><td>$31,000</td><td>增加 $31,000</td></tr>
+          <tr><td>Total assets</td><td>$0</td><td>$87,000</td><td>15,000 + 41,000 + 31,000</td></tr>
+          <tr><td>Share capital</td><td>$0</td><td>$50,000</td><td>增加 $50,000</td></tr>
+          <tr><td>Retained earnings</td><td>$0</td><td>$25,000</td><td>淨利 39,000 − 股利 14,000</td></tr>
+          <tr><td>Accounts payable</td><td>$0</td><td>$12,000</td><td>增加 $12,000</td></tr>
+          <tr><td>Total equity and liabilities</td><td>$0</td><td>$87,000</td><td>50,000 + 25,000 + 12,000</td></tr>
+        </tbody></table></div>
+        <p>損益表資料：revenues <strong>$172,000</strong> − operating expenses <strong>$120,000</strong> = income before income tax <strong>$52,000</strong>；再扣 income tax <strong>$13,000</strong>，得到 <strong>net income $39,000</strong>。已付股利 $14,000 是額外資料，不從淨利再扣一次費用。</p>
+        <h3>Step 1 · 求 operating cash flow（54–58）</h3>
+        <p>課件將 net income 的應計結果轉成現金：A/R 增加 $41,000，代表已認列收入卻未收現，要<strong>扣</strong>；A/P 增加 $12,000，在此範例代表已認列營業相關成本／費用卻未付款，要<strong>加回</strong>。</p>
+        <div class="worked"><h4>間接法</h4><p class="formula">Net income $39,000<br>− Increase in accounts receivable $41,000<br>+ Increase in accounts payable $12,000<br>= Net cash provided by operating activities $10,000</p><p><strong>加回 A/P 不表示新增收入</strong>；只是把尚未付款的部分從應計損益換回現金基礎。</p></div>
+        <div class="note"><h4>講義補充：用直接收付款再驗算</h4><p>依本例沒有其他收付款差異的條件，客戶收現 = $172,000 − $41,000 = <strong>$131,000</strong>；營業費用付現 = $120,000 − $12,000 = <strong>$108,000</strong>；所得稅付現 <strong>$13,000</strong>。所以 $131,000 − $108,000 − $13,000 = <strong>$10,000</strong>。這是依課件資料重建的教學補充，原簡報不是用直接法編表。</p></div>
+        <h3>Step 2 · 求 investing 與 financing（59–62）</h3>
+        <div class="table-wrap"><table><thead><tr><th>交易</th><th>分類</th><th>現金效果</th></tr></thead><tbody>
+          <tr><td>Purchase of land</td><td>Investing</td><td>−$15,000</td></tr>
+          <tr><td>Issuance of ordinary shares</td><td>Financing</td><td>+$50,000</td></tr>
+          <tr><td>Payment of cash dividends</td><td>Financing（本章條件）</td><td>−$14,000</td></tr>
+          <tr><td>Net financing cash flow</td><td>50,000 − 14,000</td><td><strong>+$36,000</strong></td></tr>
+        </tbody></table></div>
+        <h3>Step 3 · 加總本期現金增減（63–64）</h3>
+        <p class="formula">$10,000 operating − $15,000 investing + $36,000 financing = $31,000 net increase in cash</p>
+        <h3>Step 4 · 勾稽期初與期末（65）</h3>
+        <p class="formula">Beginning cash $0 + Net increase $31,000 = Ending cash $31,000</p>
+        <p>這個 $31,000 必須和比較財務狀況表的 Cash 相同；$39,000 net income 和 $25,000 retained earnings 都不是期末現金答案。</p>
+        <div class="caution"><h4>三個數字，三種意思</h4><p><strong>$39,000</strong> 是本期 net income；<strong>$25,000</strong> 是扣股利後期末 retained earnings；<strong>$31,000</strong> 是三種活動共同形成的期末 cash。財務狀況表還包含 $41,000 應收與 $15,000 土地，所以企業的資源不只剩現金。</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>淨利先變成營業現金流，再加投資與籌資，最後才到期末現金。每一步都要知道正在回答哪個數字，別一步跳到最後。</p></div>
+      </section>
+
+      <section id="indirect-signs">
+        <span class="slides">LO3 · 投影片 56–58、66–69；加減原理為講義補充</span><h2>間接法加減方向：想「現金是否跟上損益」</h2>
+        <div class="table-wrap"><table><thead><tr><th>項目／變動</th><th>從損益轉為 operating cash flow</th><th>原因</th></tr></thead><tbody>
+          <tr><td>Depreciation / amortization expense</td><td>加回</td><td>已降低損益，但本期沒有因這項分攤再付購置現金。</td></tr>
+          <tr><td>Gain on sale of plant assets</td><td>扣除</td><td>利益增加損益，但整筆處分收現列 investing；先移除損益中的利益。</td></tr>
+          <tr><td>Loss on sale of plant assets</td><td>加回</td><td>損失降低損益，移除後將實際處分收現列 investing。</td></tr>
+          <tr><td>Operating receivables ↑ / ↓</td><td>增加扣、減少加</td><td>應收增加常代表收入還沒收現；應收減少常代表收回以前的收入。</td></tr>
+          <tr><td>Inventory ↑ / ↓</td><td>增加扣、減少加</td><td>增加表示取得存貨超過轉成本部分；減少表示部分 COGS 用了以前取得的存貨。須與應付變動一起看。</td></tr>
+          <tr><td>Prepaid operating expenses ↑ / ↓</td><td>增加扣、減少加</td><td>先付未費用化部分扣除；本期耗用以前預付部分加回。</td></tr>
+          <tr><td>Operating payables / accruals ↑ / ↓</td><td>增加加、減少扣</td><td>增加常表示費用已發生但尚未付；減少常表示本期支付以前所欠。</td></tr>
+          <tr><td>Operating contract liabilities ↑ / ↓</td><td>增加加、減少扣</td><td>增加可能先收了尚未認列的款；減少可能本期認列以前收的款。</td></tr>
+        </tbody></table></div>
+        <p class="tip">上表適用於已排除非現金、投資／籌資及其他特殊變動後的營業相關項目。不是所有資產增加都扣、所有負債增加都加：長期借款增加、收購帶入的應收、匯率或重分類等要另外分析。</p>
+        <div class="worked"><h4>講義自編：出售機器的 gain 與 cash 是兩個數字</h4><p>機器帳面 $20,000，收到 $25,000，gain $5,000 已進 net income。間接法 operating 段<strong>扣 $5,000</strong>；investing 段列整筆收現 <strong>+$25,000</strong>。不能只把 gain $5,000 列投資現金流，也不能因扣了 gain 就以為賣機器沒有收到現金。</p></div>
+        <h3>Significant non-cash activities（重大非現金活動）</h3>
+        <p>投影片 66 列出用股份買資產、債券轉普通股、直接舉債取得資產、長期資產交換。若沒有現金或約當現金收付，<strong>不灌進三種活動的現金總額</strong>，而在適當附註另外揭露。它們會動到資產負債權益，卻不一定動到 Cash；因此只用比較資產負債表差額推現金流會出錯。</p>
+        <h3>Hu：有淨利仍可能營業現金流為負（投影片 69）</h3>
+        <p class="formula">Net income HK$80,000 − Increase in receivables HK$75,000 − Increase in inventory HK$100,000<br>= Net cash used in operating activities HK$95,000</p>
+        <p>Hu 的 <strong>CFO = −HK$95,000</strong>，不是 −HK$175,000：後者是調整合計，還要加回原來的 HK$80,000 淨利。這說明收入尚未收回、現金投入存貨，可能使獲利與現金分開。不能只憑一年負 CFO 就斷言公司永遠無法生存；還要看成長、週期與資金來源。（68–69）</p>
+        <div class="summary-capsule"><b>本段收斂</b><p>加減的是從「應計損益」到「營業現金」的差距，不是重新認列收入或費用。遇到每一項，都問：它已影響損益嗎？現金在哪一段出現？</p></div>
+      </section>
+
+      <section id="nestor">
+        <span class="slides">LO3 · 投影片 67、72–73</span><h2>Nestor：完整現金流量表與非現金附註</h2>
+        <p>Nestor SA 的課件圖包含折舊、攤銷、處分利益、營業帳戶變動與三種活動，適合檢查上段加減方向。括號表示負數；金額為歐元。</p>
+        <div class="table-wrap"><table><thead><tr><th>區段／項目</th><th>金額</th><th>理解</th></tr></thead><tbody>
+          <tr><td>Net income</td><td>€320,750</td><td>間接法起點（本課件版本）。</td></tr>
+          <tr><td>+ Depreciation expense</td><td>€88,400</td><td>非現金費用加回。</td></tr>
+          <tr><td>+ Amortization of intangibles</td><td>€16,300</td><td>非現金費用加回。</td></tr>
+          <tr><td>− Gain on sale of plant assets</td><td>€8,700</td><td>移除已在損益的投資處分利益。</td></tr>
+          <tr><td>− Increase in net accounts receivable</td><td>€11,000</td><td>損益中的收入尚未全收現。</td></tr>
+          <tr><td>+ Decrease in inventory</td><td>€15,500</td><td>本期成本部分來自原有存貨。</td></tr>
+          <tr><td>− Decrease in accounts payable</td><td>€9,500</td><td>本期額外支付原來欠的款。</td></tr>
+          <tr><td><strong>Net operating cash flow</strong></td><td><strong>€411,750</strong></td><td>調整合計 +€91,000。</td></tr>
+          <tr><td>Sale of plant assets</td><td>+€90,500</td><td>投資段列整筆處分收現。</td></tr>
+          <tr><td>Purchase of equipment</td><td>−€182,500</td><td>投資付現。</td></tr>
+          <tr><td>Purchase of land</td><td>−€70,000</td><td>投資付現。</td></tr>
+          <tr><td><strong>Net investing cash flow</strong></td><td><strong>−€162,000</strong></td><td>90,500 − 182,500 − 70,000。</td></tr>
+          <tr><td>Payment of cash dividends</td><td>−€19,800</td><td>本章按籌資處理。</td></tr>
+          <tr><td>Issuance of ordinary shares</td><td>+€100,000</td><td>籌資收現。</td></tr>
+          <tr><td>Redemption of bonds</td><td>−€50,000</td><td>籌資付現。</td></tr>
+          <tr><td><strong>Net financing cash flow</strong></td><td><strong>€30,200</strong></td><td>100,000 − 19,800 − 50,000。</td></tr>
+          <tr><td><strong>Net increase in cash</strong></td><td><strong>€279,950</strong></td><td>411,750 − 162,000 + 30,200。</td></tr>
+          <tr><td>Beginning cash → ending cash</td><td>€135,000 → <strong>€414,950</strong></td><td>135,000 + 279,950。</td></tr>
+        </tbody></table></div>
+        <div class="caution"><h4>同額 €50,000，不是同一筆交易</h4><p>主表 <strong>redemption of bonds €50,000</strong> 是實際付現的債券清償。附註另有<strong>發行 €50,000 債券直接取得設備</strong>，這筆是非現金投資與籌資活動。金額恰好一樣，但不能相互抵銷，也不能把第二筆當作現金流入與現金流出各加 €50,000。</p></div>
+        <div class="worked"><h4>從 Nestor 到 free cash flow</h4><p>本章用 <strong>FCF = CFO − capital expenditures − cash dividends</strong>。現金資本支出 €182,500 + €70,000 = <strong>€252,500</strong>，所以：</p><p class="formula">€411,750 − €252,500 − €19,800 = €139,450 free cash flow</p><p>不扣 net investing outflow €162,000，因為那已混入售資產收現；也不把以債券直接買設備的 €50,000 再當本期現金資本支出。（72–73）</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>同一張表能同時檢查「加減方向、三段分類、期末勾稽、非現金排除」。FCF 是另作的分析，和 cash balance、net income 都是不同答案。</p></div>
+      </section>
+
+      <section id="cash-analysis">
+        <span class="slides">LO3 · 投影片 68–73</span><h2>從現金流量看流動性、彈性與餘裕</h2>
+        <p>營業現金流持續充足，通常較能以營運支付帳款，降低依賴額外借款或發行股份。營業現金流低或負，可能需外部資金，也可能是收款時點、存貨投資或成長造成；要連同損益、資產與負債分析。</p>
+        <div class="table-wrap"><table><thead><tr><th>指標</th><th>本章公式</th><th>回答哪個問題</th></tr></thead><tbody>
+          <tr><td>Current cash debt coverage</td><td>Net cash provided by operating activities ÷ average current liabilities</td><td>一年營業現金流對平均流動負債的支應程度。（70）</td></tr>
+          <tr><td>Cash debt coverage</td><td>Net cash provided by operating activities ÷ average total liabilities</td><td>不用出售營業資產，營業現金流相對全部負債有多少。（71）</td></tr>
+          <tr><td>Free cash flow (FCF)</td><td>CFO − capital expenditures − cash dividends</td><td>本章定義下，扣資本支出與股利後可供較自由運用的現金流。（72–73）</td></tr>
+        </tbody></table></div>
+        <p><strong>Average liabilities</strong> 在簡化題目通常用（期初 + 期末）÷ 2；若題目提供更細的平均數，依題目。CFO 是期間量，搭配平均負債能減少單一時點波動的影響。</p>
+        <div class="caution"><h4>不要把教材判讀變成保證</h4><p>課件說 current cash debt coverage 接近 1:1 良好，是教學判讀，不是所有產業的合格線，也不表示每筆到期債務都能準時付款。FCF 在本章<strong>扣 cash dividends</strong>；其他分析可能採不同定義，比較時必須先統一公式。本章優先依課件公式解題，不能拿未扣股利的數字混比。</p></div>
+        <div class="note"><h4>講義自編例子</h4><p>CFO $90,000；期初／期末 current liabilities $80,000／$100,000，平均 $90,000，current cash debt coverage = <strong>1.00</strong>。若 total liabilities 平均 $300,000，cash debt coverage = <strong>0.30</strong>。同一個 CFO、不同分母，回答的範圍不同。</p></div>
+      </section>
+
+      <section id="lo4">
+        <span class="slides">LO4 · 投影片 74–90</span><h2>附註：主表沒有空間，重要資訊仍要說清楚</h2>
+        <h3>完整財報不是只有兩張表（75–76）</h3>
+        <p>課件的完整財報包括：期末財務狀況表；本期損益及其他綜合損益（一表，或損益表與綜合損益表兩表）；權益變動表；現金流量表；附註。至少每年呈列，並提供前期比較資訊。符合特定重大追溯／重分類條件時，還涉及最早比較期初的財務狀況表，不能把投影片簡短清單當成所有情況的全部要求。<a href="#src-ias1">官方完整財報說明</a>。</p>
+        <p><strong>Accounting policies（會計政策）</strong>是編製、呈列資訊使用的原則、基礎、規則與實務。課件第一項附註常稱 <em>Summary of Significant Accounting Policies</em>；目前 IAS 1 已改要求揭露 <strong>material accounting policy information（重大會計政策資訊）</strong>，不是把所有通用政策整段貼上即可。<a href="#src-ias1">IAS 1 修訂說明</a>。</p>
+        <h3>課件政策揭露例子（77–79）</h3>
+        <div class="table-wrap"><table><thead><tr><th>公司／主題</th><th>從附註讀出的資訊（改寫）</th><th>該學什麼</th></tr></thead><tbody>
+          <tr><td>LG · Inventory</td><td>成本與 NRV 孰低；多數存貨用 weighted-average，在途項目用 specific identification；成本含相關加工成本。</td><td>同一家公司可因不同性質項目使用不同適當方法；看政策與減記條件。</td></tr>
+          <tr><td>Stora Enso · Intangibles</td><td>歷史成本、直線攤銷，通常 3–10 年，專利可到 20 年。</td><td>年限是該課件公司例子，不是 IAS 38 固定規定。</td></tr>
+          <tr><td>Sports Direct · PPE</td><td>成本減折舊與減損；符合資產條件的支出納入帳面，其餘維修等列費用；按類別說明方法、年限、殘值與處分。</td><td>政策解釋「哪種支出進資產，哪種進費用」。表列 buildings 4–10%、plant/equipment 20–33% 等是個別公司政策。</td></tr>
+          <tr><td>Ahold Delhaize · Financial liabilities</td><td>課件表示該公司非衍生金融負債按 amortized cost 衡量，列於 debts、borrowings、accounts payable 等。</td><td>公司採用的類別不等於所有金融負債都只能採該類別。</td></tr>
+        </tbody></table></div>
+        <p class="tip">第 79 頁把 IFRS 9 稱為 <em>Financial Instruments: Recognition and Measurement</em>；IFRS 9 正式名稱是 <strong>Financial Instruments</strong>，前者常見於 IAS 39 舊標題。講義保留金融負債衡量的學習重點，但不沿用這個標題錯置。<a href="#src-ifrs9">IFRS 9 官方名稱與內容</a>。</p>
+        <h3>Disaggregation（細分揭露）：讓總額有可讀的內容（80–82）</h3>
+        <ul><li><strong>PPE</strong> 細分 land、buildings 等類別，並提供適用的 accumulated depreciation。</li><li><strong>Receivables</strong> 說明 trade customers、related parties、prepayments 與其他款項。</li><li><strong>Inventories</strong> 細分 merchandise、production supplies、work in process、finished goods。</li><li><strong>Provisions</strong> 分辨 employee benefits 等不同義務。</li></ul>
+        <h3>帳齡、到期日與資產變動：三種表回答不同問題</h3>
+        <div class="worked"><h4>Lenovo 帳齡（83）</h4><p>圖上單位 thousands。Trade receivables gross <strong>$6,761,826</strong> − loss allowance <strong>$100,342</strong> = net <strong>$6,661,484</strong>；gross 的帳齡為 0–30 days $4,560,771、31–60 days $1,332,471、61–90 days $430,207、over 90 days $438,377。四組相加回 gross，再扣 allowance。</p><p><strong>圖表依 invoice date 編帳齡</strong>；課件並列 credit terms 0–120 days。所以「發票超過 90 天」不一定等於「已逾期超過 90 天」，也不能單看帳齡就推定全部壞帳。</p></div>
+        <div class="worked"><h4>Christian Dior 借款到期分析（84）</h4><p>圖上單位 euro millions，歷史到期年度 2019、2020、2021、2022、2023、2024、其後，對應 total 5,550、1,913、1,740、1,265、26、1,218、191；合計 <strong>€11,903 million</strong>。另分 fixed rate €11,260 million、floating rate €643 million。</p><p>它讓人看「何時需要償還、是否集中在某年、對利率敏感多少」。這些歷史年份不是 2026 年最新到期表；不要拿來判斷公司今天的償債壓力。</p></div>
+        <div class="worked"><h4>Nestlé PPE gross value 調節（85）</h4><p>原圖總額以 millions 表示：期初 <strong>57,572</strong>，currency retranslations −1,762、capital expenditure +3,860、disposals −1,281、held-for-sale reclassification −734、scope of consolidation +14，得到期末 <strong>57,669</strong>。</p><p class="formula">57,572 − 1,762 + 3,860 − 1,281 − 734 + 14 = 57,669</p><p>這是 <strong>gross value</strong> 變動表，不是 net carrying amount，也不是 cash flow statement。匯率、重分類、合併範圍都可能非現金，因此 PPE 餘額淨增加 97 不等於現金買設備 97。第 85 頁標題寫 maturity analysis，但<strong>圖裡實際是 PPE 變動表</strong>，應按圖中內容讀。</p></div>
+        <h3>三種揭露技巧（86–87）</h3>
+        <div class="table-wrap"><table><thead><tr><th>方法</th><th>意思與課件例子</th><th>要避免的誤讀</th></tr></thead><tbody>
+          <tr><td>Parenthetical explanation<br>括號說明</td><td>主表同一行直接加明細，例如 Hitachi 在 common stock 旁列 outstanding shares 4,637,785,317。</td><td>股數不是貨幣金額；outstanding、issued 與 treasury shares 的概念也要分辨。</td></tr>
+          <tr><td>Cross-reference<br>交叉參照</td><td>資產中的 sinking fund $800,000 指向相關負債；bonds $2,300,000 指回資產。</td><td>兩者有關聯，不代表能只列差額 $1,500,000。</td></tr>
+          <tr><td>Contra items<br>減項／抵減帳戶</td><td>Allowance 或 accumulated depreciation，搭配資產看總額與淨額。</td><td>資產評價減項不是另一個 payable；不得因英文有 reserve / allowance 就混成負債。</td></tr>
+        </tbody></table></div>
+        <h3>Offsetting、consistency、fair presentation（88–90）</h3>
+        <p><strong>Offsetting（抵銷）</strong>：資產負債、收益費損原則上分開呈列，除非準則要求或允許。應收扣 allowance、存貨扣減記是評價淨額，不是任意拿 unrelated asset 和 liability 相抵。帳上有 $800,000 現金與 $2,300,000 債券，不能只報「淨負債 $1,500,000」就隱藏來源。</p>
+        <p><strong>Consistency（一致性）</strong>：類似交易適用一致政策，期間間保持可比較；不代表發現錯誤或準則改變時也禁止更正。政策改變、估計改變、前期錯誤的處理接續 ch02。<strong>Fair presentation（允當表達）</strong>要求忠實呈現交易與事件；遵循 IFRS 並提供必要額外揭露，才支持允當表達。附註是讀懂數字的一部分，不是可忽略的附錄。</p>
+        <div class="summary-capsule"><b>本段收斂</b><p>主表給餘額與成果，附註交代政策、組成、風險和變動原因。看不到「如何算出、何時回收或清償」，就還沒有讀完整。</p></div>
+      </section>
+
+      <section id="lo5">
+        <span class="slides">LO*5 · 投影片 91–95</span><h2>十七個財務比率：公式要連到它想回答的問題</h2>
+        <p>課件分四類：<strong>liquidity ratios</strong> 看短期支付；<strong>activity ratios</strong> 看資產使用效率；<strong>profitability ratios</strong> 看期間獲利；<strong>coverage ratios</strong> 看長期債權人與投資人的保障。分類是閱讀工具，不代表同一比率只與一種風險有關。</p>
+        <div class="note"><h4>先看分母有沒有 average</h4><p>下面公式依課件圖 3A.1 重新整理。<strong>Average balance</strong> 在簡化題目採（期初 + 期末）÷ 2；<strong>weighted-average ordinary shares</strong> 要考慮股份在本期流通的時間，和期末股數不同。比率可能是倍數、百分比或每股金額；<strong>free cash flow 是金額，雖然課件列在 ratios 清單，並非除法比率</strong>。</p></div>
+        <h3>Ⅰ Liquidity：短期能否支付？（93）</h3>
+        <div class="table-wrap"><table class="ratio-table"><thead><tr><th>指標</th><th>課件公式</th><th>用途與辨認</th></tr></thead><tbody>
+          <tr id="ratio-01"><td>1 · Current ratio<br>流動比率</td><td>Current assets ÷ current liabilities</td><td>期末流動資產相對流動負債。用餘額；不要換成 CFO。</td></tr>
+          <tr id="ratio-02"><td>2 · Quick / acid-test ratio<br>速動比率</td><td>(Cash + short-term investments + net accounts receivable) ÷ current liabilities</td><td>較即時的短期流動性；本章分子排除 inventory、prepaid expenses。</td></tr>
+          <tr id="ratio-03"><td>3 · Current cash debt coverage<br>流動現金負債保障</td><td>Net cash provided by operating activities ÷ average current liabilities</td><td>以本期營業現金流支應短期負債的程度；分母是<strong>平均</strong>流動負債。</td></tr>
+        </tbody></table></div>
+        <h3>Ⅱ Activity：資產周轉多快？（93）</h3>
+        <div class="table-wrap"><table class="ratio-table"><thead><tr><th>指標</th><th>課件公式</th><th>用途與辨認</th></tr></thead><tbody>
+          <tr id="ratio-04"><td>4 · Accounts receivable turnover<br>應收帳款周轉率</td><td>Net sales ÷ average net accounts receivable</td><td>應收相對銷售的周轉；課件分子寫 net sales。若題目另外指定 net credit sales，依題目版本。</td></tr>
+          <tr id="ratio-05"><td>5 · Inventory turnover<br>存貨周轉率</td><td>Cost of goods sold ÷ average inventory</td><td>存貨轉成已出售商品成本的速度；分子是 <strong>COGS</strong>，不是 sales。</td></tr>
+          <tr id="ratio-06"><td>6 · Asset turnover<br>資產周轉率</td><td>Net sales ÷ average total assets</td><td>每一元平均資產支撐多少銷售；不是以 net income 作分子。</td></tr>
+        </tbody></table></div>
+        <h3>Ⅲ Profitability：賺多少，對誰的投入而言？（94）</h3>
+        <div class="table-wrap"><table class="ratio-table"><thead><tr><th>指標</th><th>課件公式</th><th>用途與辨認</th></tr></thead><tbody>
+          <tr id="ratio-07"><td>7 · Profit margin on sales<br>銷售淨利率</td><td>Net income ÷ net sales</td><td>每一元淨銷售留下多少淨利。不是 gross profit margin。</td></tr>
+          <tr id="ratio-08"><td>8 · Return on assets (ROA)<br>資產報酬率</td><td>Net income ÷ average total assets</td><td>以全部平均資產衡量淨利；本章採此公式，其他研究定義先另核對。</td></tr>
+          <tr id="ratio-09"><td>9 · Return on share capital—ordinary<br>普通股權益報酬率</td><td>(Net income − preference dividends) ÷ average shareholders' equity—ordinary</td><td>普通股股東投入的平均<strong>全部普通股權益</strong>，不是只除面額 share capital。</td></tr>
+          <tr id="ratio-10"><td>10 · Earnings per share (EPS)<br>每股盈餘</td><td>(Net income − preference dividends) ÷ weighted-average ordinary shares outstanding</td><td>本章簡化普通股 EPS；單位是每股貨幣。合併資料須以適當歸屬普通股股東的損益為基礎。</td></tr>
+          <tr id="ratio-11"><td>11 · Price-earnings ratio (P/E)<br>本益比</td><td>Market price per share ÷ earnings per share</td><td>每股市價是每股盈餘的幾倍；不是股價除淨利總額。</td></tr>
+          <tr id="ratio-12"><td>12 · Payout ratio<br>股利支付率</td><td>Cash dividends ÷ net income</td><td>本章以淨利相對現金股利衡量分配比例；這和 dividend yield 的股價分母不同。</td></tr>
+        </tbody></table></div>
+        <h3>Ⅳ Coverage：負債保障與普通股帳面權益（95）</h3>
+        <div class="table-wrap"><table class="ratio-table"><thead><tr><th>指標</th><th>課件公式</th><th>用途與辨認</th></tr></thead><tbody>
+          <tr id="ratio-13"><td>13 · Debt to assets ratio<br>負債比率</td><td>Total liabilities ÷ total assets</td><td>多少資產由債權人請求權支撐；是 total liabilities，不只長期有息借款。</td></tr>
+          <tr id="ratio-14"><td>14 · Times interest earned<br>利息保障倍數</td><td>(Net income + interest expense + income tax expense) ÷ interest expense</td><td>本章用息稅前盈餘相對利息；這是損益保障，並非實際現金付款比例。</td></tr>
+          <tr id="ratio-15"><td>15 · Cash debt coverage<br>現金負債保障</td><td>Net cash provided by operating activities ÷ average total liabilities</td><td>營業現金流相對<strong>平均全部負債</strong>；和第 3 項的 current 分母不同。</td></tr>
+          <tr id="ratio-16"><td>16 · Book value per share<br>每股帳面價值</td><td>Shareholders' equity—ordinary ÷ outstanding ordinary shares</td><td>期末普通股權益分攤到期末流通股數；不是市價，也不保證清算實收此數。</td></tr>
+          <tr id="ratio-17"><td>17 · Free cash flow<br>自由現金流量</td><td>CFO − capital expenditures − cash dividends</td><td>本課件定義下可較自由運用的現金流金額；不是 net income 或期末 cash。</td></tr>
+        </tbody></table></div>
+        <h3>講義自編：用一組數字辨認不同分母</h3>
+        <p>以下是<strong>自編練習資料</strong>，不是投影片公司：current assets $150,000（cash 20,000、short-term investments 10,000、net A/R 40,000、inventory 70,000、prepaids 10,000）；current liabilities $75,000。Net sales $600,000，COGS $360,000，average inventory $60,000、average total assets $500,000。Net income $60,000、preference dividends $10,000；average ordinary equity $250,000、weighted-average ordinary shares 25,000、期末 ordinary equity $260,000、期末流通普通股 26,000、每股市價 $24。</p>
+        <div class="table-wrap"><table><thead><tr><th>指標</th><th>代入</th><th>結果</th></tr></thead><tbody>
+          <tr><td>Current ratio</td><td>150,000 ÷ 75,000</td><td>2.00</td></tr>
+          <tr><td>Quick ratio</td><td>(20,000 + 10,000 + 40,000) ÷ 75,000</td><td>0.93（約）</td></tr>
+          <tr><td>Inventory turnover</td><td>360,000 ÷ 60,000</td><td>6 次</td></tr>
+          <tr><td>Asset turnover</td><td>600,000 ÷ 500,000</td><td>1.20 次</td></tr>
+          <tr><td>Profit margin</td><td>60,000 ÷ 600,000</td><td>10%</td></tr>
+          <tr><td>ROA</td><td>60,000 ÷ 500,000</td><td>12%</td></tr>
+          <tr><td>Return on ordinary equity</td><td>(60,000 − 10,000) ÷ 250,000</td><td>20%</td></tr>
+          <tr><td>EPS</td><td>(60,000 − 10,000) ÷ 25,000</td><td>$2 per share</td></tr>
+          <tr><td>P/E</td><td>24 ÷ 2</td><td>12 倍</td></tr>
+          <tr><td>Book value per share</td><td>260,000 ÷ 26,000</td><td>$10 per share</td></tr>
+        </tbody></table></div>
+        <p>Current ratio 2.00 看似有餘裕，但 quick ratio 只有約 0.93，差別主要在 inventory 和 prepaids；所以還要看存貨是否容易出售。EPS 用期間加權股數；book value 用期末股數，不能互換。</p>
+        <div class="caution"><h4>比率的判讀限制（講義補充）</h4><p>比較須統一期間、幣別單位、公式與會計政策，並看同業和時間趨勢。高周轉可能效率好，也可能庫存不足；高 current ratio 可能流動性好，也可能應收回收不佳。EPS／淨利為零或負時，P/E 和 payout 等比率可能無法按一般方式解讀；分母為零時不能直接相除。Book value 是帳面配置，不是清算價值或市場價格保證。</p></div>
+        <div class="summary-capsule"><b>本段收斂</b><p>先問「短期支付、周轉、獲利，還是長期保障」，再挑公式；代入前檢查分子、平均分母與單位。算對數字後，還要說出數字的意義與限制。</p></div>
+      </section>
+
+      <section id="lo6">
+        <span class="slides">LO6 · 投影片 96–103</span><h2>IFRS 與 U.S. GAAP：共同要求、排列與用語</h2>
+        <p>課件表示兩套制度都要求 statement of financial position 與 statement of cash flows；內容、基本目的與呈列有許多共同處。都要求政策、管理階層判斷及重大估計不確定性資訊、前期比較與年度報表；NCI 都列在合併財務狀況表 equity。（97–99）</p>
+        <div class="table-wrap"><table><thead><tr><th>比較點</th><th>IFRS（課件重點）</th><th>U.S. GAAP（課件重點）</th></tr></thead><tbody>
+          <tr><td>報表名稱</td><td>常稱 statement of financial position；balance sheet 也可用。</td><td>常稱 balance sheet；同樣可見另一名稱。</td></tr>
+          <tr><td>分類與規定</td><td>一般流動／非流動分類，符合條件時可依流動性呈列。</td><td>基本流動／非流動判斷有相似處；美國公開發行公司還需留意 SEC 特定項目與格式。</td></tr>
+          <tr><td>項目排列</td><td>課件範例常先 non-current assets，current assets 內較低流動性先，cash 最後；另一側 equity 可先。</td><td>課件例子常先 current assets，cash 先；再 non-current assets，current / non-current liabilities，最後 equity。</td></tr>
+          <tr><td>股本名稱</td><td>Share capital—ordinary</td><td>Common stock</td></tr>
+          <tr><td>Reserve 用語</td><td>課件允許見到 reserves，但須解釋屬於哪一類。</td><td>課件說不鼓勵使用 reserve 這種容易含糊的名稱。</td></tr>
+        </tbody></table></div>
+        <p>「Cash 放最後／最前」是課件指出的常見排列，<strong>不是見到 cash 在最前就認定一定是 U.S. GAAP</strong>。財務狀況表科目的上下位置不同，不會改變 Assets = Liabilities + Equity。（100–102）</p>
+        <p>第 103 頁談過去 IASB / FASB 的共同報表呈列計畫：原提案希望多張表采用一致分類，後來擱置並轉向 performance reporting。這是<strong>歷史計畫說明</strong>，不能當作「三張表現在已強制完全一致分類」的規定。IFRS 18 已發布的更新另見下一段。</p>
+        <div class="summary-capsule"><b>本段收斂</b><p>先分清用語與版面差異，再判斷認列、衡量或分類規則的差異。名稱相同不保證規則完全相同，位置不同也不保證金額不同。</p></div>
+      </section>
+
+      <section id="standards-update">
+        <h2>課件版本與準則更新：閱讀時帶著適用年度</h2>
+        <p class="tip">這一節是官方資料核對補充，核對日期 2026-10-11。原課件的數字例題仍按其既有條件解答；一般以 2026 年未提前採用 IFRS 18 的情境閱讀。</p>
+        <div class="table-wrap"><table><thead><tr><th>課件位置</th><th>原本讀法</th><th>需要補的條件／更新</th></tr></thead><tbody>
+          <tr><td>9–10 · 要素定義</td><td>預期流入／流出未來利益的舊措辭。</td><td>Framework 現行定義用 present economic resource / present obligation；定義與認列分開。</td></tr>
+          <tr><td>20 · Property held for sale</td><td>概略列在 other assets。</td><td>若符合 IFRS 5，依其單獨分類與呈列要求，不一律放一般非流動項目。</td></tr>
+          <tr><td>31 · Cash equivalents</td><td>三個月或更短的高度流動投資。</td><td>通常從<strong>取得日</strong>算到期；還須已知金額、極低價值變動風險與短期現金目的。</td></tr>
+          <tr><td>37、39 · 負債分類</td><td>一年／營業週期口訣。</td><td>不能取代報導日的遞延清償權利與 covenants 判斷。</td></tr>
+          <tr><td>49 · 股利付現分類</td><td>教材 IFRS 允許 operating / financing；作業指定 financing。</td><td>採用 IFRS 18 後，dividends paid 列 financing；其他利息股利項目有新規範。</td></tr>
+          <tr><td>56、67 · 間接法起點</td><td>從 net income 調節。</td><td>採用 IFRS 18 後，IAS 7 間接法改以 operating profit or loss 作起點；原課件範例不要偷偷換起點。</td></tr>
+          <tr><td>75–76 · 會計政策附註</td><td>Significant accounting policies。</td><td>目前要求 material accounting policy information；不是越長越完整。</td></tr>
+          <tr><td>79 · IFRS 9 標題</td><td>寫成 Financial Instruments: Recognition and Measurement。</td><td>正式為 IFRS 9 Financial Instruments，不混用 IAS 39 舊名稱。</td></tr>
+          <tr><td>85 · 投影片標題</td><td>Maturity analysis for financial liabilities。</td><td>所放 Nestlé 圖實際是 PPE gross value 調節；不當作負債到期分析。</td></tr>
+          <tr><td>103 · On the horizon</td><td>介紹擱置的舊匯合計畫與轉向績效報導。</td><td>IASB 已於 2024 年發布 IFRS 18，原則自 2027-01-01 起的年度報導期間適用，可提前採用。</td></tr>
+        </tbody></table></div>
+        <div class="note"><h4>IFRS 18 對本章最直接的影響</h4><p>IFRS 18 取代 IAS 1，並對 IAS 7 作連帶修訂。對<strong>沒有 specified main business activities</strong> 的企業，採用後 interest paid 列 financing，interest received 與 dividends received 列 investing，dividends paid 列 financing。有以投資資產或向客戶融資為主要業務的企業，相關利息／收股利另有條件判斷；不要把一般企業表直接套用金融業。<a href="#src-ifrs18">IFRS 18 生效日</a>、<a href="#src-ifrs18-effects">官方 Effects Analysis</a>、<a href="#src-ias7">IAS 7 更新摘要</a>。</p></div>
+        <p>考試若問「本章範例」，按指定條件，例如 dividend financing、net income 起點。若問「採用 IFRS 18 後」，要換到對應版本並說清年度。<strong>保留課件與更新的界線，比不加說明地混成一個版本更安全。</strong></p>
+      </section>
+
+<section id="quiz-mistakes">
+<h2>你的四題錯題｜先猜思路，再拆陷阱</h2>
+<p class="lead">不是只記住答案字母，而是找出錯的那條推理在哪裡轉彎。下面從你實際選的選項推測可能的思路，讓你對照：哪一句像你當時的想法？</p>
+<div class="note"><h4>事實與猜測分開</h4><p>作答事實由你補充：第 3 題 B、第 5 題 A、第 14 題 C、第 15 題 D。<strong>「可能怎麼想」「為何容易選」都是講義作者的猜測，未經你確認</strong>；不是你已承認的原因，也不表示你已理解。記錄日期 2026/10/11，非考試日期。</p></div>
+<div class="table-wrap"><table><thead><tr><th>題號</th><th>你的選擇 → 正解</th><th>可能混淆的概念（猜測）</th><th>下一次先問</th></tr></thead><tbody>
+<tr><td><a href="#mistake-03">3</a></td><td>B → D</td><td>不能直接看見未來 → 完全不能幫助預測</td><td>問未來評估，還是本期收付過程？</td></tr>
+<tr><td><a href="#mistake-05">5</a></td><td>A → D</td><td>淨額要扣除什麼，公式方向反了</td><td>扣完負債，股東還剩多少？</td></tr>
+<tr><td><a href="#mistake-14">14</a></td><td>C → D</td><td>流動性分析 → 一種正式活動分類</td><td>這個名稱在 O／I／F 三類裡嗎？</td></tr>
+<tr><td><a href="#mistake-15">15</a></td><td>D → B</td><td>自己的庫藏股 → 別家公司的投資</td><td>股份是誰發行的？</td></tr>
+</tbody></table></div>
+<p class="tip">依貼上評分加總：14／18 題答對，80／100 分（前 16 題各 5 分、最後 2 題各 10 分）。其餘 14 題只知道「答對」，未另行記錄你實際勾選的字母。下面所有小例子與重做題都是講義補充，不是老師原題。</p>
+<article class="learning-note" id="mistake-03"><h3>第 3 題｜把「財報不是預言機」推成「不能幫助預測」</h3><p>你的選擇：B. assess future cash flows</p><p>正確答案：D. analyze cash inflows and outflows for the period</p><p><strong>可能怎麼想（猜測）：</strong>猜測一：你可能想「財務狀況表是現在的照片，怎麼會知道 future cash flows？」於是選 B。這個直覺抓對了報表的時間性，但把「不能直接看到未來」擴大成「對評估未來完全沒用」。</p><p><strong>為什麼這個選項容易吸引人（猜測）：</strong>B 的 future 很顯眼，又和「某一日的餘額」形成反差，所以容易看起來像 except。另一個猜測是：你記得現金流量表處理現金，便把所有含 cash flows 的選項都排除；B 和 D 都含現金，但只有 D 指本期實際流入流出的分析。</p><p><strong>推理在哪裡轉錯：</strong>應收帳款能提示未來可能收多少，存貨能提示銷售與變現資源，到期負債能提示未來付現壓力。因此財務狀況表有助 assess，但不保證預測準確。D 的 for the period 問的是這段時間現金實際怎麼走，這是現金流量表直接說明的內容。</p><p><strong>用數字／情境拆開：</strong>講義補充例：年末應收款 100、下月到期負債 80，能讓你思考下月收付款的壓力；但無法單從這兩筆餘額知道今年客戶到底付了多少現金、公司付了多少款。</p><p><strong>下次辨認的方法：</strong>圈出 assess future 與 analyze … for the period：前者是借助餘額推估，後者是整理期間現金活動。再確認題目有 except，選不屬於本表直接用途的 D。</p><details><summary>換個情境再做一次（自編）</summary><p>如果只知道今年與去年年末現金都為 50，能否知道今年總共收了多少、付了多少？</p><details><summary>English answer＋中文說明</summary><p>No. The same ending cash balance can result from different gross cash inflows and outflows.</p><p>不能。收到 10 又付出 10，或收到 1,000 又付出 1,000，期末都可能一樣；餘額不足以交代過程。</p></details></details><p class="tip"><a href="#quiz-03">回到原題與四個選項</a> · <a href="#lo1">回讀相關章節</a></p></article>
+<article class="learning-note" id="mistake-05"><h3>第 5 題｜記住「資產減掉一塊」，但把應扣除的對象換了</h3><p>你的選擇：A. total assets minus total shareholders&#x27; equity.</p><p>正確答案：D. total assets minus total liabilities.</p><p><strong>可能怎麼想（猜測）：</strong>猜測一：你可能知道 net assets 要做減法，卻把 shareholders&#x27; equity 當成應該先扣掉的資金來源。猜測二：你把「公司本身的淨資產」想成「排除股東那份後剩下的東西」。這兩種想法都會讓 A 看起來合理。</p><p><strong>為什麼這個選項容易吸引人（猜測）：</strong>A 同時出現 total assets、minus、equity，都是背公式時常遇到的字；而 net assets 和 equity 又確實有關。只辨認關鍵字、沒確認等號兩邊，就容易把 Assets − Liabilities = Equity 的方向記反。</p><p><strong>推理在哪裡轉錯：</strong>股東是剩餘請求權人。先用全部資產扣掉必須履行的負債，剩下才是股東權益。扣掉股東權益反而留下債權人的那一份：Assets − Equity = Liabilities。這裡是在談帳面上的淨額，不保證資產立即出售後就能分到這筆現金。</p><p><strong>用數字／情境拆開：</strong>講義補充例：Assets 100、Liabilities 40、Equity 60。Net assets = 100 − 40 = 60；你選的 A 會算成 100 − 60 = 40，那是 liabilities。</p><p><strong>下次辨認的方法：</strong>把「淨資產」翻成「扣完債務，股東還剩多少？」先寫 A = L + E，再求 E = A − L；不要只記得 minus。</p><details><summary>換個情境再做一次（自編）</summary><p>資產 250、負債 90，net assets 是多少？如果資產減股東權益，會得到什麼？</p><details><summary>English answer＋中文說明</summary><p>Net assets are 160. Assets minus shareholders&#x27; equity equal liabilities, which are 90.</p><p>淨資產 160；250 − 160 = 90 是負債。用簡單數字代回去，可以抓到公式方向反了。</p></details></details><p class="tip"><a href="#quiz-05">回到原題與四個選項</a> · <a href="#equity-liabilities">回讀相關章節</a></p></article>
+<article class="learning-note" id="mistake-14"><h3>第 14 題｜把「變成現金」的直覺當成活動分類名稱</h3><p>你的選擇：C. liquidity activities.</p><p>正確答案：D. investing activities.</p><p><strong>可能怎麼想（猜測）：</strong>猜測一：你可能看到 collecting loans 與 disposing of PPE，想到「把東西收回、賣掉，讓公司更有現金」，於是把 liquidity activities 當作「增加流動性」那類。猜測二：loan 與 PPE 看起來性質不同，你不確定三類哪一類能同時包含它們，C 像是能把它們包在一起的新類別。</p><p><strong>為什麼這個選項容易吸引人（猜測）：</strong>liquidity 是本章真的教過的專有名詞，不是亂造的英文；把它放在 activities 前面，就很像正式分類。選項正是利用「熟悉、聽起來合理」讓人跳過檢查分類表。</p><p><strong>推理在哪裡轉錯：</strong>Liquidity 是分析公司的短期付現能力；operating、investing、financing 才是現金流量表的三種分類。一般非金融企業借錢給別人，取得一項放款債權；收回本金是收回該投資，出售 PPE 是處分長期資產，所以一起歸 investing。</p><p><strong>用數字／情境拆開：</strong>講義補充例：公司借出本金 30，之後收回本金 20，這兩筆一般列投資流出 30、投資流入 20，合計 −10；若是公司向銀行借 30，才是籌資流入。銀行以放款為主要業務時可屬營業，利息須另行判斷。</p><p><strong>下次辨認的方法：</strong>先列出三類 O／I／F，再問「錢是拿去日常營運、取得／處分長期資源，還是向股東或債權人籌集／返還？」看到 loan 再確認公司站在借出或借入的哪一邊。</p><details><summary>換個情境再做一次（自編）</summary><p>一般製造公司：①借給另一家公司 50；②向銀行借 50。兩筆各是什麼活動？</p><details><summary>English answer＋中文說明</summary><p>The loan made to another company is an investing outflow. The bank borrowing is a financing inflow.</p><p>①投資流出；②籌資流入。金額一樣、都叫借款，方向與公司的角色不同，分類就不同。</p></details></details><p class="tip"><a href="#quiz-14">回到原題與四個選項</a> · <a href="#lo3">回讀相關章節</a></p></article>
+<article class="learning-note" id="mistake-15"><h3>第 15 題｜看到「股票賣得比成本高」，套用一般投資的故事</h3><p>你的選擇：D. investing activity.</p><p>正確答案：B. financing activity.</p><p><strong>可能怎麼想（猜測）：</strong>猜測一：你可能把 treasury stock 理解成公司持有的股票投資，看到 sale … greater than cost，就想到「買低賣高」，因此選 D。猜測二：你其實知道是庫藏股，但答題時被價差吸引，先判斷有投資收益，忘了先問「這是誰發行的股票？」</p><p><strong>為什麼這個選項容易吸引人（猜測）：</strong>sale、stock、cost 三個字組合起來，很容易觸發「出售投資」的熟悉模式；greater than cost 又讓它像賺取投資報酬的題目。真正決定分類的 treasury 反而只有一個字，容易被略過。</p><p><strong>推理在哪裡轉錯：</strong>Treasury stock 是公司買回自己的股份，是權益減項。再出售自己的股份取得現金，屬股東資金的變動，因此是 financing。高於成本的差額通常直接在權益處理，不是本題的投資收益，也不改變全筆收款的現金活動分類。</p><p><strong>用數字／情境拆開：</strong>講義補充例：先以 100 買回自己的股份，再以 120 售出。再次出售收到的整筆 120 是 financing inflow；20 的差額在權益內處理，不把 100 列籌資、20 列投資。若一般公司賣的是另一公司的長期股權投資，則通常是 investing。</p><p><strong>下次辨認的方法：</strong>先圈 treasury／own shares，再看 sale：自己的股權 → financing；持有別家公司的投資 → 通常 investing。最後才看價格高低，它不會把自己的股權交易變成投資活動。</p><details><summary>換個情境再做一次（自編）</summary><p>同樣收到 120：①出售本公司的庫藏股；②出售另一公司的長期股權投資。兩筆怎麼分？</p><details><summary>English answer＋中文說明</summary><p>Selling the company&#x27;s own treasury shares is a financing inflow. Selling an investment in another company is generally an investing inflow.</p><p>①籌資流入；②通常投資流入。先看股份發行人，別先看有沒有價差。</p></details></details><p class="tip"><a href="#quiz-15">回到原題與四個選項</a> · <a href="#lo3">回讀相關章節</a></p></article>
+<div class="summary-capsule"><b>四題一起看（仍是推測）</b><p>它們可能不是四個零散的忘記，而是四個「少問一步」：第 3 題先問評估還是記錄；第 5 題先問扣除誰；第 14 題先確認正式分類與借貸角色；第 15 題先問誰的股份。熟悉字眼容易讓人提早下結論，所以用一個小例子再驗一次。</p></div>
+<h3>接著可以長出的問題</h3><ul><li>第 3 題：資產和負債如何幫我預估未來現金壓力？</li><li>第 14、15 題：同樣叫 loan 或 shares，為什麼公司的角色改變，分類就變？</li></ul>
+</section>
+<section id="original-quiz" class="quiz-wide"><h2>你提供的 18 題原題｜逐題詳解</h2><p class="lead">保留原英文題幹、A–D 選項與平台正解。中文解析和複習由講義補寫。先自己選，再展開答案；錯題另有上方的思路診斷。</p><p class="tip">題目來源是你貼上的測驗文字，未確認是否為出版社或教師正式題庫；不將它與下方 20 題自編練習混為一談。</p><nav aria-label="原題快速導覽"><a href="#quiz-01">1</a> · <a href="#quiz-02">2</a> · <a href="#quiz-03">3</a> · <a href="#quiz-04">4</a> · <a href="#quiz-05">5</a> · <a href="#quiz-06">6</a> · <a href="#quiz-07">7</a> · <a href="#quiz-08">8</a> · <a href="#quiz-09">9</a> · <a href="#quiz-10">10</a> · <a href="#quiz-11">11</a> · <a href="#quiz-12">12</a> · <a href="#quiz-13">13</a> · <a href="#quiz-14">14</a> · <a href="#quiz-15">15</a> · <a href="#quiz-16">16</a> · <a href="#quiz-17">17</a> · <a href="#quiz-18">18</a></nav><article class="quiz-item" id="quiz-01" data-number="1" data-correct="A" data-selected=""><h3>Question 1 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Which of the following is a limitation of the statement of financial position?</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> All of these choices are correct.</li><li data-letter="B"><b>B.</b> Many items that are of financial value are omitted.</li><li data-letter="C"><b>C.</b> Current fair value may not be reported.</li><li data-letter="D"><b>D.</b> Judgments and estimates are used.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: A. All of these choices are correct.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>A 正確：B、C、D 都是限制，所以選 All of these choices are correct。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 正確：B、C、D 都是限制，所以選 All of these choices are correct。</li><li data-letter="B">B 本身正確：有財務價值的項目不一定符合資產認列條件，例如自行建立的品牌；因此不能只選 B。</li><li data-letter="C">C 本身正確：報表採用不同衡量基礎，帳面金額未必就是報導日 fair value。</li><li data-letter="D">D 本身正確：備抵損失、耐用年限等需要 judgments and estimates，並非所有數字都完全客觀。</li></ol></div><div class="quiz-review"><h4>複習｜報表的限制</h4><p>有價值 ≠ 可以認列；帳面價值 ≠ 必然是 fair value；估計 ≠ 數字沒有用。碰到 All 題，先獨立檢查每個選項。</p><p><a href="#lo1">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-02" data-number="2" data-correct="A" data-selected=""><h3>Question 2 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>The statement of financial position is useful for analyzing all of the following except</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> profitability.</li><li data-letter="B"><b>B.</b> liquidity.</li><li data-letter="C"><b>C.</b> financial flexibility.</li><li data-letter="D"><b>D.</b> solvency.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: A. profitability.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>A 正確：題目問 except；獲利能力主要需看期間收入、費用與損益，單一日的餘額不夠。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 正確：題目問 except；獲利能力主要需看期間收入、費用與損益，單一日的餘額不夠。</li><li data-letter="B">B 不選：liquidity 是短期付款能力，可從流動資產與流動負債取得線索。</li><li data-letter="C">C 不選：financial flexibility 是因應機會或突發需要的財務調整能力；資源與負債結構可提供線索。</li><li data-letter="D">D 不選：solvency 是長期償債能力，負債與權益結構有助判斷。</li></ol></div><div class="quiz-review"><h4>複習｜某一日與一段期間</h4><p>財務狀況表是 stock／餘額；獲利需要期間的 flow／收入與費用。計算 ROA 可用資產餘額搭配淨利，並不與本題衝突。</p><p><a href="#lo1">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-03" data-number="3" data-correct="D" data-selected="B"><h3>Question 3 <span class="quiz-key">5 分 · 貼上結果：答錯</span></h3><div class="original-stem" lang="en"><p>Statement of financial position information is useful for all of the following except to</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> evaluate capital structure</li><li data-letter="B"><b>B.</b> assess future cash flows</li><li data-letter="C"><b>C.</b> compute rates of return</li><li data-letter="D"><b>D.</b> analyze cash inflows and outflows for the period</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. analyze cash inflows and outflows for the period</strong></p><p>你的實際選擇：B. assess future cash flows</p><p><a href="#mistake-03">看這題「為什麼可能會選錯」的診斷（猜測）</a></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：題目問 except；本期實際現金流入、流出由 statement of cash flows 呈現，財務狀況表不直接交代收付過程。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 不選：負債與權益比例可用來 evaluate capital structure。</li><li data-letter="B">B 不選：應收款、存貨、到期負債等可幫助 assess future cash flows；有助評估不等於單靠它就能精準預測。</li><li data-letter="C">C 不選：資產或權益餘額可作 rates of return 的分母，搭配損益資料計算；題目只問資訊是否有用。</li><li data-letter="D">D 正確：題目問 except；本期實際現金流入、流出由 statement of cash flows 呈現，財務狀況表不直接交代收付過程。</li></ol></div><div class="quiz-review"><h4>複習｜有助預測，不等於記錄流量</h4><p>對照下方錯題診斷。看到 useful information，不要自動加上「只用這張報表就一定能算出」的限制。</p><p><a href="#lo1">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-04" data-number="4" data-correct="C" data-selected=""><h3>Question 4 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>The statement of financial position</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> Uses fair value for most assets and liabilities.</li><li data-letter="B"><b>B.</b> Makes very limited use of judgments and estimates.</li><li data-letter="C"><b>C.</b> Omits many items that are of financial value.</li><li data-letter="D"><b>D.</b> All of the choices are correct regarding the statement of financial position.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: C. Omits many items that are of financial value.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>C 正確：許多有價值的項目因不符認列條件而未列入，不表示它們沒有價值。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：不能說大多數資產、負債都使用 fair value；存在成本、攤銷後成本等衡量基礎。</li><li data-letter="B">B 錯：估計與判斷並不少，例如減損與折舊年限。</li><li data-letter="C">C 正確：許多有價值的項目因不符認列條件而未列入，不表示它們沒有價值。</li><li data-letter="D">D 錯：A、B 並不正確，不能選 All。</li></ol></div><div class="quiz-review"><h4>複習｜限制的辨認</h4><p>以常見的歷史成本、減損與估計例子反駁 A、B；不要把報表想成所有市場價值的完整清單。</p><p><a href="#lo1">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-05" data-number="5" data-correct="D" data-selected="A"><h3>Question 5 <span class="quiz-key">5 分 · 貼上結果：答錯</span></h3><div class="original-stem" lang="en"><p>The net assets of a business are equal to</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> total assets minus total shareholders&#x27; equity.</li><li data-letter="B"><b>B.</b> total assets plus total liabilities.</li><li data-letter="C"><b>C.</b> current assets minus current liabilities.</li><li data-letter="D"><b>D.</b> total assets minus total liabilities.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. total assets minus total liabilities.</strong></p><p>你的實際選擇：A. total assets minus total shareholders&#x27; equity.</p><p><a href="#mistake-05">看這題「為什麼可能會選錯」的診斷（猜測）</a></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：Net assets = Total assets − Total liabilities = Equity。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：Assets − Equity = Liabilities；減掉股東權益後得到的是負債。</li><li data-letter="B">B 錯：負債是他人的請求權，計算 net assets 要扣除，不能加回。</li><li data-letter="C">C 錯：Current assets − Current liabilities = Working capital（營運資金），範圍只含流動項目。</li><li data-letter="D">D 正確：Net assets = Total assets − Total liabilities = Equity。</li></ol></div><div class="quiz-review"><h4>複習｜扣除的是誰的請求權</h4><p>先寫 Assets = Liabilities + Equity，再移項。Net assets 保留股東的剩餘權益；working capital 只比較流動項目。</p><p><a href="#equity-liabilities">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-06" data-number="6" data-correct="B" data-selected=""><h3>Question 6 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>The current assets section of the statement of financial position should include</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> patents.</li><li data-letter="B"><b>B.</b> inventory.</li><li data-letter="C"><b>C.</b> goodwill.</li><li data-letter="D"><b>D.</b> machinery.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: B. inventory.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>B 正確：inventory 在正常營業週期中出售或耗用，通常是流動資產。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：patents 是無形資產，通常列非流動資產。</li><li data-letter="B">B 正確：inventory 在正常營業週期中出售或耗用，通常是流動資產。</li><li data-letter="C">C 錯：goodwill 通常是非流動項目，且不是待售商品存貨。</li><li data-letter="D">D 錯：machinery 通常是長期供營運使用的 PPE，不是流動資產。</li></ol></div><div class="quiz-review"><h4>複習｜營業週期與資產用途</h4><p>inventory 的流動分類看正常營業週期，不是保證每筆存貨 12 個月內出售；機器若是設備製造商的待售商品，情境不同。</p><p><a href="#current-assets">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-07" data-number="7" data-correct="A" data-selected=""><h3>Question 7 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Equity or debt securities held to finance future construction of additional plants should be classified on a balance sheet as</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> long-term investments.</li><li data-letter="B"><b>B.</b> intangible assets.</li><li data-letter="C"><b>C.</b> property, plant, and equipment.</li><li data-letter="D"><b>D.</b> current assets.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: A. long-term investments.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>A 正確：持有證券作為未來擴廠的長期資金安排，依本題預設列 long-term investments。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 正確：持有證券作為未來擴廠的長期資金安排，依本題預設列 long-term investments。</li><li data-letter="B">B 錯：股票、債券屬金融工具，不因沒有實體就歸入 intangible assets。</li><li data-letter="C">C 錯：未來用途是建廠，不代表現在持有的證券已經變成廠房設備。</li><li data-letter="D">D 錯：題意是為未來擴廠保留的長期投資；實務仍需依用途、限制與流動分類條件判斷，不能只憑 securities 一字。</li></ol></div><div class="quiz-review"><h4>複習｜現在持有什麼，比未來拿來做什麼更先判斷</h4><p>現在持有的是 securities，未來才要建廠；不能提前分類為 PPE。限制用途與預期變現期仍需判讀。</p><p><a href="#noncurrent-assets">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-08" data-number="8" data-correct="B" data-selected=""><h3>Question 8 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>A generally accepted method of valuation is</p><p></p><p></p><p>1. prepaid expenses at fair value.</p><p>2. accounts receivable at net realizable value.</p><p>3. inventories at lower-of-cost-or-net realizable value.</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> 1</li><li data-letter="B"><b>B.</b> 2 and 3</li><li data-letter="C"><b>C.</b> 3</li><li data-letter="D"><b>D.</b> 2</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: B. 2 and 3</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>B 正確：依教材用語，2 與 3 正確；應收款呈現預期可收回的淨額，存貨採成本與 NRV 孰低。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：1 錯，prepaid expenses 通常按尚未耗用的成本列示，而非一律按 fair value。</li><li data-letter="B">B 正確：依教材用語，2 與 3 正確；應收款呈現預期可收回的淨額，存貨採成本與 NRV 孰低。</li><li data-letter="C">C 錯：3 正確，但漏掉依本題教材用語也正確的 2。</li><li data-letter="D">D 錯：2 正確，但漏掉 3。</li></ol></div><div class="quiz-review"><h4>複習｜NRV 的教材用語與準則範圍</h4><p>存貨採 cost 與 net realizable value 孰低。應收款的「net realizable value」是教材的淨可收回金額說法；實務 IFRS 9 要依工具分類衡量並考量 expected credit losses，不是把 IAS 2 的規則照搬給應收款。</p><p><a href="#current-assets">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-09" data-number="9" data-correct="C" data-selected=""><h3>Question 9 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Which item below is not a current liability?</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> The currently maturing portion of long-term debt</li><li data-letter="B"><b>B.</b> Unearned revenue</li><li data-letter="C"><b>C.</b> Treasury shares</li><li data-letter="D"><b>D.</b> Trade accounts payable</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: C. Treasury shares</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>C 正確：treasury shares 是自己公司的庫藏股，扣減權益，不是負債。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 不選：長期借款即將到期的部分，符合流動條件時是流動負債。</li><li data-letter="B">B 不選：unearned revenue 是已收款但尚未履約的義務；本題預設在正常週期內履行。並非所有預收收入都一定是流動。</li><li data-letter="C">C 正確：treasury shares 是自己公司的庫藏股，扣減權益，不是負債。</li><li data-letter="D">D 不選：trade accounts payable 通常在正常營業週期支付，列流動負債。</li></ol></div><div class="quiz-review"><h4>複習｜義務和權益減項</h4><p>庫藏股是 equity 的減項；預收收入則是尚未履約的義務。看科目性質，再判斷流動與非流動。</p><p><a href="#equity-liabilities">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-10" data-number="10" data-correct="D" data-selected=""><h3>Question 10 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Treasury shares should be reported as a(n)</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> investment.</li><li data-letter="B"><b>B.</b> current asset.</li><li data-letter="C"><b>C.</b> other asset.</li><li data-letter="D"><b>D.</b> reduction of equity.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. reduction of equity.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：庫藏股為 reduction of equity（權益減項）。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：買回自己的股份不是持有另一公司的投資。</li><li data-letter="B">B 錯：庫藏股不是流動資產；自己的股份不是自己對外持有的資源。</li><li data-letter="C">C 錯：也不列 other asset。</li><li data-letter="D">D 正確：庫藏股為 reduction of equity（權益減項）。</li></ol></div><div class="quiz-review"><h4>複習｜自己股份與別人股份</h4><p>買別人股份通常取得投資資產；買回自己股份通常減少權益。這個區別也是第 15 題的關鍵。</p><p><a href="#equity-liabilities">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-11" data-number="11" data-correct="A" data-selected=""><h3>Question 11 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Which of the following should be reported for share capital?</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> All of these choices are correct.</li><li data-letter="B"><b>B.</b> The shares authorized</li><li data-letter="C"><b>C.</b> The shares issued</li><li data-letter="D"><b>D.</b> The shares outstanding</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: A. All of these choices are correct.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>A 正確：authorized、issued、outstanding 都是 share capital 的相關揭露資訊。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 正確：authorized、issued、outstanding 都是 share capital 的相關揭露資訊。</li><li data-letter="B">B 本身正確：authorized 是公司可發行股數的上限；但不是唯一要揭露的資訊。</li><li data-letter="C">C 本身正確：issued 是已發行股數；但還要區分 outstanding。</li><li data-letter="D">D 本身正確：outstanding 通常是 issued 減 treasury shares；三者不一定相等。</li></ol></div><div class="quiz-review"><h4>複習｜三種股數不要混成一個數</h4><p>講義補充例：authorized 1,000、issued 800、treasury 100，則 outstanding 700。是股數揭露，不是把三個數都當成財務狀況表上的金額；可在報表或附註揭露。</p><p><a href="#equity-liabilities">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-12" data-number="12" data-correct="A" data-selected=""><h3>Question 12 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Which of the following is not an acceptable major asset classification?</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> Reserves</li><li data-letter="B"><b>B.</b> Investments</li><li data-letter="C"><b>C.</b> Property, plant, and equipment</li><li data-letter="D"><b>D.</b> Current assets</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: A. Reserves</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>A 正確：題目問 not；reserves 不是可接受的主要資產分類。要看上下文，它可能是權益中的準備或其他專門用語。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 正確：題目問 not；reserves 不是可接受的主要資產分類。要看上下文，它可能是權益中的準備或其他專門用語。</li><li data-letter="B">B 不選：investments 是教材可接受的主要資產分類。</li><li data-letter="C">C 不選：PPE 是長期供生產或營運使用的資產分類。</li><li data-letter="D">D 不選：current assets 是主要資產分類。</li></ol></div><div class="quiz-review"><h4>複習｜資產大類與準備項目</h4><p>看到 reserve 先問它的上下文；它不是與 current assets、PPE 並列的主要資產分類，不要只因名稱看起來像儲備資源就選入。</p><p><a href="#noncurrent-assets">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-13" data-number="13" data-correct="D" data-selected=""><h3>Question 13 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>The statement of cash flows provides answers to all of the following questions except</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> what was the change in the cash balance during the period?</li><li data-letter="B"><b>B.</b> what was the cash used for during the period?</li><li data-letter="C"><b>C.</b> where did the cash come from during the period?</li><li data-letter="D"><b>D.</b> what is the impact of inflation on the cash balance at the end of the year?</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. what is the impact of inflation on the cash balance at the end of the year?</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：它不直接衡量年末現金因 inflation 而損失多少購買力；特殊物價調整議題另有規範。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 不選：現金流量表能說明期間現金餘額的變動。</li><li data-letter="B">B 不選：它呈現現金用到哪裡，例如購置設備與還本。</li><li data-letter="C">C 不選：它呈現現金從哪裡來，例如營業收款、借款。</li><li data-letter="D">D 正確：它不直接衡量年末現金因 inflation 而損失多少購買力；特殊物價調整議題另有規範。</li></ol></div><div class="quiz-review"><h4>複習｜現金金額與購買力</h4><p>現金流量表追蹤收付與餘額；同樣 €100 能買多少東西，是購買力問題。不要混成同一張表直接回答的問題。</p><p><a href="#lo3">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-14" data-number="14" data-correct="D" data-selected="C"><h3>Question 14 <span class="quiz-key">5 分 · 貼上結果：答錯</span></h3><div class="original-stem" lang="en"><p>Making and collecting loans and disposing of property, plant, and equipment are</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> operating activities.</li><li data-letter="B"><b>B.</b> financing activities.</li><li data-letter="C"><b>C.</b> liquidity activities.</li><li data-letter="D"><b>D.</b> investing activities.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. investing activities.</strong></p><p>你的實際選擇：C. liquidity activities.</p><p><a href="#mistake-14">看這題「為什麼可能會選錯」的診斷（猜測）</a></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：一般非金融企業對外放款、收回放款本金，以及出售 PPE，屬 investing activities。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：本題預設一般非金融企業；借出款項及收回本金、出售 PPE，通常不是日常營業收付。</li><li data-letter="B">B 錯：公司向外借款及償還自己的借款本金才是 financing；making loans 是公司把錢借給別人。</li><li data-letter="C">C 錯：liquidity 是分析短期付款能力的概念，不是第四種現金活動。</li><li data-letter="D">D 正確：一般非金融企業對外放款、收回放款本金，以及出售 PPE，屬 investing activities。</li></ol></div><div class="quiz-review"><h4>複習｜先分活動，再用流量分析 liquidity</h4><p>三種正式分類只有 operating、investing、financing。loan 題先問「公司是借給別人，還是向別人借？」利息不是這裡的本金，金融機構放款可能屬營業。</p><p><a href="#lo3">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-15" data-number="15" data-correct="B" data-selected="D"><h3>Question 15 <span class="quiz-key">5 分 · 貼上結果：答錯</span></h3><div class="original-stem" lang="en"><p>In preparing a statement of cash flows, sale of treasury stock at an amount greater than cost would be classified as a(n)</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> extraordinary activity.</li><li data-letter="B"><b>B.</b> financing activity.</li><li data-letter="C"><b>C.</b> operating activity.</li><li data-letter="D"><b>D.</b> investing activity.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: B. financing activity.</strong></p><p>你的實際選擇：D. investing activity.</p><p><a href="#mistake-15">看這題「為什麼可能會選錯」的診斷（猜測）</a></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>B 正確：出售自己的庫藏股取得現金，屬與股東權益有關的 financing activity。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：現金活動沒有 extraordinary activity 這個正式第四類。</li><li data-letter="B">B 正確：出售自己的庫藏股取得現金，屬與股東權益有關的 financing activity。</li><li data-letter="C">C 錯：價差不是營業收入；庫藏股交易也不因高於成本就改成營業活動。</li><li data-letter="D">D 錯：這是自己的股份；一般企業出售所持其他公司的投資，才通常屬 investing。</li></ol></div><div class="quiz-review"><h4>複習｜先確認股份是哪家公司發行</h4><p>自己的 treasury stock 再出售：financing；一般企業持有別家公司長期股權投資再出售：investing。Greater than cost 不改變交易對象。</p><p><a href="#lo3">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-16" data-number="16" data-correct="D" data-selected=""><h3>Question 16 <span class="quiz-key">5 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Preparing the statement of cash flows involves all of the following except determining the</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> change in cash during the period.</li><li data-letter="B"><b>B.</b> cash provided by operations.</li><li data-letter="C"><b>C.</b> cash provided by or used in investing and financing activities.</li><li data-letter="D"><b>D.</b> current cash debt coverage.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. current cash debt coverage.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：current cash debt coverage 是分析比率，不是編製現金流量表必須決定的項目。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 不選：要先掌握期初、期末現金差額，才能勾稽期間變動。</li><li data-letter="B">B 不選：cash provided by operations 是現金流量表的一部分。</li><li data-letter="C">C 不選：投資與籌資活動的現金流也要整理。</li><li data-letter="D">D 正確：current cash debt coverage 是分析比率，不是編製現金流量表必須決定的項目。</li></ol></div><div class="quiz-review"><h4>複習｜編表與分析是兩個步驟</h4><p>Current cash debt coverage = Operating cash flow ÷ Average current liabilities；先有報表數字才能算比率，但編表不以這個比率作為必要項目。</p><p><a href="#cash-analysis">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-17" data-number="17" data-correct="D" data-selected=""><h3>Question 17 <span class="quiz-key">10 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>The following information is taken from Fulton Company&#x27;s trial balance:</p><p>Land held for speculation              €70,000</p><p>Research and development costs    35,000</p><p>Plant expansion fund                       47,000</p><p>Fulton will report long-term investments of</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> €70,000.</li><li data-letter="B"><b>B.</b> €82,000.</li><li data-letter="C"><b>C.</b> €105,000.</li><li data-letter="D"><b>D.</b> €117,000.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. €117,000.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：Long-term investments = €70,000 + €47,000 = €117,000。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：€70,000 只算投機持有土地，漏掉 €47,000 plant expansion fund。</li><li data-letter="B">B 錯：€82,000 不等於本題應納入的 €70,000 + €47,000。</li><li data-letter="C">C 錯：€105,000 = €70,000 + €35,000，把 R&amp;D 納入且漏掉擴廠基金。</li><li data-letter="D">D 正確：Long-term investments = €70,000 + €47,000 = €117,000。</li></ol></div><div class="quiz-review"><h4>複習｜先分類，再加總</h4><p>沿用教材將投機持有土地與擴廠基金列長期投資。實務中以資本增值為目的的土地可能適用 IAS 40 investment property，房地產商的待售土地可能是存貨，需依用途判斷。R&amp;D 不屬本題長期投資：IAS 38 的研究支出費用化，符合條件的發展支出可認列無形資產，不能一概說全部 R&amp;D 都要費用化。</p><p><a href="#noncurrent-assets">回讀相關概念</a></p></div></div></details></article>
+<article class="quiz-item" id="quiz-18" data-number="18" data-correct="D" data-selected=""><h3>Question 18 <span class="quiz-key">10 分 · 貼上結果：答對</span></h3><div class="original-stem" lang="en"><p>Lohmeyer Corporation reports:</p><p>Cash provided by operating activities    €250,000</p><p>Cash used by investing activities              110,000</p><p>Cash provided by financing activities       140,000</p><p>Beginning cash balance                            120,000</p><p>What is Lohmeyer&#x27;s ending cash balance?</p></div><ul class="choices" lang="en"><li data-letter="A"><b>A.</b> €620,000.</li><li data-letter="B"><b>B.</b> €550,000.</li><li data-letter="C"><b>C.</b> €330,000.</li><li data-letter="D"><b>D.</b> €400,000.</li></ul><details class="quiz-solution"><summary>展開正解、選項解析與複習</summary><p lang="en"><strong>Correct answer: D. €400,000.</strong></p><div class="quiz-columns"><div><h4>中文解題主線</h4><p>D 正確：€120,000 + €250,000 − €110,000 + €140,000 = €400,000。</p></div><div><h4>A–D 每個選項為什麼</h4><ol class="option-notes"><li data-letter="A">A 錯：€620,000 = 120,000 + 250,000 + 110,000 + 140,000；把 cash used by investing 當成流入了。</li><li data-letter="B">B 錯：€550,000 不符合期初現金加上三類淨流量的勾稽；不要憑 provided 次數猜總額。</li><li data-letter="C">C 錯：€330,000 不符合題目所列流入、流出與期初餘額，需逐項加減。</li><li data-letter="D">D 正確：€120,000 + €250,000 − €110,000 + €140,000 = €400,000。</li></ol></div><div class="quiz-review"><h4>複習｜Cash used 是減號</h4><p>先算淨增加：250,000 − 110,000 + 140,000 = 280,000；再加期初 120,000 = 400,000。講義例中未列匯率變動影響，依提供數字勾稽。</p><p><a href="#lo3">回讀相關概念</a></p></div></div></details></article>
+</section>
+      <section id="review">
+        <h2>Answer in English｜自編檢查題</h2>
+        <p class="tip">以下 20 題全部是本講義自編，並非 PowerPoint 原題或正式題庫。題目與答案用英文；先作答再展開，中文提示幫你回找概念。</p>
+        <div class="exam" id="practice-01"><strong lang="en">1. Distinguish the statement of financial position from the statement of cash flows.</strong><p class="tip">提示：at a specific date / during a period。</p><details><summary>Sample answer</summary><p lang="en">The statement of financial position reports assets, liabilities and equity at a specific date. The statement of cash flows explains changes in cash and cash equivalents during a period, classified as operating, investing and financing activities.</p></details></div>
+        <div class="exam" id="practice-02"><strong lang="en">2. Explain liquidity, solvency and financial flexibility.</strong><p class="tip">提示：短期、長期、應變調度。</p><details><summary>Sample answer</summary><p lang="en">Liquidity concerns the ability to meet short-term obligations and convert assets into cash. Solvency concerns the ability to meet obligations over the long term. Financial flexibility is the ability to alter the amounts and timing of cash flows to respond to unexpected needs and opportunities.</p></details></div>
+        <div class="exam" id="practice-03"><strong lang="en">3. State three limitations of the statement of financial position.</strong><p class="tip">提示：成本、估計、未入帳價值。</p><details><summary>Sample answer</summary><p lang="en">Many reported amounts reflect historical costs rather than current values. Amounts depend on judgments and estimates. Some valuable resources, such as employee capabilities and certain internally generated assets, are not recognised.</p></details></div>
+        <div class="exam" id="practice-04"><strong lang="en">4. A manufacturer's normal operating cycle is 18 months. Inventory is expected to be sold within that cycle. Must the inventory be classified as non-current because it will be held for more than 12 months?</strong><p class="tip">提示：normal operating cycle。</p><details><summary>Sample answer</summary><p lang="en">No. Inventory expected to be realised, sold or consumed in the normal operating cycle is classified as current even when that cycle is longer than 12 months.</p></details></div>
+        <div class="exam" id="practice-05"><strong lang="en">5. Why is a two-year investment not automatically a cash equivalent when only three months remain until maturity?</strong><p class="tip">提示：取得日起算，還有其他條件。</p><details><summary>Sample answer</summary><p lang="en">The usual short-maturity assessment is made from the date of acquisition. A cash equivalent must also be readily convertible to a known amount of cash, have an insignificant risk of changes in value, and be held to meet short-term cash commitments.</p></details></div>
+        <div class="exam" id="practice-06"><strong lang="en">6. Accounts receivable are $165,824 and the allowance for doubtful accounts is $1,850. Report net receivables and classify the allowance.</strong><p class="tip">提示：Scientific Products，減項不是 payable。</p><details><summary>Sample answer</summary><p lang="en">Net receivables are $163,974 ($165,824 − $1,850). The allowance is a valuation allowance deducted from receivables; it is not a liability.</p></details></div>
+        <div class="exam" id="practice-07"><strong lang="en">7. Scientific Products reports total assets of $1,720,554 and total liabilities of $820,472. Compute total equity.</strong><p class="tip">提示：Assets − liabilities。</p><details><summary>Sample answer</summary><p lang="en">Total equity is $900,082 ($1,720,554 − $820,472), including the non-controlling interest.</p></details></div>
+        <div class="exam" id="practice-08"><strong lang="en">8. Classify these cash transactions for an ordinary non-financial company: collecting cash from customers, purchasing land for business use, issuing ordinary shares, and repaying loan principal.</strong><p class="tip">提示：O / I / F / F。</p><details><summary>Sample answer</summary><p lang="en">Customer collections are operating cash inflows. The purchase of land is an investing cash outflow. Issuing ordinary shares is a financing cash inflow. Repaying loan principal is a financing cash outflow.</p></details></div>
+        <div class="exam" id="practice-09"><strong lang="en">9. Telemarketing reports net income of $39,000, an increase in accounts receivable of $41,000 and an increase in operating accounts payable of $12,000. Compute operating cash flow.</strong><p class="tip">提示：未收扣、未付加。</p><details><summary>Sample answer</summary><p lang="en">Net cash provided by operating activities is $10,000: $39,000 − $41,000 + $12,000. The receivables increase represents revenue not yet collected; the payables increase represents operating amounts not yet paid.</p></details></div>
+        <div class="exam" id="practice-10"><strong lang="en">10. Telemarketing has operating cash inflow of $10,000, pays $15,000 for land, receives $50,000 from issuing shares and pays $14,000 in dividends. Beginning cash is zero. Classify dividends as financing. Compute ending cash.</strong><p class="tip">提示：先算 financing $36,000。</p><details><summary>Sample answer</summary><p lang="en">Investing cash flow is −$15,000 and financing cash flow is $36,000 ($50,000 − $14,000). The net increase in cash is $31,000 ($10,000 − $15,000 + $36,000). Ending cash is $31,000.</p></details></div>
+        <div class="exam" id="practice-11"><strong lang="en">11. A machine with a carrying amount of $20,000 is sold for $25,000 cash. How are the gain and cash proceeds treated in an indirect cash flow statement?</strong><p class="tip">提示：operating 扣 gain；investing 列整筆 proceeds。</p><details><summary>Sample answer</summary><p lang="en">The $5,000 gain is deducted from profit in the operating reconciliation. The full $25,000 cash proceeds are reported as an investing inflow. The gain alone is not the investing cash flow.</p></details></div>
+        <div class="exam" id="practice-12"><strong lang="en">12. Equipment is acquired by directly issuing €50,000 of bonds to the seller. How should the transaction be reported?</strong><p class="tip">提示：没有現金收付，不加進三段。</p><details><summary>Sample answer</summary><p lang="en">It is a non-cash investing and financing transaction. It is excluded from cash flow totals and separately disclosed in the financial statements.</p></details></div>
+        <div class="exam" id="practice-13"><strong lang="en">13. Hu reports net income of HK$80,000, a HK$75,000 increase in receivables and a HK$100,000 increase in inventory, with no other adjustments. Calculate operating cash flow and explain the result.</strong><p class="tip">提示：有利潤但現金投入應收和存貨。</p><details><summary>Sample answer</summary><p lang="en">Operating cash flow is −HK$95,000 (HK$80,000 − HK$75,000 − HK$100,000). Positive profit does not imply positive operating cash flow because amounts are tied up in receivables and inventory.</p></details></div>
+        <div class="exam" id="practice-14"><strong lang="en">14. Nestor reports operating cash flow of €411,750, cash capital expenditures of €252,500 and cash dividends of €19,800. Compute free cash flow using this chapter's definition.</strong><p class="tip">提示：本章 FCF 扣股利。</p><details><summary>Sample answer</summary><p lang="en">Free cash flow is €139,450 (€411,750 − €252,500 − €19,800). This chapter deducts cash dividends as well as capital expenditures.</p></details></div>
+        <div class="exam" id="practice-15"><strong lang="en">15. Explain the difference between an invoice-date aging analysis of receivables and a maturity analysis of borrowings.</strong><p class="tip">提示：帳齡不一定就是逾期天數。</p><details><summary>Sample answer</summary><p lang="en">Invoice-date aging groups receivables by the time since invoices were issued and helps assess collection patterns and credit risk. Borrowing maturity analysis shows when debt is due for payment. Invoice age is not necessarily the number of days overdue.</p></details></div>
+        <div class="exam" id="practice-16"><strong lang="en">16. Current assets are $150,000, including cash of $20,000, short-term investments of $10,000 and net receivables of $40,000. Current liabilities are $75,000. Compute the current ratio and quick ratio.</strong><p class="tip">提示：quick 排除存貨與預付。</p><details><summary>Sample answer</summary><p lang="en">The current ratio is 2.00 ($150,000 ÷ $75,000). The quick ratio is approximately 0.93 (($20,000 + $10,000 + $40,000) ÷ $75,000).</p></details></div>
+        <div class="exam" id="practice-17"><strong lang="en">17. Net sales are $600,000, cost of goods sold is $360,000, net income is $60,000, average inventory is $60,000 and average total assets are $500,000. Compute inventory turnover, asset turnover, profit margin and return on assets.</strong><p class="tip">提示：存貨用 COGS；資產周轉用 sales；ROA 用 net income。</p><details><summary>Sample answer</summary><p lang="en">Inventory turnover is 6 times ($360,000 ÷ $60,000). Asset turnover is 1.20 times ($600,000 ÷ $500,000). Profit margin is 10% ($60,000 ÷ $600,000). Return on assets is 12% ($60,000 ÷ $500,000).</p></details></div>
+        <div class="exam" id="practice-18"><strong lang="en">18. Net income is $60,000, preference dividends are $10,000, weighted-average ordinary shares are 25,000 and the market price is $24 per share. Calculate basic EPS and the price-earnings ratio.</strong><p class="tip">提示：先算 $2 per share。</p><details><summary>Sample answer</summary><p lang="en">Basic EPS is $2 per share (($60,000 − $10,000) ÷ 25,000). The price-earnings ratio is 12 times ($24 ÷ $2).</p></details></div>
+        <div class="exam" id="practice-19"><strong lang="en">19. Net income is $60,000, interest expense is $10,000 and income tax expense is $20,000. Operating cash flow is $90,000. Average current liabilities are $90,000 and average total liabilities are $300,000. Compute times interest earned and the two cash debt coverage ratios.</strong><p class="tip">提示：利息保障用盈餘，現金保障用 CFO。</p><details><summary>Sample answer</summary><p lang="en">Times interest earned is 9 times (($60,000 + $10,000 + $20,000) ÷ $10,000). Current cash debt coverage is 1.00 ($90,000 ÷ $90,000). Cash debt coverage is 0.30 ($90,000 ÷ $300,000).</p></details></div>
+        <div class="exam" id="practice-20"><strong lang="en">20. What changes to the statement of cash flows arise when IFRS 18 is applied?</strong><p class="tip">提示：起點、利息股利分類、適用年度。</p><details><summary>Sample answer</summary><p lang="en">The indirect method starts from operating profit or loss. New requirements govern interest and dividend cash flow classification. For entities without specified main business activities, interest paid and dividends paid are financing cash flows, while interest received and dividends received are investing cash flows. IFRS 18 applies to annual reporting periods beginning on or after 1 January 2027, with earlier application permitted.</p></details></div>
+      </section>
+
+      <section id="glossary">
+        <h2>英文術語速查</h2>
+        <div class="table-wrap"><table><thead><tr><th>English</th><th>繁體中文</th><th>考試辨認重點</th></tr></thead><tbody>
+          <tr><td>Statement of financial position / balance sheet</td><td>財務狀況表／資產負債表</td><td>某一日，assets / liabilities / equity。</td></tr>
+          <tr><td>Liquidity</td><td>流動性</td><td>短期付款與資產變現。</td></tr>
+          <tr><td>Solvency</td><td>長期償債能力</td><td>長期清償與生存。</td></tr>
+          <tr><td>Financial flexibility</td><td>財務彈性</td><td>應變調整現金流金額與時間。</td></tr>
+          <tr><td>Operating cycle</td><td>營業週期</td><td>投入資源到出售並收回現金。</td></tr>
+          <tr><td>Current / non-current</td><td>流動／非流動</td><td>依正常週期、十二個月、交易與其他條件分類。</td></tr>
+          <tr><td>Property, plant, and equipment (PPE)</td><td>不動產、廠房及設備</td><td>長期有形供營運使用。</td></tr>
+          <tr><td>Intangible assets</td><td>無形資產</td><td>無實體；留意年限、攤銷與減損。</td></tr>
+          <tr><td>Depreciation / depletion / amortization</td><td>折舊／折耗／攤銷</td><td>成本分攤用語，不等於本期再次付現。</td></tr>
+          <tr><td>Accumulated depreciation</td><td>累計折舊</td><td>PPE 的減項。</td></tr>
+          <tr><td>Prepaid expenses</td><td>預付費用</td><td>已付錢、利益尚未耗用。</td></tr>
+          <tr><td>Net realizable value (NRV)</td><td>淨變現價值</td><td>估計售價減完成與出售所需成本。</td></tr>
+          <tr><td>Allowance / loss allowance</td><td>備抵／損失備抵</td><td>資產評價減項；不是 payable。</td></tr>
+          <tr><td>Collateral</td><td>擔保品</td><td>資產是否質押影響使用與風險。</td></tr>
+          <tr><td>Cash equivalents</td><td>約當現金</td><td>短期、高流動、已知金額、極低風險。</td></tr>
+          <tr><td>Restricted cash</td><td>受限制現金</td><td>須看限制期限與用途，不能當隨時可用。</td></tr>
+          <tr><td>Share capital / share premium</td><td>股本／股本溢價</td><td>股東投入的不同組成。</td></tr>
+          <tr><td>Retained earnings / AOCI</td><td>保留盈餘／累積其他綜合損益</td><td>淨利與 OCI 的累積去向不同。</td></tr>
+          <tr><td>Treasury shares</td><td>庫藏股</td><td>買回自己的股份；權益減項。</td></tr>
+          <tr><td>Non-controlling interest (NCI)</td><td>非控制權益</td><td>合併權益中非母公司持有部分。</td></tr>
+          <tr><td>Provisions</td><td>負債準備</td><td>具金額／時間等不確定性的義務；可流動或非流動。</td></tr>
+          <tr><td>Covenants</td><td>借款契約條件</td><td>遵守時間影響分類或風險揭露。</td></tr>
+          <tr><td>Account form / report form</td><td>帳戶式／報告式</td><td>左右對列／上下排列。</td></tr>
+          <tr><td>Operating / investing / financing activities</td><td>營業／投資／籌資活動</td><td>日常收入活動／長期資產投資／投入權益與借款。</td></tr>
+          <tr><td>Net cash provided by / used in</td><td>淨現金流入／流出</td><td>Provided 正、used 負，別忽略括號。</td></tr>
+          <tr><td>Direct / indirect method</td><td>直接／間接法</td><td>直接收付款／損益調節到營業現金。</td></tr>
+          <tr><td>Non-cash investing and financing activities</td><td>非現金投資與籌資活動</td><td>不列現金總額，另揭露。</td></tr>
+          <tr><td>Capital expenditures</td><td>資本支出</td><td>取得長期資產的支出；看是否實際付現。</td></tr>
+          <tr><td>Free cash flow (FCF)</td><td>自由現金流量</td><td>本章 CFO − cash capital expenditures − cash dividends。</td></tr>
+          <tr><td>Aging / maturity analysis</td><td>帳齡／到期分析</td><td>經過多久／何時須清償。</td></tr>
+          <tr><td>Parenthetical explanation / cross-reference</td><td>括號說明／交叉參照</td><td>行內明細／主表與相關資訊互相指向。</td></tr>
+          <tr><td>Contra item / offsetting</td><td>減項／抵銷</td><td>評價減項與資產負債相抵不同。</td></tr>
+          <tr><td>Consistency / fair presentation</td><td>一致性／允當表達</td><td>可比較政策／忠實呈現並有必要揭露。</td></tr>
+          <tr><td>Liquidity / activity / profitability / coverage ratios</td><td>流動性／活動／獲利／保障比率</td><td>依想回答的問題選公式。</td></tr>
+          <tr><td>Weighted-average shares / outstanding shares</td><td>加權平均股數／流通股數</td><td>期間加權與期末餘額不能互換。</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="connections">
+        <h2>跨章連結與自我檢查</h2>
+        <div class="table-wrap"><table><thead><tr><th>上層／相鄰概念</th><th>本章接點</th><th>可以延伸的問題</th></tr></thead><tbody>
+          <tr><td>ch01 · Accrual basis、adjusting entries</td><td>預付轉費用、應收應付、折舊是淨利與現金不同的原因。</td><td>調整分錄不動 Cash，為何仍改報表？</td></tr>
+          <tr><td>ch02 · Net income、OCI、equity changes</td><td>淨利累積到 retained earnings、OCI 累積到 AOCI；兩者不等於現金。</td><td>同一筆股利如何影響權益與現金，卻不是 expense？</td></tr>
+          <tr><td>財報分析 · Credit risk、working capital</td><td>比率與帳齡、到期日、CFO 一起讀。</td><td>Current ratio 高、CFO 卻負的公司，資金卡在哪裡？</td></tr>
+        </tbody></table></div>
+        <details class="learning-note"><summary>讀完後，自己試著回答的三個生長問題</summary><ol><li>用 Telemarketing 說明：$39,000 淨利、$25,000 保留盈餘與 $31,000 現金，為什麼都正確卻不同？</li><li>用 Nestor 說明：資產處分 gain、整筆 sale proceeds、非現金取得設備，分別到哪裡？</li><li>若要評估公司下個月能不能付帳，財務狀況表、現金流量表和附註各提供什麼，還缺什麼？</li></ol><p class="tip">這些是建議練習，不是你的實際提問或心得；日後可以把你真的卡住的問題補進相關段落。</p></details>
+        <ul class="study-check" aria-label="自行複習清單"><li><label><input type="checkbox">我能區分時點餘額與期間成果。</label></li><li><label><input type="checkbox">我能辨認 current / non-current、valuation allowances、treasury shares。</label></li><li><label><input type="checkbox">我能按四步驟算出 Telemarketing 現金 $31,000。</label></li><li><label><input type="checkbox">我能說清 Nestor gain、proceeds 與 non-cash note 的不同。</label></li><li><label><input type="checkbox">我能選對 17 個指標的分子、分母與單位。</label></li><li><label><input type="checkbox">我知道課件例題與採用 IFRS 18 後的規則要分開。</label></li></ul>
+        <p class="tip">勾選僅供本次開啟自行檢查，不自動儲存學習紀錄，也不代表已通過測驗。</p>
+        <div class="summary-capsule"><b>本章 Summary Capsule</b><p>財務狀況表說某一天有哪些資源與義務；損益表說這段期間的應計成果；現金流量表說真正收付的錢如何改變；附註解釋政策、組成與風險。比率把這些資料接起來，但任何一個比率都不能代替完整閱讀。</p></div>
+      </section>
+
+      <section id="sources">
+        <h2>來源與核對註記</h2>
+        <ol>
+          <li><strong>主要來源：</strong>使用者提供的 <em>Ch03_Kieso_IFRS5E_PPT.pptx</em>，104 頁，Chapter 3，Kieso / Weygandt / Warfield, Intermediate Accounting IFRS Edition, Fifth Edition。原檔位於 <code>C:\Users\閻星澄\Downloads\Ch03_Kieso_IFRS5E_PPT.pptx</code>。投影片頁碼包含第 1 頁中文授權聲明；公司數字沿用課件而非最新年度資料。</li>
+          <li><strong>整理方式：</strong>讀取文字、圖片表格、公式與第 47 頁活動圖；原檔未提供額外講者解說。講義中文敘述、重組表格、補充分錄、直接法驗算、20 題英文練習均為本次撰寫；未嵌入原圖片。2026/10/11 增補使用者貼上的 18 題原題（題幹、選項與回饋），以及使用者明確補充的四筆錯題選項；解析、自編重做題和錯因推測由講義補寫，推測不視為本人確認。</li>
+          <li><strong>補入原題：</strong>使用者提供的「貼上的文字.txt」，共 18 題，平台回饋正解依題序 A、A、D、C、D、B、A、B、C、D、A、A、D、D、B、D、D、D。第 3、5、14、15 題選 B、A、C、D，由使用者另外明確告知；其餘個別勾選字母未另外記錄。評分加總 80／100。記錄日期為 2026/10/11，考試日期未提供。</li>
+          <li id="src-ias32"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-32-financial-instruments-presentation/">IFRS Foundation, IAS 32 Financial Instruments: Presentation</a>：核對庫藏股的權益處理；另見 <a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2022/issued/part-a/ias-32-financial-instruments-presentation.pdf?bypass=on">IAS 32, §§33–34、AG36（較早版本）</a>，一般企業買回自己的股份扣减權益，相關交易不認列損益。本題不涉及保險基金等特殊情況。</li>
+          <li id="src-loans"><a href="https://www.ifrs.org/content/dam/ifrs/meetings/2025/september/ifric/ap5-classification-cash-flows.pdf">IFRS Foundation, Cash flow classification 討論資料，p.24（2025/09）</a>：引述 IAS 7 §§16(e)–(f) 對外放款及收回本金列投資活動，並指出金融機構例外；這是準則討論資料，不另當成新規範。</li>
+          <li id="src-framework"><a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2026/issued/part-a/conceptual-framework-for-financial-reporting.pdf?bypass=on">IFRS Foundation, Conceptual Framework, §§4.3–4.4、4.26</a>：現時經濟資源、現時移轉義務與 equity 定義。官方摘要另見 <a href="https://www.ifrs.org/issued-standards/list-of-standards/conceptual-framework/">Conceptual Framework 頁面</a>。</li>
+          <li id="src-ias1"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-1-presentation-of-financial-statements/">IFRS Foundation, IAS 1 Presentation of Financial Statements</a>：完整財報、比較資訊、允當表達及 material accounting policy information 修訂。</li>
+          <li id="src-current-assets"><a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2021/issued/part-a/ias-1-presentation-of-financial-statements.pdf">IAS 1, §§60、66–68（官方較早版本）</a>：流動資產條件、正常營業週期與流動性呈列。此連結不用來判讀後來修訂的負債 covenants。</li>
+          <li id="src-current-liabilities"><a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2024/issued/part-a/ias-1-presentation-of-financial-statements.pdf?bypass=on">IAS 1, §§69–76（2024 issued 版本）</a>：流動負債、遞延清償權利與 covenants；官方全文可能需要訂閱。</li>
+          <li id="src-covenants"><a href="https://www.ifrs.org/news-and-events/news/2022/10/iasb-amends-accounting-standard-to-improve-information-about-long-term-debt-with-covenants/">IFRS Foundation, Non-current Liabilities with Covenants</a>：2024 年起生效；報導日後須遵守條件與附註風險揭露。</li>
+          <li id="src-ias7"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-7-statement-of-cash-flows/">IFRS Foundation, IAS 7 Statement of Cash Flows</a>：三種活動、直接／間接法、非現金揭露與 IFRS 18 連帶修訂。</li>
+          <li id="src-cash-equivalents"><a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2021/issued/part-a/ias-7-statement-of-cash-flows.pdf">IAS 7, §§6–9（官方較早版本）</a>：約當現金的條件與三個月由取得日起算；不是用此舊版認定採用 IFRS 18 後的利息股利分類。</li>
+          <li id="src-ias2"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-2-inventories/">IFRS Foundation, IAS 2 Inventories</a>：成本與淨變現價值孰低、FIFO／weighted-average 等成本公式。</li>
+          <li id="src-ias16"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-16-property-plant-and-equipment/">IFRS Foundation, IAS 16 Property, Plant and Equipment</a>：PPE 認列、帳面金額、折舊與減損。</li>
+          <li id="src-ias38"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-38-intangible-assets/">IFRS Foundation, IAS 38 Intangible Assets</a>：有限年限攤銷；非確定年限不攤銷而作年度減損測試。</li>
+          <li id="src-ifrs5"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-5-non-current-assets-held-for-sale-and-discontinued-operations/">IFRS Foundation, IFRS 5</a>：符合 held-for-sale 條件之分類、衡量與呈列。</li>
+          <li id="src-ifrs9"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-9-financial-instruments/">IFRS Foundation, IFRS 9 Financial Instruments</a>：金融工具分類與衡量；核對第 79 頁正式名稱。</li>
+          <li id="src-ifrs18"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-18-presentation-and-disclosure-in-financial-statements/">IFRS Foundation, IFRS 18</a>：2024 年發布，2027 年起年度期間適用，可提前採用；取代 IAS 1。</li>
+          <li id="src-ifrs18-effects"><a href="https://www.ifrs.org/content/dam/ifrs/publications/amendments/english/2024/effect-analysis-ifrs18-april2024.pdf">IFRS Foundation, IFRS 18 Effects Analysis, §2.5，p.27</a>：IAS 7 間接法起點及利息／股利現金流分類的改變。</li>
+        </ol>
+        <p class="tip">數字重點核對：Scientific Products 平衡 $1,720,554；Telemarketing CFO $10,000、期末 cash $31,000；Nestor CFO €411,750、期末 cash €414,950、FCF €139,450；Hu CFO −HK$95,000；17 個財務指標的完整公式。第 79、85 頁標題及第 103 頁歷史前瞻內容已分別註明。</p>
+        <p class="tip">本文可離線閱讀；外部連結供延伸核對，部分官方全文可能需登入或訂閱。製作檢查限於內容、計算及檔案結構，不代表已經過畫面或實際閱讀驗收。</p>
+      </section>
+      <footer>本講義為個人學習整理，含使用者提供原題、實際錯題選項、明確標示的錯因推測與自編練習；正式考試範圍、用語與評分以授課者指定資料為準。後續可依你的實際問題加入逐題詳解。</footer>
+    </main>
+  </div>
+</body>
+</html>
