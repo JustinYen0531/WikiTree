@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="使用公開的合作方2026財報，以收入、費用、資產、負債與現金流分析OpenAI；含白話說明、完整三表假設例題與練習。">
+<meta name="wikitree-domain" content="商學">
+<meta name="wikitree-parent" content="初級會計：收入、費用與現金流">
+<title>用初級會計看懂 OpenAI 的財務狀況｜2026 公開合作方財報</title>
+<style>:root{--ink:#253449;--muted:#596a7b;--paper:#fffdf8;--line:#d9e0df;--accent:#1b6865;--deep:#103e45;--alert:#8b3b30}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.78 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}a{color:var(--accent)}a:hover{text-decoration-thickness:2px}h1,h2,h3,h4{line-height:1.35;color:var(--deep);margin:0 0 .8em}h1{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.035em}h2{font-size:1.85rem;border-bottom:1px solid var(--line);padding-bottom:.35em}h3{font-size:1.22rem;margin-top:1.65em}p{margin:.5em 0 1.05em}ul,ol{padding-left:1.45em}li{margin:.35em 0}strong{color:#183f47}code{font-family:Consolas,"Microsoft JhengHei",monospace;background:#edf3f1;padding:.1em .3em;border-radius:3px}
+    .quiz-wide{max-width:none!important}.quiz-item{border-top:2px solid var(--line);padding:1.2rem 0;scroll-margin-top:1rem}.quiz-item h3{display:flex;gap:1rem;align-items:baseline}.quiz-key{font-size:.83rem;color:var(--accent)}.quiz-columns{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) minmax(0,.9fr);gap:1rem}.quiz-columns>div{min-width:0}.quiz-columns h4{font-size:.87rem;border-bottom:1px solid var(--line);padding-bottom:.25rem}.choices{list-style:none;padding:0}.choices li{margin:.5rem 0}.option-notes{padding-left:1.1em;font-size:.94rem}.option-notes li{margin:.55rem 0}.quiz-review{background:#f9f2e4;padding:.75rem 1rem;border-radius:6px}.quiz-review p{font-size:.94rem}.hero{background:linear-gradient(135deg,#e8f1ec,#f9f0df);padding:4rem max(4vw,calc((100vw - 1320px)/2));border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem}.subtitle{font-size:1.18rem;max-width:70ch}.meta{color:var(--muted);font-size:.9rem}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:clamp(2rem,5vw,6rem);max-width:1500px;margin:auto;padding:3rem 4vw}.toc{position:sticky;top:1.2rem;align-self:start;max-height:calc(100vh - 2rem);overflow:auto;border-right:1px solid var(--line);padding-right:1.2rem}.toc b{display:block;margin-bottom:.7rem;color:var(--deep)}.toc a{display:block;padding:.32rem 0;text-decoration:none;font-size:.89rem}.toc a:hover{text-decoration:underline}main{min-width:0}section{margin-bottom:4.2rem;scroll-margin-top:1.5rem;max-width:860px}.lead{font-size:1.08rem;color:#405467}.slides{display:inline-block;color:var(--muted);font-size:.8rem;font-weight:700;letter-spacing:.04em;margin-bottom:.5rem}.note,.caution,.worked{padding:1rem 1.25rem;border-left:4px solid var(--accent);background:#edf5f2;margin:1.5rem 0}.caution{border-color:var(--alert);background:#fff2ed}.worked{border-color:#ba8650;background:#fbf3e5}.note h4,.caution h4,.worked h4{margin:0 0 .4em;font-size:1.02rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.tile{padding:1rem 1.15rem;border:1px solid var(--line);border-radius:8px;background:white}.tile h4{font-size:1rem;margin-bottom:.25rem}.tile p{margin:0}.table-wrap{overflow-x:auto;margin:1.2rem 0}table{border-collapse:collapse;width:100%;font-size:.94rem}th,td{border-bottom:1px solid var(--line);padding:.65rem .7rem;text-align:left;vertical-align:top}th{background:#eef3f0;color:var(--deep)}tbody tr:nth-child(even){background:#fbfaf6}.formula{font-family:Consolas,"Noto Sans TC",monospace;font-size:1rem;padding:.8rem 1rem;background:#f5f3ec;overflow:auto}.exam{border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0;background:#fff}.exam strong{display:block}.exam details{margin-top:.6rem}.exam summary,.learning-note summary{cursor:pointer;color:var(--accent);font-weight:700}.tip{color:var(--muted);font-size:.9rem}footer{color:var(--muted);font-size:.85rem;padding-bottom:3rem}a:focus-visible,summary:focus-visible{outline:3px solid #d58d40;outline-offset:3px}
+    @media(max-width:850px){.layout{display:block;padding:1.2rem 5vw}.toc{position:static;max-height:none;overflow-x:auto;display:flex;align-items:center;gap:1rem;white-space:nowrap;border-right:0;border-bottom:1px solid var(--line);padding:.6rem 0;margin-bottom:2rem}.toc b{margin:0}.toc a{flex:none}.grid{grid-template-columns:1fr}.quiz-columns{grid-template-columns:1fr}.hero{padding:2.5rem 5vw}}
+    @media print{.quiz-columns{grid-template-columns:1fr}body{font-size:11pt}.hero{padding:1rem 0}.layout{display:block;padding:0}.toc{display:none}a{color:inherit}}
+
+    .chapter-links{display:flex;flex-wrap:wrap;gap:1rem;margin-top:1rem;font-size:.9rem}.ratio-table td:nth-child(2){min-width:250px}.ratio-table td:first-child{min-width:150px}.summary-capsule{margin-top:1.5rem;border-top:1px solid var(--line);padding-top:1rem}.summary-capsule b{color:var(--accent)}.learning-note{padding:1rem 1.2rem;background:#f7f2e7;border-radius:6px;margin:1.2rem 0}.num{font-variant-numeric:tabular-nums;white-space:nowrap}.study-check{list-style:none;padding:0}.study-check li{padding:.35rem 0}.study-check input{margin-right:.5rem;accent-color:var(--accent)}@media print{details> :not(summary){display:block!important}.exam{break-inside:avoid}.chapter-links{display:none}.table-wrap{overflow:visible}.ratio-table td:nth-child(2){min-width:0}}
+
+.layout{max-width:1500px;grid-template-columns:250px minmax(0,1fr);gap:clamp(2rem,4vw,4rem)}section{max-width:960px}.hero h1{max-width:21ch}.opening{padding-bottom:1rem;border-bottom:1px solid var(--line)}blockquote{margin:1.3rem 0;padding:1rem 1.25rem;border-left:4px solid var(--accent);background:#edf5f2}blockquote p:last-child{margin-bottom:0}.money-map{display:grid;grid-template-columns:1fr;gap:.55rem;margin:1.5rem 0}.money-map>div{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.2rem;background:#f0f5f1;border:1px solid var(--line);border-radius:8px}.money-map span{color:var(--muted);font-size:.92rem}.money-map .map-center{background:#dfeee6;border-color:var(--accent)}.money-map .map-investor{background:#fbf3e5}.summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1.5rem 0}.summary-grid>div{padding:1rem 1.2rem;background:white;border:1px solid var(--line);border-radius:8px}.summary-grid p{margin:.4rem 0 0}.exam summary{list-style:revert}.exam strong{display:inline}.worked summary{cursor:pointer;font-weight:700;color:var(--accent)}.toc a{font-size:.85rem}.sources-foot{padding-top:1rem;border-top:1px solid var(--line)}@media(max-width:850px){.layout{display:block}.summary-grid{grid-template-columns:1fr}.money-map>div{display:block}.money-map span{display:block;margin-top:.3rem}}@media print{section{max-width:none}h2{break-after:avoid}.exam{break-inside:avoid}details> :not(summary){display:block!important}.money-map>div,.summary-grid>div{break-inside:avoid}table{font-size:9pt}.table-wrap{overflow:visible}.toc{display:none}}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="eyebrow">Accounting in real life · OpenAI · 2026</div>
+<h1>用初級會計看懂<br>OpenAI 的財務狀況</h1>
+<p class="subtitle">收入、獲利、現金與募資：把四件事分開，財經新聞就不容易把你繞暈。</p>
+<p class="meta">公開合作方財報為主｜資料查核：2026/10/11｜主案例報導日：2026/6/30｜繁體中文、白話案例、可列印</p>
+</header>
+<div class="layout">
+<nav class="toc" aria-label="講義章節"><b>學習路線</b><a href="#chapter-01">01｜先看懂最後能得到什麼結論</a><a href="#chapter-02">02｜把 OpenAI 想成一家「提供 AI 服務的店」</a><a href="#chapter-03">03｜三張報表，分別回答三個問題</a><a href="#chapter-04">04｜先建立一張「證據卡」，不要急著評分</a><a href="#chapter-05">05｜供應商賺得多，客戶可能正承擔很大的支出</a><a href="#chapter-06">06｜投資人帳面賺錢，不能推成 OpenAI 已獲利</a><a href="#chapter-07">07｜錢有人補，但「承諾、到帳、用掉」要分開</a><a href="#chapter-08">08｜親手做三張報表：為什麼虧錢，現金還能增加？</a><a href="#chapter-09">09｜哪些指標能算，哪些現在不能算？</a><a href="#chapter-10">10｜從「用戶很多」走到「生意能養活自己」</a><a href="#chapter-11">11｜自己試著回答：八題把錯覺拆開</a><a href="#chapter-12">12｜寫一段有根據的 OpenAI 財務分析</a><a href="#chapter-13">13｜英文術語速查</a><a href="#chapter-14">14｜來源、頁碼與資料界線</a></nav>
+<main><section class="opening"><p><strong>把公司想成一家店：客人付的錢夠不夠養活這家店？如果不夠，誰在補錢？</strong></p>
+<p>這份講義從你學過的收入、費用、資產、負債與現金流開始。你不需要先懂股票估值，也不需要先背複雜公式。我們先學會把數字放回正確位置，再判斷能說到哪裡。</p>
+<p>資料查核日：<strong>2026 年 10 月 11 日</strong>。主案例使用截至 <strong>2026 年 6 月 30 日</strong>的合作方財報，另用截至 2026 年 3 月 31 日的年度資料補充。這是有日期的財務切片，不代表 OpenAI 在查核日的完整即時狀況。</p>
+<blockquote>
+<p><strong>資料約定</strong>：你已同意以合作方公開的 2026 財報為主。下文把「財報直接揭露」「本講義的分析」「假設例題」分開。沒有把新聞、募資公告或預測整理成一份假的 OpenAI 財報。</p>
+</blockquote>
+</section>
+<section><h2 id="chapter-01">01｜先看懂最後能得到什麼結論</h2>
+<h3>核心命題：有資金進來，和靠生意賺錢，是兩個問題</h3>
+<p>目前這批資料支持的結論是：<strong>OpenAI 與大型合作方之間已有相當規模的商業交易，也持續取得外部投資；但合作方的收入或投資收益，都不能直接證明 OpenAI 自己已經賺錢。</strong> 原始證據見第 04、06、07 節及 <a href="#sources">來源 S1–S3</a>。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>你可能想問</th>
+<th>用本講義資料能回答到哪裡？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OpenAI 是不是已經有很大的生意？</td>
+<td>能確認合作方揭露了大額商業往來；OpenAI 對終端客戶的完整收入仍待自身財報。</td>
+</tr>
+<tr>
+<td>OpenAI 有沒有賺錢？</td>
+<td>**無法確認。**缺同期間完整收入、成本、費用與稅。</td>
+</tr>
+<tr>
+<td>它現在有多少現金？</td>
+<td>**無法確認。**募資額、投資人持股價值都不是期末銀行存款。</td>
+</tr>
+<tr>
+<td>它會不會還不出錢？</td>
+<td>能找到付款義務的線索；缺債務到期表、可動用現金與完整負債，不能直接判定。</td>
+</tr>
+<tr>
+<td>投資人看好它嗎？</td>
+<td>投資交易與投資評價可作為線索；信心不能代替經營成果。</td>
+</tr>
+</tbody></table></div>
+<p>「不知道」不是分析失敗。會計分析的本事，是知道<strong>缺哪個數字才能回答</strong>，而不是把另一家公司的數字硬塞過來。</p>
+<h3>這份講義怎麼讀</h3>
+<ul>
+<li><strong>15 分鐘快讀</strong>：第 01、02、04、06、09、12 節，先抓住判斷方法。</li>
+<li><strong>完整學習</strong>：依序讀完；第 08 節會把三張報表串起來，第 11 節自己練習。</li>
+<li><strong>卡住時回來看</strong>：每一節末尾都有「記憶膠囊」，先記住那一句就好。</li>
+</ul>
+<p><strong>記憶膠囊</strong>：分析公司要問三件事——生意有沒有賺、現金夠不夠、錢從哪裡來。</p>
+</section>
+<section><h2 id="chapter-02">02｜把 OpenAI 想成一家「提供 AI 服務的店」</h2>
+<h3>先認清角色，再認清錢</h3>
+<p>先用一般 AI 服務公司的情境理解，不把下面每種交易都當作已證實的 OpenAI 交易。客戶購買服務；公司需要人員與運算資源；投資人則投入資金，取得相應的投資權利。</p>
+<div class="money-map" role="img" aria-label="一般AI服務公司金錢關係示意，不代表真實交易逐筆明細">
+<div><b>客戶</b><span>付服務費 ↓</span></div>
+<div class="map-center"><b>AI 服務公司</b><span>提供服務，記錄收入</span></div>
+<div><b>員工與供應商</b><span>公司支付薪資與運算等款項 ↓</span></div>
+<div class="map-investor"><b>投資人／銀行</b><span>另一路：投資或借款 → 公司取得資金</span></div>
+</div><div class="table-wrap"><table>
+<thead>
+<tr>
+<th>初級會計名詞</th>
+<th>白話意思</th>
+<th>一般 AI 公司可能的例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Revenue／收入、營收</td>
+<td>本期提供商品或服務而認列的金額</td>
+<td>本期提供訂閱或 API 服務。認列時間依履約情形判斷。</td>
+</tr>
+<tr>
+<td>Expense／費用</td>
+<td>為了本期經營或履約而耗用的資源</td>
+<td>本期耗用的雲端服務、薪資、研究費用、折舊。</td>
+</tr>
+<tr>
+<td>Asset／資產</td>
+<td>公司控制、能帶來經濟利益的資源或權利</td>
+<td>現金、應收帳款、預付運算服務、自有設備。</td>
+</tr>
+<tr>
+<td>Liability／負債</td>
+<td>公司已有的義務</td>
+<td>尚未支付的供應商帳款、借款、先收錢但尚未完成的服務義務。</td>
+</tr>
+<tr>
+<td>Equity／權益</td>
+<td>資產扣負債後，歸屬所有者的剩餘權益</td>
+<td>普通股股本、投入資本、累積盈虧。</td>
+</tr>
+<tr>
+<td>Cash flow／現金流量</td>
+<td>一段期間實際收進或付出的現金</td>
+<td>收款、付款、買設備、借錢、發行股份收款。</td>
+</tr>
+</tbody></table></div>
+<p>**營收不是口袋裡的錢，費用也不一定在同一天付錢。**客戶可以先付款、公司之後才提供服務；公司也可以先用供應商的服務、下個月才付帳。這就是你學的 <strong>accrual basis／權責發生制</strong>。</p>
+<h3>同樣收到錢，會計意思可能完全不同</h3>
+<p>以下都是<strong>假設例題，單位為元</strong>，不是真實 OpenAI 交易。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>收到 100 元的原因</th>
+<th>初步記錄</th>
+<th>可以說公司賺了 100 元嗎？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本期服務已完成，客戶付費</td>
+<td>現金增加、收入增加</td>
+<td>有收入，但還要扣成本與費用才知道利潤。</td>
+</tr>
+<tr>
+<td>客戶預付未來服務</td>
+<td>現金增加、合約負債增加</td>
+<td>此時不能全部當本期收入。</td>
+</tr>
+<tr>
+<td>投資人認購普通股並付款</td>
+<td>現金增加、權益增加</td>
+<td>不行，這是投入資本。</td>
+</tr>
+<tr>
+<td>銀行放款</td>
+<td>現金增加、借款負債增加</td>
+<td>不行，日後要依約還款。</td>
+</tr>
+</tbody></table></div>
+<p>優先股的條款可能比普通股複雜。真實公司是否把某種優先股列為權益、負債或其他類別，要看合約與適用準則；不能因為名稱有「股」就一律當普通股。</p>
+<p><strong>記憶膠囊</strong>：先問「為什麼收到錢」，再決定是收入、預收款、資本，還是借款。</p>
+</section>
+<section><h2 id="chapter-03">03｜三張報表，分別回答三個問題</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>報表</th>
+<th>白話問題</th>
+<th>看的是什麼時間？</th>
+<th>用在 OpenAI 分析時需要什麼？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Income statement／損益表</td>
+<td>這段期間的生意有沒有賺？</td>
+<td>一段期間</td>
+<td>同期間收入、成本、費用、其他損益與稅。</td>
+</tr>
+<tr>
+<td>Balance sheet／資產負債表、財務狀況表</td>
+<td>這一天手上有什麼、欠什麼？</td>
+<td>一個日期</td>
+<td>現金、其他資產、短長期負債、權益。</td>
+</tr>
+<tr>
+<td>Statement of cash flows／現金流量表</td>
+<td>錢實際從哪裡來、到哪裡去？</td>
+<td>一段期間</td>
+<td>營業、投資、籌資三類現金流。</td>
+</tr>
+</tbody></table></div>
+<p>最基本的兩條關係是：</p>
+<div class="formula">資產 = 負債 + 權益<br>淨利 = 收入與其他收益 − 成本、費用與其他損失</div><p>現金流量則分三個籃子：</p>
+<ul>
+<li><strong>營業活動 Operating</strong>：一般營業收付款，例如服務收款、供應商付款、薪資。</li>
+<li><strong>投資活動 Investing</strong>：例如購買長期設備、買進或處分投資。</li>
+<li><strong>籌資活動 Financing</strong>：例如普通股增資收款、借款、還借款本金。</li>
+</ul>
+<p>這裡是入門分類。利息、股利等項目的實際分類還要看適用準則，不要把入門口訣當所有交易的唯一答案。</p>
+<h3>「2026 財報」不一定代表 2026 年 1 月到 12 月</h3>
+<p>微軟 FY2026 是 <strong>2025/7/1–2026/6/30</strong>，使用 U.S. GAAP。SoftBank Group 截至 2026/3/31 的年度報告是 <strong>2025/4/1–2026/3/31</strong>，公司稱 FY2025；它的 FY2026 第一季則是 <strong>2026/4/1–2026/6/30</strong>，使用 IFRS。<a href="#sources">S1–S3</a></p>
+<p>所以本講義說「2026 財報」，意思是<strong>報導期間結束於 2026 年、且已公開的財報</strong>。沒有把尚未結束的 2026 曆年當成已有全年實績，也沒有把一整年的交易與一季的交易直接加總。</p>
+<p><strong>記憶膠囊</strong>：損益表看期間、資產負債表看日期、現金流量表看實際收付款；比較前先對齊公司、期間與單位。</p>
+</section>
+<section><h2 id="chapter-04">04｜先建立一張「證據卡」，不要急著評分</h2>
+<h3>財報直接揭露：這些到底是誰的數字？</h3>
+<p>下表只整理本次要用的少量財報線索。<strong>金額皆為美元，B = billion = 十億美元 = 10 億美元</strong>；不換算台幣，避免匯率混入。每個值都要連同「主體、期間、科目」一起讀。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>證據</th>
+<th>直接揭露的內容</th>
+<th>原始位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A．微軟對 OpenAI 的商業收入</td>
+<td>FY2026 為 <strong>$24.1B（241 億美元）</strong>，包含分潤款項。這是微軟的收入。</td>
+<td>S1，Note 1，印刷頁 60／PDF 第 60 頁。</td>
+</tr>
+<tr>
+<td>B．微軟對 OpenAI 的應收帳款</td>
+<td>2026/6/30 為 <strong>$6.0B（60 億美元）</strong>。這是微軟的收款權利。</td>
+<td>S1，同上。</td>
+</tr>
+<tr>
+<td>C．微軟的 OpenAI 投資損益</td>
+<td>FY2026 淨收益 <strong>$6.5B（65 億美元）</strong>，主要與重組的稀釋收益有關。這是微軟的投資損益。</td>
+<td>S1，Note 3，印刷頁 62／PDF 第 62 頁。</td>
+</tr>
+<tr>
+<td>D．SoftBank Group 的 OpenAI 投資評價</td>
+<td>2026/6/30：累積投資 <strong>$44.6B</strong>、公允價值 <strong>$89.6B</strong>、累積投資收益 <strong>$45.0B</strong>。累積投資包括間接投資，且扣除處分。</td>
+<td>S2，印刷頁 3／PDF 第 5 頁。</td>
+</tr>
+<tr>
+<td>E．SoftBank Group 的追加投資</td>
+<td>追加承諾 <strong>$30B</strong>，分三期各 $10B；6/30 前完成 4/1 那期。附註另揭露 7/1 已完成，10/1 那期在報告發布時列為計畫。</td>
+<td>S2，Note 15–16，印刷頁 68–69／PDF 第 70–71 頁。</td>
+</tr>
+<tr>
+<td>F．SoftBank Group 的年度投資收益</td>
+<td>截至 2026/3/31 年度，SVF2 相關 OpenAI 投資收益為 <strong>¥6,465,523 million</strong>，主要來自公允價值增加。這是日圓、年度金額。</td>
+<td>S3，附註 7，印刷頁 62／PDF 第 66 頁。</td>
+</tr>
+</tbody></table></div>
+<h3>不同文件的可信度，不能只看「是不是官方」</h3>
+<p>正式財報的主表與附註，能讓你檢查認列方法、期間與相關限制；公司公告適合確認特定事件；新聞可能整理公司未公開的內部數字，但原文件不一定可取得。<strong>本講義的真實數字以財報為主，沒有採用新聞所稱的 OpenAI 內部財務數字。</strong></p>
+<p>OpenAI 在 2026/6/8 公告保密提交 S-1 草稿。<a href="#sources">S4</a> 這不等於向一般讀者公開了整套財報。本次查核沒有取得 OpenAI 自身完整的公開 2026 三表與附註，因此後面不會填出它的完整淨利、總負債或現金餘額。</p>
+<p>請留意 S2 的性質：這是一份中期財務報告，日文原版中期財務報表有會計師核閱；<strong>核閱不等於完整年度查核</strong>。微軟年度財務報表則附有獨立會計師查核意見。英文翻譯、年度與季報也不能不加區分地稱為同一種「已審計資料」。<a href="#sources">S1、S2</a></p>
+<p><strong>記憶膠囊</strong>：每讀到一個大數字，補上四個標籤——誰、何時、什麼幣別、哪個科目。</p>
+</section>
+<section><h2 id="chapter-05">05｜供應商賺得多，客戶可能正承擔很大的支出</h2>
+<h3>第一步：把微軟的「收入」轉回 OpenAI 的問題</h3>
+<p>第 04 節證據 A 告訴我們，微軟與 OpenAI 的商業往來規模很大。<strong>本講義的分析</strong>是：這提醒我們研究 OpenAI 的資源耗用、分潤安排與付款負擔，不能只看使用者增加了多少。</p>
+<p>但我們不能把那筆金額整包塞成 OpenAI 的「雲端費用」，因為它包括分潤，並未在該段逐項拆分。從買方角度看，一筆支出也可能依用途、服務耗用時間與條款形成費用、預付款或其他資產。要對回 OpenAI 的帳，仍要有它自己的交易明細與會計政策。</p>
+<h3>第二步：應收帳款說的是「還有收款權利」</h3>
+<p>第 04 節證據 B 是微軟的資產。換到 OpenAI 這一側，它提供了<strong>尚待結算的付款義務線索</strong>，不是 OpenAI 的現金，也不一定全部叫同一個「應付帳款」科目。</p>
+<p>你可以進一步問：帳期多久？何時到期？有沒有抵銷或其他結算安排？可動用現金夠不夠？可是光看到應收帳款，<strong>不能直接說「客戶逾期」「客戶違約」或「快倒閉」</strong>，因為正常交易本來就可能有賒帳。</p>
+<h3>一個小例子就能看懂兩家公司的鏡像</h3>
+<p>**假設例題：簡化雲端服務交易，單位為元。**供應商本月已完成 100 元服務，客戶尚未付款，不考慮稅及其他條件。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>公司</th>
+<th>本月損益</th>
+<th>月底資產／負債</th>
+<th>本月現金流</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>供應商</td>
+<td>服務收入 100</td>
+<td>應收帳款 100</td>
+<td>尚未收款，這筆現金流為 0。</td>
+</tr>
+<tr>
+<td>客戶</td>
+<td>已耗用服務費用 100</td>
+<td>應付帳款 100</td>
+<td>尚未付款，這筆現金流為 0。</td>
+</tr>
+</tbody></table></div>
+<p>供應商有收入、客戶有費用，兩邊卻都還沒有現金移動。下個月支付時，主要是清掉應收與應付，不把同一筆服務收入、費用再認一次。</p>
+<h3>為什麼不能用「年交易額減期末應收」算已付現金？</h3>
+<p>因為期末應收是一個日期的餘額，年度收入是一段期間的流量。用 <strong>24.1 − 6.0</strong> 就聲稱「OpenAI 本年度已付給微軟 18.1B」，會漏掉期初應收、預付款、非現金結算等項目。</p>
+<p>在一個非常簡化、只有賒銷與收款的模型中，才有：</p>
+<div class="formula">本期收款 = 期初應收 + 本期賒銷 − 期末應收</div><p>真實公司還可能有匯率、折讓、信用損失與重分類。所以在資料不足時，先守住「商業往來與付款義務規模大」這個可支持的觀察，不自行補出精確現金支出。</p>
+<p><strong>記憶膠囊</strong>：供應商的收入不是客戶的收入；應收應付存在，也不等於已經逾期。</p>
+</section>
+<section><h2 id="chapter-06">06｜投資人帳面賺錢，不能推成 OpenAI 已獲利</h2>
+<h3>先把「店的生意」與「持有店股份的投資」分開</h3>
+<p>一家公司賣服務可以賺錢；另一家公司持有它的股份，也可能因投資評價或交易結構變動而認列收益。這兩種獲利回答不同問題。</p>
+<p><strong>假設例題，單位為元</strong>：投資人原本持有一家公司的股份，帳上價值 100，後來依適用規則衡量為 150，未出售、未收到股利。可以有 50 的帳面投資收益，同時這家公司的服務生意仍然虧損。不能把那 50 當成服務公司收到的顧客款。</p>
+<h3>微軟：不要把投資收益除以持股比例</h3>
+<p>證據 C 的收益屬微軟，而且主要與 OpenAI 重組的 <strong>dilution gain／稀釋收益</strong>相關。稀釋是持股比例受到影響；「稀釋收益」是交易與投資帳面衡量產生的結果，不能僅憑名稱推斷 OpenAI 本業變好或變差。</p>
+<p>S1 說微軟使用 <strong>HLBV</strong> 計算這筆權益法投資的損益，原因是分配權利與優先順序不等於單純持股比例。白話就是：**不同股東分錢的規則，不一定只是大家按百分比平均分。**因此，把微軟的投資收益除以約 25% 去反推 OpenAI 淨利，沒有足夠依據。<a href="#sources">S1</a></p>
+<p>HLBV 是延伸名詞，初學者暫時不必學計算；只需記住「投資損益不一定等於被投資公司的淨利乘持股比例」。</p>
+<h3>SoftBank Group：累積評價差額也不是本季現金</h3>
+<p>證據 D 同時列出累積投入、公允價值與累積投資收益。公允價值描述的是<strong>所持投資的評價</strong>，不是 OpenAI 的銀行存款。累積收益描述的是投資的累積結果，不能直接當作 2026 年第二季的收益，也不能一律當成已賣股票收到的現金。</p>
+<p>S2 的 Note 15 說，這些 OpenAI 投資採 <strong>FVTPL／透過損益按公允價值衡量</strong>，公允價值變動進入 SoftBank Group 的投資損益。S3 的年度投資收益也主要反映相關評價增加。<a href="#sources">S2、S3</a></p>
+<p>本講義可以由此分析：投資人對持有權利的評價相當高。**要驗證 OpenAI 的營業成果，仍要回到它自己的損益與現金流。**企業估值、投資帳面價值、帳面權益與現金餘額各是不同概念。</p>
+<p><strong>記憶膠囊</strong>：投資人覺得店更值錢，不表示店本期賺錢；帳面漲價也不等於收現金。</p>
+</section>
+<section><h2 id="chapter-07">07｜錢有人補，但「承諾、到帳、用掉」要分開</h2>
+<h3>三個時間點，三個不同問題</h3>
+<ol>
+<li><strong>承諾投資</strong>：投資人答應在條件與時點符合時投入。</li>
+<li><strong>完成投資</strong>：某筆交易依文件記載完成；比尚未完成的承諾更接近已實現資金支持。</li>
+<li><strong>報導日剩餘現金</strong>：公司已收付各種款項後，當天實際還有多少可用資金。</li>
+</ol>
+<p>這三個金額通常不同。尤其「累積融資很大」不代表「今天帳上還留著那麼多」。過去收到的資金可能早已付出去。</p>
+<h3>用財報附註看投資期別</h3>
+<p>證據 E 的三期投資，要以 <strong>6/30 報導日</strong>劃分：4/1 那筆屬本季內已完成；7/1 那筆是報導日後發生、在附註揭露的 <strong>subsequent event／期後事件</strong>；10/1 那筆在該份報告發布時是計畫。<a href="#sources">S2</a></p>
+<p>因此，不能把三期全部當作 6/30 前已收的款，也不能因為現在日曆已經超過 10/1，就說季報證實了第三期已完成。這份講義使用財報當時的狀態；若要更新該事件，應另找後續公告或報告。</p>
+<h3>投資人借錢來投資，不等於 OpenAI 借了那筆錢</h3>
+<p>S2 的 Note 15–16 也揭露，SoftBank Group 的全資融資子公司為前兩期投資分別借款。<a href="#sources">S2</a> 這讓我們知道：資金供給端也要安排融資。可是債務先屬於文件寫明的借款人，<strong>不能搬成 OpenAI 的銀行借款</strong>。</p>
+<div class="money-map compact" role="img" aria-label="投資人融資與被投資公司資金示意，各方負債須分開判斷">
+<div><b>銀行</b><span>貸款 →</span></div><div><b>投資方</b><span>依約投資 →</span></div><div><b>OpenAI</b><span>取得投資資金</span></div>
+</div><p>從 OpenAI 的角度，這裡的交易涉及發行優先股取得資金，<strong>不是向客戶提供 AI 服務的營收</strong>。其自身報表的具體權益或負債分類，仍要看股權條款與適用準則；本講義不替未取得的報表決定科目。</p>
+<h3>那會計分析該追問什麼？</h3>
+<ul>
+<li>已完成的投資是否已變成可動用現金？有沒有使用限制？</li>
+<li>公司每月靠營業收回多少現金，又付出多少？</li>
+<li>如果下一筆資金晚到，哪些款項先到期？</li>
+<li>投資人本身的資金安排，是否影響後續出資時點？</li>
+</ul>
+<p>這些是<strong>分析問題</strong>，不是已證實資金出了問題。從現有投資資料可確認有外部資金支持；是否高度依賴持續募資、是否能靠營業自給，仍須完整現金流才能判斷。</p>
+<p><strong>記憶膠囊</strong>：承諾不等於到帳，到帳不等於還沒花掉；每家公司的借款也要分開。</p>
+</section>
+<section><h2 id="chapter-08">08｜親手做三張報表：為什麼虧錢，現金還能增加？</h2>
+<h3>假設案例：小型 AI 公司「小樹 AI」</h3>
+<p>**以下全部為講義自編的假設數字，不是 OpenAI 數據、估計值或重建財報。**單位統一為「萬元」，期間是一季。不考慮稅、利息、匯率與其他未列交易。期初只有現金 100、普通股權益 100，沒有其他資產或負債。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>本季發生什麼？</th>
+<th align="right">現金變化</th>
+<th>本季收入／費用</th>
+<th>期末留下什麼？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>發行普通股，收到股東投入 200</td>
+<td align="right">+200</td>
+<td>沒有收入</td>
+<td>權益增加 200。</td>
+</tr>
+<tr>
+<td>客戶預付一年服務費 120；本季完成其中 3 個月</td>
+<td align="right">+120</td>
+<td>本季收入 30</td>
+<td>未完成部分形成合約負債 90。</td>
+</tr>
+<tr>
+<td>另提供 API 服務 60，已收 45</td>
+<td align="right">+45</td>
+<td>本季收入 60</td>
+<td>應收帳款 15。</td>
+</tr>
+<tr>
+<td>耗用雲端服務 70，已付 50</td>
+<td align="right">−50</td>
+<td>本季費用 70</td>
+<td>尚欠供應商 20。</td>
+</tr>
+<tr>
+<td>本季薪資 20，全付清</td>
+<td align="right">−20</td>
+<td>本季費用 20</td>
+<td>沒有未付薪資。</td>
+</tr>
+<tr>
+<td>季初買自用伺服器 60，本季折舊 6</td>
+<td align="right">−60</td>
+<td>本季折舊費用 6</td>
+<td>設備淨額 54。</td>
+</tr>
+<tr>
+<td>本季研究支出 15，符合立即費用化假設，已付清</td>
+<td align="right">−15</td>
+<td>本季費用 15</td>
+<td>不另外保留研究資產。</td>
+</tr>
+</tbody></table></div>
+<p>預付的一年服務假設平均逐月履約，120 ÷ 12 × 3 = 30。API 服務即使有 15 尚未收款，仍已完成全部 60 的服務。設備買進則先形成資產，再把本季耗用部分認列折舊。</p>
+<h3>第一張：簡化損益表</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>小樹 AI 本季損益</th>
+<th align="right">萬元</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>訂閱服務收入</td>
+<td align="right">30</td>
+</tr>
+<tr>
+<td>API 服務收入</td>
+<td align="right">60</td>
+</tr>
+<tr>
+<td><strong>總收入</strong></td>
+<td align="right"><strong>90</strong></td>
+</tr>
+<tr>
+<td>雲端服務費用</td>
+<td align="right">(70)</td>
+</tr>
+<tr>
+<td>薪資費用</td>
+<td align="right">(20)</td>
+</tr>
+<tr>
+<td>折舊費用</td>
+<td align="right">(6)</td>
+</tr>
+<tr>
+<td>研究費用</td>
+<td align="right">(15)</td>
+</tr>
+<tr>
+<td><strong>總費用</strong></td>
+<td align="right"><strong>(111)</strong></td>
+</tr>
+<tr>
+<td><strong>本季淨損</strong></td>
+<td align="right"><strong>(21)</strong></td>
+</tr>
+</tbody></table></div>
+<p>這是一張為教學合併呈現費用的損益表，沒有另行分配各項到銷貨成本或營業費用。也沒有把股東投入或客戶尚未履約的預付款列為收入。</p>
+<h3>第二張：現金流量表</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>小樹 AI 本季現金流</th>
+<th align="right">萬元</th>
+<th>為什麼？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>客戶服務收款</td>
+<td align="right">+165</td>
+<td>120 的預付與 45 的 API 收款。</td>
+</tr>
+<tr>
+<td>付雲端、薪資、研究款</td>
+<td align="right">−85</td>
+<td>50 + 20 + 15。</td>
+</tr>
+<tr>
+<td><strong>營業活動淨現金流</strong></td>
+<td align="right"><strong>+80</strong></td>
+<td>本季預收很多錢。</td>
+</tr>
+<tr>
+<td><strong>投資活動淨現金流</strong></td>
+<td align="right"><strong>−60</strong></td>
+<td>買設備。</td>
+</tr>
+<tr>
+<td><strong>籌資活動淨現金流</strong></td>
+<td align="right"><strong>+200</strong></td>
+<td>普通股增資。</td>
+</tr>
+<tr>
+<td><strong>現金淨增加</strong></td>
+<td align="right"><strong>+220</strong></td>
+<td>80 − 60 + 200。</td>
+</tr>
+<tr>
+<td>加：期初現金</td>
+<td align="right">100</td>
+<td>期初餘額。</td>
+</tr>
+<tr>
+<td><strong>期末現金</strong></td>
+<td align="right"><strong>320</strong></td>
+<td>100 + 220。</td>
+</tr>
+</tbody></table></div>
+<p>折舊 6 不再列一次現金支出，因為購買設備時已經支付 60。本季有 21 的淨損，卻有 220 的現金增加：差異主要來自<strong>預收款、普通股增資，以及認列與收付款時點不同</strong>。</p>
+<p>但營業現金流為正，也不能馬上說本業非常健康。公司還要把先收的服務做完，未來照樣會耗用資源。</p>
+<h3>第三張：期末資產負債表</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>小樹 AI 期末項目</th>
+<th align="right">萬元</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>現金</td>
+<td align="right">320</td>
+</tr>
+<tr>
+<td>應收帳款</td>
+<td align="right">15</td>
+</tr>
+<tr>
+<td>設備淨額（60 − 累計折舊 6）</td>
+<td align="right">54</td>
+</tr>
+<tr>
+<td><strong>總資產</strong></td>
+<td align="right"><strong>389</strong></td>
+</tr>
+<tr>
+<td>應付供應商款</td>
+<td align="right">20</td>
+</tr>
+<tr>
+<td>合約負債（未完成的預收服務）</td>
+<td align="right">90</td>
+</tr>
+<tr>
+<td><strong>總負債</strong></td>
+<td align="right"><strong>110</strong></td>
+</tr>
+<tr>
+<td>普通股投入資本（期初 100 + 本季 200）</td>
+<td align="right">300</td>
+</tr>
+<tr>
+<td>累積虧損</td>
+<td align="right">(21)</td>
+</tr>
+<tr>
+<td><strong>總權益</strong></td>
+<td align="right"><strong>279</strong></td>
+</tr>
+<tr>
+<td><strong>負債 + 權益</strong></td>
+<td align="right"><strong>389</strong></td>
+</tr>
+</tbody></table></div>
+<p>三張報表接起來了：<strong>389 = 110 + 279</strong>；淨損使權益減少；現金流算出的期末 320，也出現在資產負債表。</p>
+<details class="worked"><summary>延伸：用間接法再核對一次營業現金流</summary>
+<p>從淨損 −21 出發，加回沒有現金流出的折舊 6，減去應收增加 15，加上應付增加 20，加上合約負債增加 90：<strong>−21 + 6 − 15 + 20 + 90 = 80</strong>。與直接列收付款的結果一致。此例期初各項應收、應付與合約負債都是 0。</p>
+</details><h3>把例題帶回 OpenAI，應該怎麼用？</h3>
+<p>不是把小樹 AI 的數字換成 OpenAI，而是換成問題：OpenAI 的收入有多少已收現金？預收服務還剩多少義務？設備支出多少？營業現金流與籌資現金流各多少？<strong>需要它自己的三張報表，才能把問號換成金額。</strong></p>
+<p><strong>記憶膠囊</strong>：損益回答「這季賺多少」，現金流回答「這季收付多少」；拿到投資與預收款，現金可以上升，生意卻仍虧損。</p>
+</section>
+<section><h2 id="chapter-09">09｜哪些指標能算，哪些現在不能算？</h2>
+<h3>不要拿別家公司的分子，配 OpenAI 的分母</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>想知道什麼？</th>
+<th>常見方法</th>
+<th>本講義可否算 OpenAI 的真實值？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>每賺 1 元收入，最後留多少？</td>
+<td>淨利率 = 同期間淨利 ÷ 收入</td>
+<td>不可，缺 OpenAI 的同期間完整損益。</td>
+</tr>
+<tr>
+<td>未來一年大致能否應付短期義務？</td>
+<td>流動比率 = 流動資產 ÷ 流動負債</td>
+<td>不可，缺完整分類資產負債表；比率也不代替到期日分析。</td>
+</tr>
+<tr>
+<td>公司負債占多少資產？</td>
+<td>負債比率 = 總負債 ÷ 總資產</td>
+<td>不可，不能拿投資方借款或企業估值來代替。</td>
+</tr>
+<tr>
+<td>公司營業能否自己帶來現金？</td>
+<td>觀察營業活動淨現金流及形成原因</td>
+<td>不可，合作方的收付款不是它的完整現金流。</td>
+</tr>
+<tr>
+<td>若持續失血，可撐多久？</td>
+<td>現金續航期 ≈ 可動用現金 ÷ 每月淨現金消耗</td>
+<td>不可，缺當期可動用現金、穩定消耗額與到期安排。</td>
+</tr>
+<tr>
+<td>投資評價與投入差多少？</td>
+<td>比較同一投資、同一基礎的公允價值與成本</td>
+<td>可觀察投資人的持股評價；不能叫作 OpenAI 的營業報酬率。</td>
+</tr>
+</tbody></table></div>
+<h3>真正值得學的，是「現金續航」為什麼不能亂算</h3>
+<p><strong>假設例題，單位為萬元</strong>：某公司可動用現金 120，每月淨現金消耗 10，則粗略續航為 <strong>120 ÷ 10 = 12 個月</strong>。</p>
+<p>這個計算要假設沒有新的融資、沒有受限資金混入，且消耗模式大致穩定。若下個月有 60 的一次性到期款，或者新增大額設備購置，12 個月就不是可靠預測。若公司每月營業現金流為正，也不適合硬套「每月失血」模型。</p>
+<p>所以，<strong>不能拿累積募資額除以新聞所稱的未來燒錢額，就宣稱 OpenAI 能撐幾年</strong>。不同時點、實際與預測、收入與現金流，不能混成同一道除法。</p>
+<p><strong>記憶膠囊</strong>：會按計算機之前，先確認分子、分母是不是同一家公司、同一期間、同一種意思。</p>
+</section>
+<section><h2 id="chapter-10">10｜從「用戶很多」走到「生意能養活自己」</h2>
+<h3>這是分析框架，不是 OpenAI 的已知成本表</h3>
+<p>初級會計先看收入與費用；再往前一步，可以問每增加一筆服務，收入扣掉相關增量成本後還剩多少。這通常叫 <strong>contribution margin／邊際貢獻</strong>，和財報上的毛利不一定是同一個數字。</p>
+<p>**獨立的假設例題：不是 ChatGPT 的真實價格或成本。**假設一家 AI 店每月每個付費帳戶收入 $200，服務每個帳戶的變動成本 $120；每月固定成本 $80,000。</p>
+<div class="formula">每帳戶邊際貢獻 = 200 − 120 = $80<br>損益兩平帳戶數 = 80,000 ÷ 80 = 1,000 個</div><div class="table-wrap"><table>
+<thead>
+<tr>
+<th>情境</th>
+<th align="right">每帳戶變動成本</th>
+<th align="right">每帳戶貢獻</th>
+<th align="right">簡化損益兩平點</th>
+<th>白話意思</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>成本較低</td>
+<td align="right">$120</td>
+<td align="right">$80</td>
+<td align="right">1,000 個付費帳戶</td>
+<td>增加付費客戶有助攤固定成本。</td>
+</tr>
+<tr>
+<td>使用量讓成本升高</td>
+<td align="right">$180</td>
+<td align="right">$20</td>
+<td align="right">4,000 個付費帳戶</td>
+<td>同樣價格，必須有更多付費客戶。</td>
+</tr>
+<tr>
+<td>成本超過收費</td>
+<td align="right">$220</td>
+<td align="right">−$20</td>
+<td align="right">在此假設下無正的兩平點</td>
+<td>每多一個帳戶反而加重虧損，不能只靠加量解決。</td>
+</tr>
+</tbody></table></div>
+<p>這個模型假設價格與單位變動成本固定、固定成本不跳升、每個帳戶用量相近。真實 AI 公司還會有免費使用者、不同套餐、企業折扣、用量差異與研發投資，因此只能拿來建立問題，不能代替完整損益表。</p>
+<h3>用這個思維研究 OpenAI</h3>
+<p>我們需要問：付費客戶帶來多少收入？提供服務的運算耗用多少？免費服務由誰負擔？研發費用與服務成本怎麼區分？效率改善是否抵得過降價或使用量增加？</p>
+<p>合作方財報可以提供部分資源需求的線索，<strong>卻不提供 OpenAI 的完整單位經濟數據</strong>。用戶成長、融資與技術進步可影響未來收入能力，但不能直接拿其中任何一項當淨利率。</p>
+<p><strong>記憶膠囊</strong>：量大不一定賺；先看每多做一筆服務，留下的錢是否為正，再看能不能負擔固定支出。</p>
+</section>
+<section><h2 id="chapter-11">11｜自己試著回答：八題把錯覺拆開</h2>
+<p>題目與例子皆為講義自編；實際案例的依據見前文，假設題不是 OpenAI 數據。先想一下，再展開答案。</p>
+<details class="exam"><summary>1．微軟財報裡對 OpenAI 的商業收入，可以填成 OpenAI 的營收嗎？</summary><p><strong>不可以。</strong>科目的主體是微軟。它提供買方支出與商業往來的線索，不能代替 OpenAI 對自己客戶的收入。</p></details><details class="exam"><summary>2．供應商還有應收款，就表示客戶已經逾期嗎？</summary><p><strong>不一定。</strong>要查信用條款、到期日、帳齡及結算安排。正常帳期中的應收款，也會出現在報表。</p></details><details class="exam"><summary>3．投資人把持股估得更值錢，被投資公司就一定有營業淨利嗎？</summary><p><strong>不一定。</strong>投資收益與被投資公司營業成果是不同層次。評價增加可能與預期、交易條件或投資衡量有關。</p></details><details class="exam"><summary>4．某筆投資分三期，第二期在報導日後完成，能列成報導日前全部已到帳嗎？</summary><p><strong>不能。</strong>分清報導日前已完成、期後已完成與尚未完成的承諾。再查資金限制與已使用金額，才能判斷剩餘現金。</p></details><details class="exam"><summary>5．小樹 AI 本季客戶收款 165，為什麼收入只有 90？</summary><p>收款裡包含尚未履約的預付款；收入裡也包含尚未收款、但已完成的服務。<strong>收款與收入使用不同認列時間。</strong>所以不能只看銀行流水做損益表。</p></details><details class="exam"><summary>6．小樹 AI 花 60 買伺服器，為什麼本季不把 60 全當費用？</summary><p>例題假設這是符合認列條件的自用長期設備，先形成資產，再認列本季耗用的折舊 6。<strong>現金流仍有購買支出 60</strong>，期末設備淨額是 54。</p></details><details class="exam"><summary>7．投資方借款後認購 OpenAI 股份，能把那筆銀行借款列成 OpenAI 的債務嗎？</summary><p><strong>不能。</strong>先查合約上的借款人、保證人與責任。投資方的借款，和 OpenAI 發行投資工具的權利義務，必須分別分析。</p></details><details class="exam"><summary>8．假設月費 $200、每帳戶變動成本 $180、每月固定成本 $80,000，需要多少付費帳戶才兩平？</summary><p>每帳戶貢獻是 200 − 180 = 20；兩平數為 80,000 ÷ 20 = <strong>4,000 個</strong>。這依賴例題假設，不是真實 OpenAI 的兩平點。</p></details><h3>生長枝葉：接下來值得研究的三個問題</h3>
+<ol>
+<li><strong>預收款與經營品質</strong>：現金提前進來，怎麼判斷未來服務義務的成本？</li>
+<li><strong>研發與資產</strong>：費用化或資本化，會如何影響本期利潤與未來攤銷？</li>
+<li><strong>投資人也是供應商</strong>：如何用關係人附註與實際結算資料，看清資金與商業交易？</li>
+</ol>
+<p>先研究其中一題即可，不需要一次跳到很深的估值模型。</p>
+</section>
+<section><h2 id="chapter-12">12｜寫一段有根據的 OpenAI 財務分析</h2>
+<h3>你可以使用的分析範例</h3>
+<blockquote>
+<p>依微軟與 SoftBank Group 公開的 2026 財報，OpenAI 已有大額合作方商業往來，也獲得分期投入的外部投資。商業往來提醒我們關注它的資源耗用與付款安排；投資支持則提供資金來源線索。可是合作方認列的收入、應收款與投資收益，不等於 OpenAI 自己的收入、現金與淨利。由於本次未取得 OpenAI 完整的同期三表，尚無法確認其獲利能力、短期償債能力或現金續航。下一步應取得其損益表、資產負債表、現金流量表及主要承諾附註，檢查客戶收款能否涵蓋經營與必要投資支出。<a href="#sources">S1–S3</a></p>
+</blockquote>
+<p>這段不是說公司好或壞，而是把<strong>證據 → 可支持的分析 → 缺口 → 下一份要找的資料</strong>接起來。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>先問的問題</th>
+<th>為什麼影響財務？</th>
+<th>最需要補的證據</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>服務生意能否賺錢？</td>
+<td>營收增加可能同時帶來更高運算與其他費用。</td>
+<td>完整收入、成本、研究與其他營業費用。</td>
+</tr>
+<tr>
+<td>現金夠不夠？</td>
+<td>公司可能賺錢但收款慢，也可能虧損但剛取得投資。</td>
+<td>可動用現金、營業現金流、到期付款安排。</td>
+</tr>
+<tr>
+<td>新資金如果延後會怎樣？</td>
+<td>到期支出與融資時點不一致，可能形成壓力。</td>
+<td>已完成／未完成融資、契約條件、負債到期表。</td>
+</tr>
+<tr>
+<td>未來有哪些服務與採購承諾？</td>
+<td>未來支出不一定全部已認列成今天的負債。</td>
+<td>承諾、租賃、合約負債及相關附註。</td>
+</tr>
+</tbody></table></div>
+<h3>生態總結：四個盒子，永遠分開</h3>
+<div class="summary-grid"><div><b>營收</b><p>公司本期履約帶來多少生意？</p></div><div><b>利潤</b><p>把相關成本與費用扣完，留多少？</p></div><div><b>現金</b><p>實際可用多少，下一筆款何時要付？</p></div><div><b>資金來源</b><p>來自客戶、出售資產、股東投入，還是借款？</p></div></div><p>你用初級會計分析 OpenAI，最有用的能力不是喊出一個驚人的估值，而是把每筆金額放進對的盒子，再確認那是<strong>誰的盒子</strong>。</p>
+<h3>與已有講義接起來</h3>
+<ul>
+<li><a href="Ch01_IFRS_%E5%AD%B8%E7%BF%92%E8%AC%9B%E7%BE%A9.html">Ch01：會計流程與調整觀念</a>：收入何時認列、預收與應收怎麼分。</li>
+<li><a href="Ch02_IFRS_%E5%AD%B8%E7%BF%92%E8%AC%9B%E7%BE%A9.html">Ch02：損益與權益</a>：普通股投入與當期獲利不同；淨損會影響權益。</li>
+<li><a href="Ch03_IFRS_%E5%AD%B8%E7%BF%92%E8%AC%9B%E7%BE%A9.html">Ch03：財務狀況與現金流</a>：資產、負債、附註與三類現金流如何相互核對。</li>
+</ul>
+<h3>看完後，用自己的話寫兩句</h3>
+<p>「我原本容易把＿＿＿當成＿＿＿。現在我會先查＿＿＿，再判斷＿＿＿。」</p>
+<p>「如果拿到 OpenAI 自身財報，我最想先看＿＿＿，因為＿＿＿。」</p>
+<p>這是留給你的學習記錄提示，不代表你已經回答或已經理解。</p>
+</section>
+<section><h2 id="chapter-13">13｜英文術語速查</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>英文</th>
+<th>中文／記法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Revenue</td>
+<td>營收／收入；不等於收款。</td>
+</tr>
+<tr>
+<td>Net income / net loss</td>
+<td>淨利／淨損；不等於現金變動。</td>
+</tr>
+<tr>
+<td>Accounts receivable</td>
+<td>應收帳款；收款權利，不是現金。</td>
+</tr>
+<tr>
+<td>Accounts payable</td>
+<td>應付帳款；尚未支付的帳款。</td>
+</tr>
+<tr>
+<td>Contract liability</td>
+<td>合約負債；先收款、仍有履約義務。</td>
+</tr>
+<tr>
+<td>Depreciation</td>
+<td>折舊；資產成本分攤，不是每期重新買一次。</td>
+</tr>
+<tr>
+<td>Equity</td>
+<td>權益；資產扣負債的剩餘。</td>
+</tr>
+<tr>
+<td>Fair value</td>
+<td>公允價值；投資評價不等於現金。</td>
+</tr>
+<tr>
+<td>Equity method</td>
+<td>權益法；投資帳上反映相關損益，仍須看具體權利與方法。</td>
+</tr>
+<tr>
+<td>HLBV</td>
+<td>假設按帳面價值清算的分配衡量方法；本講義只用來提醒不能簡單反推淨利。</td>
+</tr>
+<tr>
+<td>FVTPL</td>
+<td>透過損益按公允價值衡量。</td>
+</tr>
+<tr>
+<td>Funding commitment</td>
+<td>資金承諾；與已完成出資分開。</td>
+</tr>
+<tr>
+<td>Subsequent event</td>
+<td>期後事件；發生在報導日之後。</td>
+</tr>
+<tr>
+<td>Cash runway</td>
+<td>現金續航期；須有可用現金與合理消耗假設。</td>
+</tr>
+<tr>
+<td>Contribution margin</td>
+<td>邊際貢獻；收入減相關變動成本。</td>
+</tr>
+</tbody></table></div>
+<p><span id="sources"></span></p>
+</section>
+<section><h2 id="chapter-14">14｜來源、頁碼與資料界線</h2>
+<h3>S1．Microsoft FY2026 Form 10-K</h3>
+<ul>
+<li><a href="https://microsoft.gcs-web.com/static-files/8a9beeed-0e9e-48e6-b4fb-593d558e2693">微軟投資人網站上的正式 PDF</a></li>
+<li><a href="https://microsoft.gcs-web.com/sec-filings/sec-filing/10-k/0001193125-26-323660">正式申報資料頁</a></li>
+<li>2026/7/29 申報；年度截至 2026/6/30。<strong>印刷頁 60／PDF 第 60 頁，Note 1</strong>：OpenAI 商業收入、應收款、權益法／HLBV。<strong>印刷頁 62／PDF 第 62 頁，Note 3</strong>：OpenAI 投資淨收益及重組稀釋收益說明。年度財務報表附獨立會計師查核報告。</li>
+<li>此來源可證明微軟認列的交易與投資資訊，不能替代 OpenAI 全部財報。因 SEC HTML 取得不穩定，採用發行公司投資人網站提供的正式申報 PDF 核對。</li>
+</ul>
+<h3>S2．SoftBank Group：截至 2026/6/30 的三個月合併財務報告</h3>
+<ul>
+<li><a href="https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/financial_reports/financial-report_q1fy2026_01_en.pdf">SoftBank Group 官方財報 PDF</a></li>
+<li><a href="https://group.softbank/en/ir/financials/financial_reports">官方財報入口</a></li>
+<li>2026/8/6 發布；期間 2026/4/1–6/30。<strong>印刷頁 3／PDF 第 5 頁</strong>：累積 OpenAI 投資、公允價值及累積收益。<strong>印刷頁 68–69／PDF 第 70–71 頁，Note 15–16</strong>：投資期別、融資、FVTPL 與期後事件。<strong>印刷頁 61／PDF 第 64 頁，Note 13</strong>：現金流附註中的 OpenAI 投資支出。</li>
+<li>這是 <strong>SoftBank Group Corp.</strong>，不是名稱相近的電信公司 <strong>SoftBank Corp.</strong>。日文原版中期財務報表有會計師核閱；英文版為翻譯參考，原版優先。</li>
+<li>本講義保留報告當時狀態，不用附註中的计划自動推定日後已履行。</li>
+</ul>
+<h3>S3．SoftBank Group：年度截至 2026/3/31 的合併財務報告</h3>
+<ul>
+<li><a href="https://group.softbank/media/Project/sbg/sbg/pdf/ir/financials/financial_reports/financial-report_q4fy2025_01_en.pdf">SoftBank Group 官方年度財報 PDF</a></li>
+<li>2026/5/13 發布；年度 2025/4/1–2026/3/31，標為 FY2025。<strong>印刷頁 62／PDF 第 66 頁，附註 7 的說明 3</strong>：SVF2 相關 OpenAI 投資收益的來源，包含投資權利相關的評價變動。</li>
+<li>本講義只用該年度附註補充投資收益的性質，不將其年度金額與 S2 的單季或美元累積金額加總。</li>
+</ul>
+<h3>S4．OpenAI 的 S-1 保密提交公告</h3>
+<ul>
+<li><a href="https://openai.com/index/openai-submits-confidential-s-1/">OpenAI 官方公告，2026/6/8</a></li>
+<li>僅用來確認保密提交事件。這是公司公告，<strong>不是財務報表</strong>，沒有用它填入損益、資產負債或現金流數字。</li>
+</ul>
+<h3>本講義怎麼處理資料</h3>
+<p>真實數字以原始財報核對，並記錄主體、期間、幣別與頁碼。講解、表格編排、問題與小樹 AI 案例為本講義重新撰寫。未重製完整原財報，未混入未公開內部文件的新聞數字，也未把案例當成 OpenAI 估計。</p>
+<p>本次資料<strong>足以練習財務思維及分析部分線索，尚不足以替 OpenAI 建立完整三表或做出確定的償債、獲利判斷</strong>。若日後取得自身公開財報，應以同一套方法重新核對，更新本講義的結論。</p>
+</section>
+<footer class="sources-foot">本講義為自主學習教材。數字的資料主體、報導期間與假設界線均於正文標示；閱讀與列印不需網路，開啟外部原始來源則需要網路。</footer>
+</main>
+</div>
+</body>
+</html>
