@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Chapter 1｜The Environment &amp; Conceptual Framework for Financial Reporting</title>
+  <style>
+    :root{--ink:#253449;--muted:#596a7b;--paper:#fffdf8;--wash:#f3f0e9;--line:#d9e0df;--accent:#1b6865;--deep:#103e45;--warm:#f7ead4;--alert:#8b3b30}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.78 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+    a{color:var(--accent)}a:hover{text-decoration-thickness:2px}h1,h2,h3,h4{line-height:1.35;color:var(--deep);margin:0 0 .8em}h1{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-.035em}h2{font-size:1.85rem;border-bottom:1px solid var(--line);padding-bottom:.35em}h3{font-size:1.22rem;margin-top:1.65em}p{margin:.5em 0 1.05em}ul,ol{padding-left:1.45em}li{margin:.35em 0}strong{color:#183f47}code{font-family:Consolas,monospace;background:#edf3f1;padding:.1em .3em;border-radius:3px}
+    .quiz-wide{max-width:none!important}.quiz-index{padding:.8rem 1rem;background:#edf5f2;border-radius:6px}.quiz-item{border-top:2px solid var(--line);padding:1.3rem 0;scroll-margin-top:1rem}.quiz-item h3{display:flex;gap:1rem;align-items:baseline}.quiz-key{font-size:.83rem;color:var(--accent)}.quiz-columns{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.4fr) minmax(0,.9fr);gap:1rem}.quiz-columns>div{min-width:0}.quiz-columns h4{font-size:.87rem;letter-spacing:.03em;border-bottom:1px solid var(--line);padding-bottom:.25rem}.choices{list-style:none;padding:0}.choices li{margin:.5rem 0}.option-notes{padding-left:1.1em;font-size:.94rem}.option-notes li{margin:.55rem 0}.quiz-review{background:#f9f2e4;padding:.75rem 1rem;border-radius:6px}.quiz-review p{font-size:.94rem}.hero{background:linear-gradient(135deg,#e8f1ec,#f9f0df);padding:4rem max(4vw,calc((100vw - 1320px)/2));border-bottom:1px solid var(--line)}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem}.subtitle{font-size:1.18rem;max-width:70ch}.meta{color:var(--muted);font-size:.9rem}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:clamp(2rem,5vw,6rem);max-width:1500px;margin:auto;padding:3rem 4vw}.toc{position:sticky;top:1.2rem;align-self:start;max-height:calc(100vh - 2rem);overflow:auto;border-right:1px solid var(--line);padding-right:1.2rem}.toc b{display:block;margin-bottom:.7rem;color:var(--deep)}.toc a{display:block;padding:.32rem 0;text-decoration:none;font-size:.89rem}.toc a:hover{text-decoration:underline}main{min-width:0}section{margin-bottom:4.2rem;scroll-margin-top:1.5rem;max-width:860px}.lead{font-size:1.08rem;color:#405467}.slides{display:inline-block;color:var(--muted);font-size:.8rem;font-weight:700;letter-spacing:.04em;margin-bottom:.5rem}.note,.caution,.worked{padding:1rem 1.25rem;border-left:4px solid var(--accent);background:#edf5f2;margin:1.5rem 0}.caution{border-color:var(--alert);background:#fff2ed}.worked{border-color:#ba8650;background:#fbf3e5}.note h4,.caution h4,.worked h4{margin:0 0 .4em;font-size:1.02rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}.tile{padding:1rem 1.15rem;border:1px solid var(--line);border-radius:8px;background:white}.tile h4{font-size:1rem;margin-bottom:.25rem}.tile p{margin:0}.table-wrap{overflow-x:auto;margin:1.2rem 0}table{border-collapse:collapse;width:100%;font-size:.94rem}th,td{border-bottom:1px solid var(--line);padding:.65rem .7rem;text-align:left;vertical-align:top}th{background:#eef3f0;color:var(--deep)}tbody tr:nth-child(even){background:#fbfaf6}.formula{font-family:Consolas,"Noto Sans TC",monospace;font-size:1rem;padding:.8rem 1rem;background:#f5f3ec;overflow:auto}.exam{border:1px solid var(--line);border-radius:8px;padding:1rem 1.2rem;margin:1rem 0;background:#fff}.exam strong{display:block}.exam details{margin-top:.6rem}.exam summary,.learning-note summary{cursor:pointer;color:var(--accent);font-weight:700}.tip{color:var(--muted);font-size:.9rem}.tag{font-weight:700;color:var(--accent);font-size:.82rem;text-transform:uppercase;letter-spacing:.06em}footer{color:var(--muted);font-size:.85rem;padding-bottom:3rem}a:focus-visible,summary:focus-visible{outline:3px solid #d58d40;outline-offset:3px}
+    @media(max-width:850px){.layout{display:block;padding:1.2rem 5vw}.toc{position:static;max-height:none;overflow-x:auto;display:flex;align-items:center;gap:1rem;white-space:nowrap;border-right:0;border-bottom:1px solid var(--line);padding:.6rem 0;margin-bottom:2rem}.toc b{margin:0}.toc a{flex:none}.grid{grid-template-columns:1fr}.quiz-columns{grid-template-columns:1fr}.quiz-review{padding:1rem}.hero{padding:2.5rem 5vw}}
+    @media print{body{font-size:11pt}.hero{padding:1rem 0}.layout{display:block;padding:0}.toc{display:none}.quiz-columns{grid-template-columns:1fr}section{break-inside:avoid}a{color:inherit}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Intermediate Accounting · IFRS · Chapter 1</div>
+    <h1>The Environment &amp; Conceptual Framework for Financial Reporting</h1>
+    <p class="subtitle">財務報導環境與觀念架構：保留英文考試用語的繁體中文學習講義</p>
+    <p class="meta">依據使用者提供的 <em>Ch01_IFRS_Full.pptx</em>（60 頁）整理。頁碼指原投影片；英文練習題為本講義自編，不是原簡報題目或正式考題。</p>
+  </header>
+  <div class="layout">
+    <nav class="toc" aria-label="章節導覽">
+      <b>本章導覽</b>
+      <a href="#map">投影片地圖</a><a href="#lo1">1 全球市場與 IFRS</a><a href="#lo2">2 Conceptual Framework</a><a href="#lo3">3 假設、衡量與原則</a><a href="#lo4">4 報導環境挑戰</a><a href="#lo5">5 Cash vs Accrual</a><a href="#lo6">6 Reversing Entries</a><a href="#lo7">7 IFRS vs U.S. GAAP</a><a href="#exam">英文作答練習</a><a href="#original-quiz">原題 20 題詳解</a><a href="#glossary">英文術語速查</a><a href="#sources">來源與核對註記</a>
+    </nav>
+    <main>
+      <section id="start">
+        <p class="lead">這章先回答三個問題：<strong>誰制定財務報導規則？</strong> 規則背後用什麼概念判斷？交易發生時，何時認列、用什麼金額衡量、要向使用者揭露什麼？後面再用現金制、調整與迴轉分錄，把抽象概念接到實務。</p>
+        <div class="note"><h4>讀法與考試用語</h4><p>第一次看到專有名詞時，先記住中文意思，再把英文拼法一起記下。例如「忠實表述」要能認出 <strong>faithful representation</strong>。練習區凡標示 <strong>Answer in English</strong> 的題目，題幹與參考答案均為英文；中文提示不算答案的一部分。</p></div>
+        <div class="caution"><h4>資料界線</h4><p>簡報沒有講者備註，也沒有附正式題庫或作答規範。這份講義依可讀取的 60 頁投影片整理，另以 IFRS Foundation 資料核對幾個易混淆處。簡報的概數與未標日期的「目前」敘述不當作即時統計。</p></div>
+      </section>
+
+      <section id="map">
+        <h2>投影片地圖</h2>
+        <div class="table-wrap"><table><thead><tr><th>學習目標</th><th>原投影片</th><th>本講義要回答的問題</th></tr></thead><tbody>
+          <tr><td>LO1</td><td>3–14</td><td>為什麼跨國市場需要可比較的財務資訊？IASB、IOSCO 和 IFRS 各做什麼？</td></tr>
+          <tr><td>LO2</td><td>15–27</td><td>Conceptual Framework 的目標、資訊品質與五個要素是什麼？</td></tr>
+          <tr><td>LO3</td><td>28–37</td><td>何時認列、如何衡量與揭露？IFRS 15 五步驟怎麼套用？</td></tr>
+          <tr><td>LO4</td><td>38–42</td><td>政治、預期落差、倫理及國際趨同如何影響報導？</td></tr>
+          <tr><td>LO5</td><td>43–48</td><td>Cash basis 與 accrual basis 為何把損益放在不同月份？</td></tr>
+          <tr><td>LO6</td><td>49–53</td><td>Reversing entry 何時做、哪些調整可迴轉？</td></tr>
+          <tr><td>LO7</td><td>54–59</td><td>投影片如何比較 IFRS 與 U.S. GAAP 的觀念架構？</td></tr>
+          <tr><td>總複習</td><td>1–2、60</td><td>七個學習目標與本章重點。</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="lo1">
+        <span class="slides">LO1 · 投影片 3–14</span><h2>全球市場、制定機構與 IFRS</h2>
+        <p><strong>Accounting（會計）</strong>把經濟個體發生的事件先<strong>辨認 identification</strong>，再以適當基礎<strong>衡量 measurement</strong>，最後透過<strong>溝通 communication</strong>提供給投資人、債權人等使用者。<strong>Financial statements（財務報表）</strong>是主要溝通工具；<strong>general-purpose financial statements（一般用途財務報表）</strong>服務一群廣泛的外部使用者，而非只替某一位讀者訂製。（投影片 6）</p>
+        <h3>市場為什麼需要共同語言？</h3>
+        <p>儲蓄者把資金交給金融市場，企業取得資金、投入營運，再以報表回報成果。投資人若要比較不同國家的企業，需要看得懂、能比較的資訊。簡報用跨境上市和各地交易所說明這個需求（投影片 4–7）；其中的「149+ countries」是<strong>簡報的概數</strong>，不是這份講義重新統計的最新數字。</p>
+        <p>共同準則只是起點。投影片 8 還列出一致適用、共同揭露、高品質審計、監管審查、數位格式 <strong>XBRL (eXtensible Business Reporting Language)</strong>、教育及公司治理。若各地用同一套名稱卻執行不同，仍難比較。</p>
+        <div class="grid">
+          <div class="tile"><h4>IASB · International Accounting Standards Board</h4><p>國際會計準則理事會；負責制定 <strong>IFRS Accounting Standards</strong>。位於 IFRS Foundation 的治理架構內。（投影片 9、11–13）</p></div>
+          <div class="tile"><h4>IOSCO · International Organization of Securities Commissions</h4><p>國際證券管理機構組織；推動證券市場監理合作，支持跨境使用 IFRS，但<strong>不制定會計準則</strong>。（投影片 10）</p></div>
+        </div>
+        <p>簡報列出四個名稱：<strong>IFRS Foundation</strong> 負責整體治理；<strong>IASB</strong> 制定準則；<strong>IFRS Advisory Council</strong> 提供策略建議；<strong>IFRS Interpretations Committee</strong> 處理實務適用上的分歧。制定準則的 <strong>due process</strong> 強調獨立、系統性研究、利害關係人參與及國際合作。（投影片 11–12）</p>
+        <h3>遇到問題時先看哪裡？</h3>
+        <p>先找適用的 <strong>IFRS Standards、IAS Standards</strong> 及相關 <strong>IFRS Interpretations</strong>。若沒有直接適用的準則，才在建立會計政策時參考相關準則與 <strong>Conceptual Framework</strong>；其他制定機構的規範僅能在不牴觸 IFRS 的條件下參考。這是投影片 14 要表達的查找方向。</p>
+        <div class="caution"><h4>考試容易混淆：Framework 不是 Standard</h4><p>投影片 13 把 IFRS Standards、Conceptual Framework 與 Interpretations 合列為三種「authoritative pronouncements」。但 IFRS Foundation 明確說明 <strong>Conceptual Framework is not a Standard</strong>，也不凌駕任何準則。答題時可描述投影片的三類文件，卻不要寫「觀念架構的效力高於 IFRS 準則」。<a href="#src-framework">核對來源</a></p></div>
+      </section>
+
+      <section id="lo2">
+        <span class="slides">LO2 · 投影片 15–27</span><h2>Conceptual Framework：先問 why，再問 what 與 how</h2>
+        <p><strong>Conceptual Framework for Financial Reporting（財務報導觀念架構）</strong>說明財務報導的目標、什麼資訊有用、報表有哪些要素，以及認列、除列、衡量、表達與揭露的概念。簡報把它濃縮成三層：<strong>Why</strong> 是目標；<strong>What</strong> 是資訊品質與要素；<strong>How</strong> 是認列、衡量與揭露。正式 2018 年架構則有八章，還包括報導個體、資本及資本維持等主題。（投影片 16–17）</p>
+        <p>核心目標是提供有用的財務資訊，供現在及潛在的 <strong>investors、lenders、other creditors</strong> 判斷是否提供資源給企業。使用者被假設具備合理的商業和會計知識，但提供者仍應清楚呈現複雜資訊。（投影片 18、23）</p>
+        <h3>有用資訊的兩個基本品質</h3>
+        <div class="grid">
+          <div class="tile"><h4>Relevance · 攸關性</h4><p>資訊能影響決策。<strong>Predictive value</strong> 幫助預測；<strong>confirmatory value</strong> 幫助驗證或修正過去判斷。<strong>Materiality</strong> 指遺漏或錯報可能影響使用者決策，須看企業情境、性質和金額。（投影片 19–20）</p></div>
+          <div class="tile"><h4>Faithful representation · 忠實表述</h4><p>報導要與實際經濟現象相符，盡量做到 <strong>complete、neutral、free from error</strong>。Free from error 不代表每個估計值都絕對精準，而是方法與描述沒有錯誤或遺漏。（投影片 19、21）</p></div>
+        </div>
+        <p>四個<strong>增進品質 enhancing qualitative characteristics</strong> 是：<strong>comparability</strong>（可比較性）、<strong>verifiability</strong>（可驗證性）、<strong>timeliness</strong>（及時性）、<strong>understandability</strong>（可理解性）。可比較性不是所有企業都用完全相同方法；<strong>consistency</strong> 指同一企業跨期方法一致。驗證可直接清點現金，也可核對輸入值再重算。及時性強調資訊在失去決策價值前可用。（投影片 22–23）</p>
+        <div class="note"><h4>Cost constraint · 成本限制</h4><p>資訊帶給使用者的效益應值得付出蒐集、處理、查核與揭露的成本。它是衡量報導要求的限制，不是容許企業任意隱瞞重大資訊。（投影片 19、37）</p></div>
+        <h3>五個報表要素：從資產負債表連到損益</h3>
+        <div class="table-wrap"><table><thead><tr><th>英文術語</th><th>判斷重點</th><th>投影片例子</th></tr></thead><tbody>
+          <tr><td><strong>Asset</strong> 資產</td><td>過去事件形成、企業現在控制的經濟資源；經濟資源是有產生經濟利益潛力的權利。</td><td>Cash、receivables、inventory、PPE、patents。</td></tr>
+          <tr><td><strong>Liability</strong> 負債</td><td>過去事件形成的現時義務，企業須移轉經濟資源；重點是沒有實際能力避免該義務。</td><td>Payables、loans、accrued expenses、provisions。</td></tr>
+          <tr><td><strong>Equity</strong> 權益</td><td>資產扣除所有負債後的剩餘權益。</td><td>Share capital、retained earnings、reserves。</td></tr>
+          <tr><td><strong>Income</strong> 收益</td><td>資產增加或負債減少，使權益增加；不包含權益持有人投入。</td><td>Revenue、gains。</td></tr>
+          <tr><td><strong>Expenses</strong> 費用</td><td>資產減少或負債增加，使權益減少；不包含對權益持有人的分配。</td><td>COGS、salaries、depreciation、losses。</td></tr>
+        </tbody></table></div>
+        <p class="formula">Equity = Assets − Liabilities</p>
+        <p>資產要看<strong>控制權 control</strong>，不是只看物品放在哪裡；負債要看現有義務，不能把純粹的未來計畫當作負債。<strong>Income</strong> 比日常營業收入 <strong>revenue</strong> 更廣，也包含 gains；<strong>expenses</strong> 的例子含日常費用及 losses。（投影片 24–27）</p>
+      </section>
+
+      <section id="lo3">
+        <span class="slides">LO3 · 投影片 28–37</span><h2>假設、衡量、收入與揭露</h2>
+        <p>前一節列出報表應呈現的「東西」；本節處理<strong>何時記、記多少、還要說明什麼</strong>。投影片 29 把經濟個體、繼續經營、貨幣單位、期間性、應計基礎列為五項 assumptions；把 historical cost / fair value、revenue recognition、expense recognition、full disclosure 歸在 principles；另外列 cost constraint。這是課件的教學整理，不表示每個標籤都是一條獨立的 IFRS 準則。</p>
+        <div class="table-wrap"><table><thead><tr><th>Assumption</th><th>意思</th><th>讀題時的線索</th></tr></thead><tbody>
+          <tr><td>Economic entity</td><td>企業交易與業主、其他單位分開記。</td><td>老闆私用款不能直接當公司營業費用。</td></tr>
+          <tr><td>Going concern</td><td>預期企業可在可預見未來持續營運。</td><td>若無法持續，某些衡量基礎可能要改。</td></tr>
+          <tr><td>Monetary unit</td><td>可用貨幣衡量的活動才進帳。</td><td>品牌好感難直接用金額入帳。</td></tr>
+          <tr><td>Periodicity</td><td>持續經營活動切成會計期間。</td><td>年末必須判定哪筆屬於本期。</td></tr>
+          <tr><td>Accrual basis</td><td>依經濟事件所屬期間記錄，與收付款時間區分。</td><td>先提供服務、後收款仍可能本期認列收入。</td></tr>
+        </tbody></table></div>
+        <h3>Measurement bases 與 fair value hierarchy</h3>
+        <p><strong>Historical cost</strong> 以取得時付出的金額為起點；<strong>fair value</strong> 是在衡量日，市場參與者於有秩序交易中出售資產可收到、或移轉負債需支付的價格。<strong>Value in use / fulfilment value</strong> 著眼於企業使用資產或履行負債所預期的現金流；<strong>current cost</strong> 問今天取得等效資產要付多少。（投影片 31）</p>
+        <p><strong>IFRS 13 fair value hierarchy</strong> 分的是<strong>估值輸入值 inputs</strong>：Level 1 是活絡市場中相同項目的未調整報價；Level 2 是其他可觀察輸入值；Level 3 是不可觀察輸入值。級數不是資產好壞評分，也不能單憑「Level 3」就說數字錯誤。（投影片 32；<a href="#src-fairvalue">IFRS 13</a>）</p>
+        <h3>IFRS 15：Revenue recognition 五步驟</h3>
+        <ol><li><strong>Identify the contract</strong>：確認與客戶之間存在符合條件的合約。</li><li><strong>Identify performance obligations</strong>：找出合約承諾的不同商品或服務。</li><li><strong>Determine the transaction price</strong>：估計有權取得的對價。</li><li><strong>Allocate the transaction price</strong>：按相對的 <strong>stand-alone selling prices</strong> 分給各履約義務。</li><li><strong>Recognize revenue</strong>：履約義務滿足、控制權移轉時或隨履行進度認列收入。</li></ol>
+        <p>Airbus / British Airways 的課件例子只有一個主要履約義務，€100 million 全部分配給飛機交付；何時認列還要看控制權何時轉移，而非只看簽約或收款。（投影片 33–34；<a href="#src-revenue">IFRS 15</a>）</p>
+        <div class="worked"><h4>Backup Company：兩項履約義務的分攤（投影片 35）</h4><p>30 台發電機加安裝合計收 $50,000。單獨售價：發電機 $1,500 × 30 = $45,000；安裝 $200 × 30 = $6,000；合計 $51,000。</p><p class="formula">Generators: $50,000 × 45,000 / 51,000 ≈ $44,118<br>Installation: $50,000 × 6,000 / 51,000 ≈ $5,882</p><p>課件將 $44,118 在 2026-02-01 交付發電機時認列，並記 $22,200 COGS（$740 × 30）；$5,882 在 2026-03-15 完成安裝時認列，並記 $4,500 安裝成本（$150 × 30）。<strong>收入分攤依單獨售價，不依各項成本。</strong> 四捨五入後兩筆收入合計仍是 $50,000。</p></div>
+        <h3>Expense recognition 與 full disclosure</h3>
+        <p>費用應放在它所屬的期間：有些與本期收入直接相關；行政薪資等 <strong>period costs</strong> 於發生時認列；長期資產成本可能透過 <strong>depreciation</strong> 系統性分攤；未來效益不確定時可能立即費用化。（投影片 36）</p>
+        <p><strong>Full disclosure</strong> 指提供足以影響知情使用者判斷的重要資訊，透過財務報表、<strong>notes to the financial statements</strong> 與必要的補充資料呈現。報表數字不是全部；附註會解釋會計政策、風險和明細。（投影片 36）</p>
+      </section>
+
+      <section id="lo4">
+        <span class="slides">LO4 · 投影片 38–42</span><h2>財務報導的環境挑戰</h2>
+        <p>準則會影響企業報出的績效、契約與市場判斷，因此各產業、政府和投資人可能對提案施壓。IASB 可聽取意見，但準則制定仍須以經濟實質、研究及觀念架構為基礎。這是投影片 39 所說的 <strong>political environment</strong>。</p>
+        <p><strong>Expectations gap（預期落差）</strong>是公眾期待會計師做到的事，與會計師認為自己能做到的事之間的差距。課件舉出非財務資訊、前瞻資料、品牌和人力等 <strong>soft assets</strong>、資訊及時性與可理解性。這些挑戰共同提醒：報表並非企業全部價值或未來的即時全貌。（投影片 40）</p>
+        <p><strong>Ethics（倫理）</strong>不是只熟悉條文。管理階層若強調短期數字，會計人員可能在有判斷空間的處理上承受壓力；此時需要專業判斷與誠信。（投影片 41）</p>
+        <p><strong>International convergence（國際趨同）</strong>指不同國家準則或實務朝可比較方向靠近。投影片列中國、日本、美國、馬來西亞與義大利作例子（投影片 42）。這些國別現況屬課件敘述，沒有在此逐一核對為 2026 年最新政策；考試若問課件內容，請以老師提供的版本為準。</p>
+      </section>
+
+      <section id="lo5">
+        <span class="slides">LO5 · 投影片 43–48</span><h2>Cash basis 與 accrual basis</h2>
+        <p><strong>Cash basis（現金基礎）</strong>收到現金才記收入、付出現金才記費用。<strong>Accrual basis（應計基礎）</strong>依履約或費用發生期間認列，收付款可能在別的月份。IFRS 一般用途財務報表使用應計基礎；現金流量資訊另依現金流量表呈現。（投影片 44、48；<a href="#src-accrual">IAS 1 §27</a>）</p>
+        <div class="worked"><h4>Eser Contractor：總利潤相同，月份不同（投影片 45–46）</h4><p>1 月交付車庫，價格 ₺22,000，成本 ₺18,000（先賒欠）；2 月收款，3 月付成本。投影片假設控制權在 1 月交付時轉移。</p><div class="table-wrap"><table><thead><tr><th>方法</th><th>1 月淨利</th><th>2 月淨利</th><th>3 月淨利</th><th>總計</th></tr></thead><tbody><tr><td>Cash basis</td><td>₺0</td><td>₺22,000</td><td>−₺18,000</td><td>₺4,000</td></tr><tr><td>Accrual basis</td><td>₺4,000</td><td>₺0</td><td>₺0</td><td>₺4,000</td></tr></tbody></table></div><p>若題目問「為何應計制更能反映 1 月績效」，重點是收入和相關成本都在交易發生的 1 月呈現，而不是說現金消失或總利潤變了。</p></div>
+        <h3>由現金轉成應計：先辨認應收、預收、預付、應付</h3>
+        <p>Dr. Liwan 的課件只給現金收入 ₺300,000、現金營業支出 ₺170,000，所以只能先算<strong>現金結餘 ₺130,000</strong>；沒有應收、預收、預付與應付的期初期末數字，<strong>不能算出確定的 accrual net income</strong>。（投影片 47）</p>
+        <p class="formula">Accrual service revenue<br>= Cash received + Ending A/R − Beginning A/R<br>+ Beginning unearned revenue − Ending unearned revenue</p>
+        <p class="formula">Accrual operating expense<br>= Cash paid + Beginning prepaid expense − Ending prepaid expense<br>+ Ending accrued liability − Beginning accrued liability</p>
+        <div class="caution"><h4>投影片 47 的費用換算符號需要更正</h4><p>投影片把 prepaid expense 與 accrued liability 的期初、期末加減方向列反。上面費用公式是按帳戶變動推導的更正：期初預付在本期耗用會<strong>增加</strong>本期費用；期末預付尚未耗用會<strong>減少</strong>本期費用；期末應付是已發生未付，會<strong>增加</strong>本期費用。若考試直接照投影片給定公式作答，請先和授課者確認評分採哪一版；這裡不把投影片原式偷偷改掉。</p></div>
+        <p>課件還強調：賒銷、應收、應付與遞延項目在現代信用經濟中很常見。只看現金進出會錯過這些期間差異，也較難用當期報表評估經營表現。（投影片 48）</p>
+      </section>
+
+      <section id="lo6">
+        <span class="slides">LO6 · 投影片 49–53</span><h2>Reversing entries：把前期調整倒過來</h2>
+        <p><strong>Reversing entry（迴轉分錄）</strong>在新期間第一天，將前一期的 <strong>adjusting entry（調整分錄）</strong>借貸方向完全倒轉。它是<strong>可選的記帳便利方法</strong>，目的是讓新期間收到或支付現金時可用較直觀的分錄；不應改變兩期合計的經濟結果。（投影片 50、53）</p>
+        <div class="table-wrap"><table><thead><tr><th>情況</th><th>Dec 31 adjusting entry</th><th>Jan 1 reversing entry</th><th>後續現金交易</th></tr></thead><tbody>
+          <tr><td>Accrued revenue<br>應計收入</td><td>DR Interest Receivable<br>CR Interest Revenue</td><td>DR Interest Revenue<br>CR Interest Receivable</td><td>收現時 DR Cash / CR Interest Revenue</td></tr>
+          <tr><td>Accrued expense<br>應計費用</td><td>DR Salary Expense<br>CR Salaries Payable</td><td>DR Salaries Payable<br>CR Salary Expense</td><td>付薪時 DR Salary Expense / CR Cash</td></tr>
+        </tbody></table></div>
+        <p>投影片 51 的兩組分錄沒有給金額；重點是<strong>Jan 1 把 Dec 31 的借貸互換</strong>。支付或收取全部款項時，前期部分會與迴轉效果抵消，新期只留下屬於新期的金額。</p>
+        <div class="worked"><h4>Deferral 的條件式迴轉（投影片 52）</h4><p>12 月 10 日買 ₺20,000 supplies，最初全部借記 <strong>Supplies Expense</strong>。12 月 31 日剩 ₺5,000，調整為 DR Supplies (Asset) ₺5,000 / CR Supplies Expense ₺5,000；1 月 1 日可迴轉為 DR Supplies Expense ₺5,000 / CR Supplies (Asset) ₺5,000。這種做法配合「原交易先直接記費用」的記帳路徑；若原本已記 <strong>prepaid / unearned</strong>，不能不看原分錄就照抄。</p></div>
+        <p>課件的判斷表：採迴轉法時，<strong>accruals</strong> 通常迴轉；原先直接記費用或收入的某些 <strong>deferrals</strong> 可視方法迴轉；<strong>depreciation</strong> 和 <strong>allowance for doubtful accounts</strong> 的調整不迴轉。整體仍屬選擇性處理，不是每家公司都必須做。（投影片 53）</p>
+      </section>
+
+      <section id="lo7">
+        <span class="slides">LO7 · 投影片 54–59</span><h2>IFRS 與 U.S. GAAP：共同基礎與差異</h2>
+        <p>簡報回顧 IASB 與 <strong>FASB (Financial Accounting Standards Board)</strong> 曾共同處理財務報導目標與資訊品質，IASB 後來獨立完成 2018 年觀念架構更新。兩套體系都重視有用資訊，也都使用 historical cost 和 fair value；<strong>IFRS 13</strong> 與美國的 <strong>ASC 820</strong> 是接近的公允價值衡量規範。（投影片 55–56）</p>
+        <div class="table-wrap"><table><thead><tr><th>課件列出的比較點</th><th>讀懂它的方式</th></tr></thead><tbody>
+          <tr><td>Asset / liability definitions</td><td>兩套架構對資產與負債的文字定義和細節不完全相同；作答不能只寫「完全一樣」。</td></tr>
+          <tr><td>Stewardship</td><td>課件強調 IASB 架構明列對管理階層受託責任的資訊需求。</td></tr>
+          <tr><td>Prudence</td><td>課件以謹慎性在兩套架構中的處理作為差異之一。</td></tr>
+          <tr><td>Fair value scope</td><td>課件認為 IFRS 在某些 PPE、自然資源和無形資產的公允價值選擇較廣。</td></tr>
+          <tr><td>Elements / guidance</td><td>要素定義及估值指引的寫法並非逐字相同；課件提到 FASB SFAC No. 7。</td></tr>
+        </tbody></table></div>
+        <p>投影片 58 再談各國貨幣單位與企業組織文化（例如日本 keiretsu）對實際適用的影響。這些是「相同大原則，情境可能不同」的例子，不等於貨幣單位假設是 IFRS 與 U.S. GAAP 的核心對立。</p>
+        <div class="caution"><h4>學習目標標題與實際內容不同</h4><p>投影片 54 的 LO7 寫 <em>Compare disclosure requirements under IFRS and U.S. GAAP</em>，但 55–59 頁主要比較的是<strong>觀念架構與衡量</strong>，沒有逐項列出 disclosure requirements。這份講義只能整理投影片確實提供的比較，不能憑空補出一張揭露規定對照表。若老師考「disclosure requirements」，需要再看指定教材或課堂補充。</p></div>
+        <p>投影片 59 對未來趨同抱持樂觀，屬課件觀點，不應當作兩套規則已完全一致的事實。</p>
+      </section>
+
+      <section id="exam">
+        <h2>Answer in English｜自編作答練習</h2>
+        <p class="tip">以下題目與參考答案均使用英文，幫你練習考試語言。點開答案前，先自己口頭或寫下答案；中文提示只是讀題輔助。題目並非原投影片或正式考題。</p>
+        <div class="exam"><strong>1. What is the difference between the IASB and IOSCO?</strong><details><summary>Sample answer</summary><p>The IASB develops IFRS Accounting Standards. IOSCO coordinates securities regulators and supports efficient capital markets; it does not set accounting standards.</p></details></div>
+        <div class="exam"><strong>2. Is the Conceptual Framework an IFRS Standard?</strong><details><summary>Sample answer</summary><p>No. The Conceptual Framework helps develop and interpret IFRS Standards and can help preparers develop accounting policies when no Standard applies. It does not override an IFRS Standard.</p></details></div>
+        <div class="exam"><strong>3. Name the two fundamental qualitative characteristics and explain one of them.</strong><details><summary>Sample answer</summary><p>The two fundamental qualitative characteristics are relevance and faithful representation. Relevant information is capable of making a difference in users' decisions through predictive or confirmatory value.</p></details></div>
+        <div class="exam"><strong>4. Define an asset under the Conceptual Framework.</strong><details><summary>Sample answer</summary><p>An asset is a present economic resource controlled by an entity as a result of past events. An economic resource is a right that has the potential to produce economic benefits.</p></details></div>
+        <div class="exam"><strong>5. What do Levels 1, 2 and 3 of the fair value hierarchy classify?</strong><details><summary>Sample answer</summary><p>They classify the inputs used in fair value measurements. Level 1 uses unadjusted quoted prices for identical items in active markets; Level 2 uses other observable inputs; Level 3 uses unobservable inputs.</p></details></div>
+        <div class="exam"><strong>6. List the five steps in the IFRS 15 revenue recognition model.</strong><details><summary>Sample answer</summary><p>Identify the contract; identify the performance obligations; determine the transaction price; allocate the transaction price to the performance obligations; and recognize revenue when or as each performance obligation is satisfied.</p></details></div>
+        <div class="exam"><strong>7. Why does Eser Contractor report ₺4,000 of profit in January under the accrual basis?</strong><details><summary>Sample answer</summary><p>The garage was delivered in January, so the ₺22,000 revenue and the related ₺18,000 cost belong to that period. The profit is ₺4,000 even though cash is received and paid in later months.</p></details></div>
+        <div class="exam"><strong>8. Can Dr. Liwan's accrual-basis net income be calculated from cash receipts of ₺300,000 and cash payments of ₺170,000 alone?</strong><details><summary>Sample answer</summary><p>No. The beginning and ending balances of receivables, unearned revenue, prepaid expenses and accrued liabilities are also needed. The available figures only show a ₺130,000 cash surplus.</p></details></div>
+        <div class="exam"><strong>9. What is a reversing entry, and is it mandatory?</strong><details><summary>Sample answer</summary><p>A reversing entry is the exact opposite of a prior-period adjusting entry and is recorded at the start of the new period. It simplifies bookkeeping but is optional.</p></details></div>
+        <div class="exam"><strong>10. Which adjusting entries should not be reversed in the slide deck's decision guide?</strong><details><summary>Sample answer</summary><p>Adjustments for depreciation and the allowance for doubtful accounts should not be reversed.</p></details></div>
+        <div class="exam"><strong>11. Give two similarities and two differences between IFRS and U.S. GAAP as presented in the slides.</strong><details><summary>Sample answer</summary><p>Both frameworks aim to provide useful financial information and use historical cost and fair value. The slides identify differences in the definitions of assets and liabilities, the treatment of stewardship and prudence, and the scope of fair value measurement.</p></details></div>
+        <div class="exam"><strong>12. Do slides 55–59 provide a detailed comparison of IFRS and U.S. GAAP disclosure requirements?</strong><details><summary>Sample answer</summary><p>No. They mainly compare the conceptual frameworks and selected measurement issues. A detailed comparison of disclosure requirements would require additional course material.</p></details></div>
+      </section>
+
+
+      <section id="original-quiz" class="quiz-wide">
+        <h2>原題紀錄與逐項詳解｜20 題</h2>
+        <p>原題與 A–D 選項依你貼上的文字保留英文原文；正解依附件的回饋。附件顯示 20 題均為「答對，5/5」，但沒有保留你曾經猶豫或先選的選項；下方「你的疑問」只記錄你這次親口說明的部分。這些詳解是講義補寫，不冒充題庫原解說。</p>
+        <p class="tip">每題分三欄：原題、逐項詳解、複習。先遮住答案自己選，再看原因。特別容易混淆的第 3、5–9、11、13、15–17、19 題可由下方索引直接跳轉。</p>
+        <div class="quiz-index">重點題：<a href="#quiz-q03">3</a> · <a href="#quiz-q05">5</a> · <a href="#quiz-q06">6</a> · <a href="#quiz-q07">7</a> · <a href="#quiz-q08">8</a> · <a href="#quiz-q09">9</a> · <a href="#quiz-q11">11</a> · <a href="#quiz-q13">13</a> · <a href="#quiz-q15">15</a> · <a href="#quiz-q16">16</a> · <a href="#quiz-q17">17</a> · <a href="#quiz-q19">19</a></div>
+
+        <article class="quiz-item" id="quiz-q01">
+          <h3>原題 01 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">One element of the objective of financial reporting is to provide</p><ol class="choices" lang="en"><li><strong>A.</strong> information about the investors in the business entity.</li><li><strong>B.</strong> information that will attract new investors.</li><li><strong>C.</strong> information about the liquidation values of the resources held by the enterprise.</li><li><strong>D.</strong> information that assists in decisions about providing resources to the entity.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. information that assists in decisions about providing resources to the entity.</strong></p><p>題目要的是『讓資金提供者做決策』，不是替企業推銷。</p><ul class="option-notes"><li>A 說的是投資人本身的資料，焦點錯了。</li><li>B 是吸引新投資人，帶有宣傳目的；財報目標不是替公司募資廣告。</li><li>C 把報表限定為清算價值；持續經營企業並非一律按清算價值報導。</li><li>D 對：協助判斷是否向企業提供資源。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>回看 LO2：objective → useful information for investors, lenders and other creditors。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q02">
+          <h3>原題 02 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Which of the following parties are likely to use financial reports prepared using the financial accounting process?</p><ol class="choices" lang="en"><li><strong>A.</strong> Government agencies.</li><li><strong>B.</strong> Creditors.</li><li><strong>C.</strong> Unions.</li><li><strong>D.</strong> All of these answer choices are correct.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. All of these answer choices are correct.</strong></p><p>這題問誰『可能使用』財務報告，不限於主要使用者。</p><ul class="option-notes"><li>A 政府機關可能使用，故不能單選 A。</li><li>B 債權人可能使用，故不能單選 B。</li><li>C 工會可能使用，故不能單選 C。</li><li>D 對：三者都可能使用。注意『可能使用者』比 Conceptual Framework 的主要目標使用者範圍廣。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>主要目標使用者：investors、lenders、other creditors；其他人仍可能讀報表。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q03">
+          <h3>原題 03 <span class="quiz-key">正解 B</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Which of the following correctly depicts the order of steps in the IASB&#x27;s due process?</p><ol class="choices" lang="en"><li><strong>A.</strong> Research and analysis conducted, exposure draft, public hearing on proposed standard</li><li><strong>B.</strong> Topic placed on Board&#x27;s agenda, public hearing on proposed standard, exposure draft</li><li><strong>C.</strong> Topic placed on Board&#x27;s agenda, exposure draft, public hearing on proposed standard</li><li><strong>D.</strong> Research and analysis conducted, topic placed on Board&#x27;s agenda, exposure draft</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>B. Topic placed on Board&#x27;s agenda, public hearing on proposed standard, exposure draft</strong></p><p>先認出三個動作：列入議程、公開聽證、公布徵求意見稿。題庫把它們排成 B；但真實程序沒有唯一固定順序。</p><ul class="option-notes"><li>A 與題庫 B 不同：從研究開始，而且把 public hearing 放在 exposure draft 後；這不等於實務上絕不會發生。</li><li>B 是附件指定答案：topic on agenda → public hearing → exposure draft。</li><li>C 把 hearing 放在 draft 後，與題庫次序不合；官方程序可在不同階段諮詢，不能說此順序必然不可能。</li><li>D 從 research 開始且未列 hearing，不是題庫指定三步；官方目前也確有 research programme。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>英文讀題：depicts the order of steps = 畫出步驟先後；due process = 準則制定的公開程序。官方把 public hearing 列為可選步驟，非每案必經，也沒有固定只能在 draft 前。<a href='https://www.ifrs.org/about-us/how-we-set-ifrs-standards/'>官方流程</a>、<a href='https://www.ifrs.org/content/dam/ifrs/about-us/legal-and-governance/constitution-docs/due-process-handbook-2026.pdf'>2026 Handbook</a>。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q04">
+          <h3>原題 04 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Which of the following is not one of the major types of pronouncements issued by the International Accounting Standards Board (IASB)?</p><ol class="choices" lang="en"><li><strong>A.</strong> International financial reporting standards.</li><li><strong>B.</strong> International financial reporting standards interpretations.</li><li><strong>C.</strong> Conceptual framework for financial reporting.</li><li><strong>D.</strong> Memorandum of understanding.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. Memorandum of understanding.</strong></p><p>題庫把三種課程文件放在同一組；memorandum of understanding 是合作備忘錄。</p><ul class="option-notes"><li>A IFRS Standards 是題庫列的準則文件，不是例外。</li><li>B IFRS Interpretations 是解釋文件，不是例外。</li><li>C Conceptual Framework 是 IASB 發布的架構文件，因此不是本題例外；但它不是 IFRS Standard，也不能凌駕準則。</li><li>D 對：memorandum of understanding 是各方合作安排，不屬這組課件文件。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>把『IASB 發布的文件』與『具準則效力的 IFRS Standard』分開；Framework 不是 Standard。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q05">
+          <h3>原題 05 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">The international financial reporting environment includes challenges in financial reporting including all of the following except:</p><ol class="choices" lang="en"><li><strong>A.</strong> Decision-usefulness.</li><li><strong>B.</strong> Political environment.</li><li><strong>C.</strong> Expectations gap.</li><li><strong>D.</strong> Ethics.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Decision-usefulness.</strong></p><p>關鍵字是 except：找『不是課件所列報導環境挑戰』的選項。你說原本想選 B，因為政治環境看起來不像會計；但課件 LO4 確實把它列成挑戰。</p><ul class="option-notes"><li>A 對：decision-usefulness 是財務報導追求的目標／評價準則，不是此處列出的外在挑戰。</li><li>B Political environment 是挑戰：準則會影響利益，可能遭政治與產業壓力。</li><li>C Expectations gap 是挑戰：大眾期待與會計師可提供的內容有落差。</li><li>D Ethics 是挑戰：判斷空間和業績壓力會產生倫理問題。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>讀到 except / not / least 先圈起來。LO4 投影片 39–41 正好依序談 political environment、expectations gap、ethics。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q06">
+          <h3>原題 06 <span class="quiz-key">正解 B</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">The purpose of the International Accounting Standards Board is to</p><ol class="choices" lang="en"><li><strong>A.</strong> issue enforceable standards which regulate the financial accounting and reporting of multinational corporations.</li><li><strong>B.</strong> develop a single set of high-quality IFRS.</li><li><strong>C.</strong> develop a uniform currency in which the financial transactions of companies through-out the world would be measured.</li><li><strong>D.</strong> arbitrate accounting disputes between auditors and international companies.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>B. develop a single set of high-quality IFRS.</strong></p><p>你覺得 A 合理，是因為 IFRS 確實希望準則可被執行；但 A 把『制定』寫成 IASB 直接『規管跨國企業』，且把範圍限得太窄。</p><ul class="option-notes"><li>A 說 issue enforceable standards 這半句有真實成分；錯在 regulate multinational corporations：IASB 制定準則，採用與執法由各司法管轄區的制度負責，且 IFRS 不只服務跨國公司。</li><li>B 對：develop a single set of high-quality IFRS 是本題要的 IASB 核心任務。</li><li>C 統一貨幣不是 IASB 任務；各地財報仍可用不同貨幣。</li><li>D IASB 不扮演審計師與企業間爭議仲裁者。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>辨認主詞 IASB：它 develop standards。『enforceable』可形容準則的目標，不能因此推成 IASB 親自執法。<a href='https://www.ifrs.org/regulators/'>IFRS Foundation 與監管者</a>。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q07">
+          <h3>原題 07 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">The second level in the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework</p><ol class="choices" lang="en"><li><strong>A.</strong> Provides the elements of financial statements.</li><li><strong>B.</strong> Includes assumptions, principles, and constraints.</li><li><strong>C.</strong> Identifies the objective of financial reporting.</li><li><strong>D.</strong> Identifies recognition, measurement, and disclosure concepts used in establishing and applying accounting standards.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Provides the elements of financial statements.</strong></p><p>課件的三層圖：Level 1 = objective；Level 2 = qualitative characteristics + elements；Level 3 = recognition / measurement / disclosure。你說 B 也像對，因為 assumptions 等也出現在圖上；它們其實放在第三層。</p><ul class="option-notes"><li>A 對：elements of financial statements 是第二層的一部分。注意第二層不只有 elements，還有 qualitative characteristics。</li><li>B assumptions、principles、constraints 是課件第三層的 how，不是第二層。</li><li>C objective 是第一層的 why。</li><li>D recognition、measurement、disclosure 是第三層的 how。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>速記：1 Why／目標；2 What／品質和要素；3 How／認列、衡量、揭露。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q08">
+          <h3>原題 08 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">The objective of financial reporting in the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework</p><ol class="choices" lang="en"><li><strong>A.</strong> Is found on the third level of the Framework.</li><li><strong>B.</strong> All of the choices are correct regarding the objective of financial reporting.</li><li><strong>C.</strong> Includes the qualitative characteristics that make accounting information useful.</li><li><strong>D.</strong> Is the foundation for the Framework.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. Is the foundation for the Framework.</strong></p><p>本題問 objective 在架構中的位置／角色。你說 C 感覺對，是因為資訊品質確實和目標相連；但它不是目標本身的內容。</p><ul class="option-notes"><li>A 錯：objective 在第一層，不是第三層。</li><li>B 錯：A、C 都不對，因此不能 all correct。</li><li>C qualitative characteristics 解釋什麼資訊『有用』，在課件第二層；不是 objective 的文字定義。</li><li>D 對：objective 是整個架構的基礎。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>把問題拆成『為何報導？』與『怎樣才有用？』。前者 objective，後者 qualitative characteristics。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q09">
+          <h3>原題 09 <span class="quiz-key">正解 B</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">An implicit assumption of the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework is that</p><ol class="choices" lang="en"><li><strong>A.</strong> All of the choices are correct.</li><li><strong>B.</strong> Users need reasonable knowledge of business and financial accounting matters to understand the information contained in financial statements.</li><li><strong>C.</strong> Information must be decision-useful to all potential users of financial reporting.</li><li><strong>D.</strong> General-purpose financial reporting is the primary source of information for users of financial reporting.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>B. Users need reasonable knowledge of business and financial accounting matters to understand the information contained in financial statements.</strong></p><p>implicit assumption 是『沒有大聲寫在題幹、但理解報表時預設成立的條件』。你說 C 感覺對；它把主要使用者擴成所有潛在讀者，範圍過度。</p><ul class="option-notes"><li>A 錯：C 不成立，因此不可能 all choices are correct。</li><li>B 對：預設使用者有合理的商業及財務會計知識，且願意仔細閱讀。</li><li>C 錯：有用資訊針對主要目標使用者，不可能保證對 every potential user 都有用。</li><li>D 說 general-purpose reporting 是主要資訊來源，和本題考的讀者知識假設不同；不能用它替代 B。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>看到 all potential users 要警覺絕對化。不是每位讀者都獲得量身訂做的資訊。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q10">
+          <h3>原題 10 <span class="quiz-key">正解 C</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">In the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework, an enhancing qualitative characteristic is</p><ol class="choices" lang="en"><li><strong>A.</strong> Predictive value.</li><li><strong>B.</strong> Free from error.</li><li><strong>C.</strong> Timeliness.</li><li><strong>D.</strong> Confirmatory value.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>C. Timeliness.</strong></p><p>題目找 enhancing characteristic。</p><ul class="option-notes"><li>A Predictive value 是 relevance 的組成，不是 enhancing 類。</li><li>B Free from error 是 faithful representation 的組成。</li><li>C 對：timeliness 是四項 enhancing characteristics 之一。</li><li>D Confirmatory value 也是 relevance 的組成。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>基本：relevance／faithful representation；增進：comparability、verifiability、timeliness、understandability。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q11">
+          <h3>原題 11 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">In the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework, an ingredient of a fundamental qualitative characteristic is</p><ol class="choices" lang="en"><li><strong>A.</strong> Neutrality.</li><li><strong>B.</strong> Understandability.</li><li><strong>C.</strong> Timeliness.</li><li><strong>D.</strong> Verifiability.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Neutrality.</strong></p><p>這題講義原本有提，但藏在 LO2 的『Faithful representation』小卡裡，不夠容易找；現在獨立複習。ingredient = 某個基本品質裡面的構成要素。</p><ul class="option-notes"><li>A 對：neutrality 是 faithful representation 的構成之一；另兩個是 completeness 和 free from error。</li><li>B Understandability 是 enhancing characteristic，不是基本品質的 ingredient。</li><li>C Timeliness 是 enhancing characteristic。</li><li>D Verifiability 也是 enhancing characteristic。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>層級：fundamental → faithful representation → completeness / neutrality / free from error。<a href='https://www.ifrs.org/issued-standards/list-of-standards/conceptual-framework/'>Framework</a>。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q12">
+          <h3>原題 12 <span class="quiz-key">正解 B</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Erin Company applies the same accounting treatment to similar events from period to period. Erin Company is exhibiting which of the following qualities as described by the International Accounting Standards Board&#x27;s (IASB&#x27;s) Conceptual Framework?</p><ol class="choices" lang="en"><li><strong>A.</strong> All of the choices are correct.</li><li><strong>B.</strong> Consistency.</li><li><strong>C.</strong> Predictive value.</li><li><strong>D.</strong> Verifiability.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>B. Consistency.</strong></p><p>同一家公司對相似事件跨期採同一方法，關鍵字 from period to period。</p><ul class="option-notes"><li>A 不對：predictive value 和 verifiability 不因方法跨期一致就全部成立。</li><li>B 對：consistency 是跨期方法一致。</li><li>C Predictive value 是資訊能幫助預測，題目未說。</li><li>D Verifiability 是獨立且具知識的人可核對描述，題目未說。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>Consistency 有助於 comparability，但不要把兩詞完全畫上等號。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q13">
+          <h3>原題 13 <span class="quiz-key">正解 C</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Issuance of common stock for cash affects which basic element of financial statements?</p><ol class="choices" lang="en"><li><strong>A.</strong> Losses.</li><li><strong>B.</strong> Revenues.</li><li><strong>C.</strong> Equity.</li><li><strong>D.</strong> Liabilities.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>C. Equity.</strong></p><p>Issuance of common stock for cash = 發行普通股換到現金。這是業主投入，不是銷貨。</p><ul class="option-notes"><li>A Losses 是讓權益減少的損失；本題沒有損失。</li><li>B Revenues 來自提供商品／服務等經營活動；發行股票是 owner contribution。</li><li>C 對：發行股票增加 equity；同時 cash 這項 asset 也增加，但 Assets 不在選項中。</li><li>D 沒有形成必須還款的 liability。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>分錄複習：DR Cash / CR Share Capital。公式 Assets = Liabilities + Equity：資產↑、權益↑，負債不變。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q14">
+          <h3>原題 14 <span class="quiz-key">正解 C</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Under International Financial Reporting Standards (IFRS) real accounts include all of the following except</p><ol class="choices" lang="en"><li><strong>A.</strong> Liabilities</li><li><strong>B.</strong> Assets</li><li><strong>C.</strong> Dividends</li><li><strong>D.</strong> Equity</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>C. Dividends</strong></p><p>real account = permanent account，期末結轉後餘額留到下期。</p><ul class="option-notes"><li>A Liabilities 會留到下期。</li><li>B Assets 會留到下期。</li><li>C 對：Dividends 作為本題的分配／結轉帳戶，期末結轉到權益，不是留有餘額的 permanent account。</li><li>D Equity（例如 Retained Earnings）會留到下期。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>別把 Dividends 當 expense：它是對業主分配，不進 profit or loss。期末可借記 Retained Earnings、貸記 Dividends 作結轉。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q15">
+          <h3>原題 15 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Which of the following is a real (permanent) account?</p><ol class="choices" lang="en"><li><strong>A.</strong> Both Goodwill and Accounts Receivable</li><li><strong>B.</strong> Accounts Receivable</li><li><strong>C.</strong> Goodwill</li><li><strong>D.</strong> Sales Revenue</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Both Goodwill and Accounts Receivable</strong></p><p>real/permanent account 看是否代表期末仍存在的資產、負債或權益。</p><ul class="option-notes"><li>A 對：Goodwill 和 Accounts Receivable 都是資產，屬 permanent accounts。</li><li>B Accounts Receivable 單獨說法是真的，但題目問『哪個選項』，還有 Goodwill，故 B 不完整。</li><li>C Goodwill 單獨說法也是真的，但同樣不完整。</li><li>D Sales Revenue 是本期收入，期末會結轉，是 temporary account。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>資產例子：Cash、A/R、Inventory、Goodwill。期末結轉前後，資產餘額仍延續；revenue / expense 的本期餘額會歸零。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q16">
+          <h3>原題 16 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Which of the following is a nominal (temporary) account?</p><ol class="choices" lang="en"><li><strong>A.</strong> Salaries and Wages Expense</li><li><strong>B.</strong> Unearned Service Revenue</li><li><strong>C.</strong> Inventory</li><li><strong>D.</strong> Retained Earnings</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Salaries and Wages Expense</strong></p><p>nominal = temporary account，累積一個期間的收入、費用或分配，期末結轉。</p><ul class="option-notes"><li>A 對：Salaries and Wages Expense 是費用，結轉後新期從零開始。</li><li>B Unearned Service Revenue 名稱有 revenue，但本質是已收款、尚未履約的 liability，因此是 permanent。</li><li>C Inventory 是 asset，因此是 permanent。</li><li>D Retained Earnings 是 equity，期末結轉後仍留到下期。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>不要只看帳戶名字裡有 Revenue。先問：已賺得嗎？Unearned = 尚未賺得，先列 liability。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q17">
+          <h3>原題 17 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">A journal entry to record a payment on account will include a</p><ol class="choices" lang="en"><li><strong>A.</strong> credit to Accounts Receivable.</li><li><strong>B.</strong> credit to Accounts Payable.</li><li><strong>C.</strong> debit to Accounts Receivable.</li><li><strong>D.</strong> debit to Accounts Payable.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. debit to Accounts Payable.</strong></p><p>payment on account 在這題指『清償先前賒欠的應付帳款』。先有負債，現在付現，負債要減少。</p><ul class="option-notes"><li>A Credit Accounts Receivable 會減少應收帳款；那是客戶還錢給公司，不是公司付應付帳款。</li><li>B Credit Accounts Payable 會增加應付帳款，方向反了。</li><li>C Debit Accounts Receivable 會增加應收帳款，與清償供應商無關。</li><li>D 對：Debit Accounts Payable 讓負債下降；另一邊是 Credit Cash。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>兩筆分錄：先賒購 DR Inventory / CR Accounts Payable；後付款 DR Accounts Payable / CR Cash。借方不一定是增加：負債借方是減少。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q18">
+          <h3>原題 18 <span class="quiz-key">正解 D</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Reversing entries do not apply to which of the following items?</p><ol class="choices" lang="en"><li><strong>A.</strong> Accrued wages.</li><li><strong>B.</strong> Prepaid insurance.</li><li><strong>C.</strong> Unearned revenue.</li><li><strong>D.</strong> Depreciation.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>D. Depreciation.</strong></p><p>題目問不適合迴轉的調整。</p><ul class="option-notes"><li>A Accrued wages 是應計費用，採迴轉法時可在下期初迴轉。</li><li>B Prepaid insurance 是否迴轉取決於原始記帳法；若原交易直接記費用，某些 deferral 可迴轉，因此不是唯一必然不能選項。</li><li>C Unearned revenue 也須看原先直接記收入或記負債；某些情形可迴轉。</li><li>D 對：depreciation 調整不迴轉；它反映資產成本的期間分攤。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>Accrual 可常見迴轉；deferral 要看原分錄；depreciation、bad debts 不迴轉。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q19">
+          <h3>原題 19 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">Reversing entries</p><ol class="choices" lang="en"><li><strong>A.</strong> Impact the statement of financial position and the income statement.</li><li><strong>B.</strong> Are not allowed under International Financial Reporting Standards(IFRS).</li><li><strong>C.</strong> Impact the income statement only.</li><li><strong>D.</strong> Change amounts reported in the financial statements of the preceding peroid.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Impact the statement of financial position and the income statement.</strong></p><p>迴轉分錄同時動到一個資產／負債帳戶和一個收入／費用帳戶，所以會影響當下的兩類報表；不會改寫上一期已出的報表。</p><ul class="option-notes"><li>A 對：例如 DR Salaries Payable / CR Salary Expense：前者在 statement of financial position，後者在 income statement。</li><li>B 錯：IFRS 不禁止迴轉分錄；這是可選的記帳技術。</li><li>C 錯：迴轉也會調整資產或負債，不能說 only income statement。</li><li>D 錯：日期在新期間，不能回頭改前期已報金額。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>報表複習見下方表格：本題直接點名 SFP 與 income statement；changes in equity 透過本期損益間接受影響，cash flows 只隨真實現金收付改變。</p></div>
+          </div>
+        </article>
+
+        <article class="quiz-item" id="quiz-q20">
+          <h3>原題 20 <span class="quiz-key">正解 A</span></h3>
+          <div class="quiz-columns">
+            <div><h4>原題與選項</h4><p lang="en">The major financial statements include all of the following except:</p><ol class="choices" lang="en"><li><strong>A.</strong> Statement of changes in financial position.</li><li><strong>B.</strong> Statement of financial position.</li><li><strong>C.</strong> Statement of changes in equity.</li><li><strong>D.</strong> Statement of comprehensive income.</li></ol></div>
+            <div><h4>正解與逐項詳解</h4><p><strong>A. Statement of changes in financial position.</strong></p><p>題目找『不是當前主要報表的名稱』。</p><ul class="option-notes"><li>A 對：statement of changes in financial position 是舊式／模糊稱呼；現行完整財報用 statement of cash flows 等正式名稱。</li><li>B Statement of financial position 是資產、負債、權益的期末狀態。</li><li>C Statement of changes in equity 是本期權益變動。</li><li>D Statement of comprehensive income 呈現損益及其他綜合損益；可按準則採一表或兩表方式呈現。</li></ul></div>
+            <div class="quiz-review"><h4>複習</h4><p>不要漏掉第四個：statement of cash flows。附註 notes 也是完整財報的一部分。<a href='https://www.ifrs.org/issued-standards/list-of-standards/ias-1-presentation-of-financial-statements/'>IAS 1 說明</a>。</p></div>
+          </div>
+        </article>
+
+        <h3 id="reports-review">第 19、20 題補充：報表與交易怎麼連起來</h3>
+        <p>你提到「三個報表」。第 19 題文字直接提到 <strong>statement of financial position</strong> 與 <strong>income statement</strong>；第 20 題另列 <strong>statement of changes in equity</strong> 和 <strong>statement of comprehensive income</strong>。完整財報還有 <strong>statement of cash flows</strong> 及附註。下表把這些常一起考的名稱與變動一次連起來；<strong>income statement</strong> 的損益資訊也屬綜合損益呈現的一部分，並非一定要多出一份獨立報表。</p>
+        <div class="table-wrap"><table><thead><tr><th>報表</th><th>看什麼</th><th>什麼變動會進來</th><th>例子</th></tr></thead><tbody>
+          <tr><td>Statement of financial position<br>財務狀況表</td><td>某一日 assets、liabilities、equity 的餘額。</td><td>所有使資產、負債、權益餘額變動的交易；即使沒有收付現金也可能變。</td><td>賒購：Inventory ↑、Accounts Payable ↑。發行股：Cash ↑、Share Capital ↑。迴轉應付薪資：Salaries Payable ↓。</td></tr>
+          <tr><td>Income statement / profit or loss<br>損益表</td><td>一段期間的 revenue、expenses、profit or loss。</td><td>賺得收入、發生費用及其調整。業主投入與股利不是收入或費用。</td><td>薪資發生：Salary Expense ↑；迴轉時 Salary Expense 暫時 ↓，之後付款分錄再配合處理。</td></tr>
+          <tr><td>Statement of comprehensive income<br>綜合損益表</td><td>profit or loss 加上符合準則的 other comprehensive income (OCI)。</td><td>本期損益與特定 OCI 項目。可以用單一報表或兩份相連報表呈現。</td><td>正常營業收入影響 profit or loss；某些準則規定的評價變動可能進 OCI。</td></tr>
+          <tr><td>Statement of changes in equity<br>權益變動表</td><td>期初到期末各權益項目如何變。</td><td>本期損益、OCI、發行股票、股利等業主交易。</td><td>發行股使 share capital ↑；本期獲利使 retained earnings ↑；股利使 equity ↓。</td></tr>
+          <tr><td>Statement of cash flows<br>現金流量表</td><td>一段期間實際的現金流入／流出。</td><td>實際收付款，依營業、投資、籌資活動分類；非現金迴轉本身不會製造現金流。</td><td>支付應付帳款：Cash ↓；單純迴轉調整分錄：沒有當下現金流。</td></tr>
+        </tbody></table></div>
+        <div class="worked"><h4>把第 17、19 題串起來</h4><p>若本期清償先前賒購的 $100：<code>DR Accounts Payable 100 / CR Cash 100</code>。財務狀況表的負債與現金都減少 $100；這筆付款本身不再產生新的費用。若是下期初迴轉上期應付薪資，則 <code>DR Salaries Payable / CR Salary Expense</code>，當下同時碰到財務狀況表與損益表，卻不會更改上期已報出的財報。真正付薪時才有現金流。</p></div>
+        <p class="tip">這裡的「影響報表」指分錄會改動相應帳戶；正確的迴轉與後續交易合在一起看，不應把前期已定稿的淨利重新改掉。</p>
+      </section>
+
+      <section id="glossary">
+        <h2>英文術語速查</h2>
+        <div class="table-wrap"><table><thead><tr><th>English</th><th>繁體中文</th><th>一句話記法</th></tr></thead><tbody>
+          <tr><td>Financial reporting</td><td>財務報導</td><td>把企業財務資訊提供給外部使用者。</td></tr><tr><td>Standard-setting body</td><td>準則制定機構</td><td>IASB 制定 IFRS；IOSCO 不制定會計準則。</td></tr><tr><td>Conceptual Framework</td><td>觀念架構</td><td>概念基礎，但不是 Standard。</td></tr><tr><td>Relevance</td><td>攸關性</td><td>能影響決策。</td></tr><tr><td>Faithful representation</td><td>忠實表述</td><td>反映真實的經濟現象。</td></tr><tr><td>Materiality</td><td>重大性</td><td>遺漏或錯報可能影響決策。</td></tr><tr><td>Performance obligation</td><td>履約義務</td><td>合約中承諾交付的可區分商品或服務。</td></tr><tr><td>Stand-alone selling price</td><td>單獨售價</td><td>分攤合約價格時的比例基礎。</td></tr><tr><td>Accrual basis</td><td>應計基礎</td><td>依交易所屬期間，而非現金時點。</td></tr><tr><td>Adjusting entry</td><td>調整分錄</td><td>期末使收入、費用及相關帳戶歸到正確期間。</td></tr><tr><td>Reversing entry</td><td>迴轉分錄</td><td>下期初把特定調整分錄借貸倒轉。</td></tr><tr><td>Full disclosure</td><td>充分揭露</td><td>重要資訊還要在報表與附註說清楚。</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section id="sources">
+        <h2>來源與核對註記</h2>
+        <ol>
+          <li><strong>主要來源：</strong>使用者提供的 <em>Ch01_IFRS_Full.pptx</em>，Chapter 1，60 頁，檔案位於 <code>C:\Users\閻星澄\Downloads\Ch01_IFRS_Full.pptx</code>。本講義依原頁碼註記，不重製全部投影片文字。</li>
+          <li id="src-framework"><a href="https://www.ifrs.org/issued-standards/list-of-standards/conceptual-framework/">IFRS Foundation, Conceptual Framework for Financial Reporting</a>；另見 <a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2024/issued/part-a/conceptual-framework-for-financial-reporting.pdf?bypass=on">Conceptual Framework, Status and Purpose, SP1.2</a>：Framework 不是 Standard，也不凌駕 Standard。</li>
+          <li id="src-revenue"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-15-revenue-from-contracts-with-customers/">IFRS Foundation, IFRS 15 Revenue from Contracts with Customers</a>：五步驟及履約義務滿足時認列收入。</li>
+          <li id="src-fairvalue"><a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-13-fair-value-measurement/">IFRS Foundation, IFRS 13 Fair Value Measurement</a>；<a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2022/issued/part-a/ifrs-13-fair-value-measurement.pdf?bypass=on">§§72–90 fair value hierarchy</a>。</li>
+          <li><a href="https://www.ifrs.org/about-us/how-we-set-ifrs-standards/">IFRS Foundation, How we set IFRS Standards</a>；<a href="https://www.ifrs.org/content/dam/ifrs/about-us/legal-and-governance/constitution-docs/due-process-handbook-2026.pdf">Due Process Handbook (2026)</a>：public hearing 是可選的諮詢方法，故第 3 題只保留題庫指定答案，不把它當成所有專案的固定時序。</li>
+          <li><a href="https://www.ifrs.org/issued-standards/list-of-standards/ias-1-presentation-of-financial-statements/">IFRS Foundation, IAS 1 Presentation of Financial Statements</a>：完整財報包含財務狀況表、損益與其他綜合損益、權益變動表、現金流量表及附註。</li>
+          <li id="src-accrual"><a href="https://www.ifrs.org/content/dam/ifrs/publications/pdf-standards/english/2022/issued/part-a/ias-1-presentation-of-financial-statements.pdf?bypass=on">IFRS Foundation, IAS 1 Presentation of Financial Statements, §§27–28</a>：除現金流量資訊外，財務報表採應計基礎。<a href="https://www.ifrs.org/issued-standards/list-of-standards/ifrs-18-presentation-and-disclosure-in-financial-statements/">IFRS 18</a> 自 2027 年起適用並將取代 IAS 1；本講義仍按課件使用 IAS 1 名稱。</li>
+        </ol>
+        <p class="tip">特別核對：投影片 47 的費用換算符號；投影片 13 的 Framework 地位；投影片 54 的學習目標與 55–59 頁實際內容。這些差異均在相應章節明示。外部連結供進一步核對；閱讀本講義本身不需要連線。</p>
+      </section>
+      <footer>本講義是學習整理與自編練習；正式考試範圍、用字與評分標準仍以授課者提供的材料為準。</footer>
+    </main>
+  </div>
+</body>
+</html>
