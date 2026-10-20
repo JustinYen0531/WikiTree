@@ -93,7 +93,7 @@ class AiProviders {
         this.states.set(provider, state);
       } catch { state = { status: 'error', message: '無法啟動 Codex，請安裝或更新官方 Codex CLI 後重試。' }; }
     }
-    if (state.status === 'connected' && !this.models.has(provider)) {
+    if (state.status === 'connected') {
       try { await this.loadModels(provider); }
       catch { return { status: 'error', message: '無法取得模型，請重新連線或檢查帳號權限。', models: [] }; }
     }

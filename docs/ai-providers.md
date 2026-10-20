@@ -13,7 +13,7 @@ WikiTree 目前只保留 OpenAI · Codex。先前透過 Antigravity／`agy` 使�
 
 ## 資料與安全邊界
 
-- OpenAI 使用官方 Codex App Server，模型清單取自 `model/list`。
+- OpenAI 使用官方 Codex App Server；每次確認連線狀態時都重新讀取 `model/list`，讓模型選單跟上 Codex 當下提供的清單。
 - 官方工具自行處理登入與憑證更新；WikiTree 不收密碼，也不把憑證傳到前端或寫入專案。
 - Codex 授權資料由官方工具存放在使用者家目錄下 `.wikitree/ai/openai`。
 - 前端只記住廠商與模型名稱；登入網址只在登入期間顯示。
