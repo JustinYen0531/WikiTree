@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chapter 3 財務決策與單一價格法則｜冒險者公會的首席大掌櫃修煉秘笈</title>
+  <title>Chapter 3 財務決策與單一價格法則｜冒險者公會的首席大掌櫃修煉秘笈 [v2.0 增補演化版]</title>
   <style>
     :root {
       --ink: #1f2d3d;
@@ -66,6 +66,18 @@
       border-radius: 20px;
       margin-bottom: 1.2rem;
     }
+    .version-tag {
+      display: inline-block;
+      background: #d48b28;
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+      letter-spacing: 0.05em;
+    }
     .hero h1 {
       font-size: clamp(2.1rem, 4.5vw, 3.4rem);
       margin: 0 0 0.8rem;
@@ -76,7 +88,7 @@
     .hero .subtitle {
       font-size: 1.25rem;
       color: #d1ebe3;
-      max-width: 800px;
+      max-width: 820px;
       margin: 0 0 1.2rem;
       font-weight: 300;
     }
@@ -96,9 +108,9 @@
     /* 佈局容器 */
     .layout {
       display: grid;
-      grid-template-columns: 270px minmax(0, 1fr);
+      grid-template-columns: 280px minmax(0, 1fr);
       gap: clamp(2rem, 4vw, 5rem);
-      max-width: 1520px;
+      max-width: 1540px;
       margin: 0 auto;
       padding: 3rem 4vw;
     }
@@ -131,17 +143,22 @@
       display: block;
       color: var(--muted);
       text-decoration: none;
-      font-size: 0.9rem;
-      padding: 0.42rem 0.6rem;
+      font-size: 0.88rem;
+      padding: 0.38rem 0.55rem;
       border-radius: 6px;
       transition: all 0.2s ease;
       line-height: 1.4;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
     }
     .toc a:hover {
       color: var(--accent);
       background: var(--accent-light);
-      padding-left: 0.9rem;
+      padding-left: 0.8rem;
+    }
+    .toc .toc-sub {
+      padding-left: 1.4rem;
+      font-size: 0.82rem;
+      color: #728498;
     }
 
     /* 主體內容 */
@@ -238,7 +255,7 @@
     .law-box h3 { color: #fcebbd; margin-top: 0; }
     .law-box p { color: #d6eee7; margin-bottom: 0; }
 
-    /* 原書 Example 詳解卡片 */
+    /* 原書 Example / Problem 詳解卡片 */
     .example-card {
       background: #ffffff;
       border: 1px solid #cbdad4;
@@ -278,8 +295,49 @@
       border-left: 3px solid #7c988f;
       margin-bottom: 1.2rem;
     }
+    .example-problem .orig-en {
+      font-size: 0.92rem;
+      color: #4b635c;
+      font-style: italic;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #d5dedb;
+    }
     .example-solution {
       padding: 0.5rem 0.2rem;
+    }
+
+    /* 演化歷史卡片 (Evolution Card) */
+    .evolution-card {
+      background: #fdfaf3;
+      border: 2px dashed #e8c68a;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .evolution-card h3 {
+      margin-top: 0;
+      color: #8c5b13;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .evolution-timeline {
+      list-style: none;
+      padding-left: 0.5rem;
+      position: relative;
+    }
+    .evolution-timeline li {
+      position: relative;
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .evolution-timeline li::before {
+      content: "●";
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 1.1rem;
     }
 
     /* 互動小實驗 Widget 容器 */
@@ -452,6 +510,21 @@
       color: #8c261b;
     }
 
+    /* 摺疊按鈕 / 詳細解答 */
+    details.solution-details {
+      margin-top: 1rem;
+      background: #f4fbf7;
+      border: 1px solid #c8e4d8;
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+    }
+    details.solution-details summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--accent-dark);
+      outline: none;
+    }
+
     /* 響應式 */
     @media (max-width: 960px) {
       .layout {
@@ -473,13 +546,14 @@
 <!-- 頂部 Hero Banner -->
 <header class="hero">
   <div class="eyebrow">Corporate Finance · Berk & DeMarzo · Chapter 3</div>
-  <h1>Chapter 3｜財務決策與單一價格法則</h1>
+  <h1>Chapter 3｜財務決策與單一價格法則 <span class="version-tag">v2.0 增補演化版</span></h1>
   <div class="subtitle">Financial Decision Making and the Law of One Price —— 像十五歲國中生一樣，搞懂公會大掌櫃的算錢神技！</div>
   <div class="meta-tags">
     <span class="meta-tag">⚔️ 角色：公會首席財務掌櫃</span>
     <span class="meta-tag">🎯 核心：評價原則 (Valuation Principle)</span>
     <span class="meta-tag">⏳ 武器：貨幣時間價值 (TVM) & 淨現值 (NPV)</span>
     <span class="meta-tag">⚖️ 終極真理：單一價格法則 (Law of One Price)</span>
+    <span class="meta-tag">📝 擴充：課後 14 題經典非 Excel 題庫全詳解</span>
   </div>
 </header>
 
@@ -487,6 +561,7 @@
   <!-- 側邊導航目錄 -->
   <nav class="toc" aria-label="講義目錄">
     <div class="toc-title">📖 冒險指南目錄</div>
+    <a href="#evolution">📜 講義演化記錄 (Changelog)</a>
     <a href="#intro">🏰 序章：公會大掌櫃的神聖任務</a>
     <a href="#sec1">⚖️ 第一節：市場價格決定客觀價值</a>
     <a href="#sec2">⏳ 第二節：時間也是一種匯率 (TVM)</a>
@@ -495,11 +570,34 @@
     <a href="#sec5">📜 第五節：無套利證券定價與分離原則</a>
     <a href="#integration">🧩 全章心智地圖與十組易混概念</a>
     <a href="#practice">🎯 實戰演練：6 題觀念通關測驗</a>
+    <a href="#textbook-problems">🔥 下半段增補：課後 14 大試煉題庫</a>
+    <a class="toc-sub" href="#prob-valuing">↳ 1~5 決策評估篇</a>
+    <a class="toc-sub" href="#prob-tvm">↳ 6~8 時間價值篇</a>
+    <a class="toc-sub" href="#prob-npv">↳ 11 NPV 與無本借貸</a>
+    <a class="toc-sub" href="#prob-arbitrage">↳ 12~14 套利與單一價格</a>
+    <a class="toc-sub" href="#prob-securities">↳ 16~18 證券無套利定價</a>
+    <a href="#further-reading">🔬 經典學術文獻與思想源流</a>
     <a href="#glossary">📚 必背英漢專業術語字典庫</a>
   </nav>
 
   <!-- 主體講義內容 -->
   <main>
+
+    <!-- 演化記錄 -->
+    <section id="evolution" class="evolution-card">
+      <h3>📜 講義演化記錄 (Version Evolution & Changelog)</h3>
+      <p style="color:#6d4b14; font-size:0.95rem;">本講義採用<strong>版本演化模式（Evolutionary Changelog）</strong>進行維護，確保知識累積過程清晰可溯，絕不任意破壞先前已建立的知識架構：</p>
+      <ul class="evolution-timeline">
+        <li>
+          <strong>v1.0 (2026-10-20 初版上線)：</strong><br>
+          建立 Chapter 3 核心理論骨架（評價原則、貨幣時間價值、NPV 決策黃金律、套利與單一價格法則、無套利證券定價與分離原則）；嵌入 5 大沉浸式原生 JS 互動實驗組件；納入原書 Example 3.1~3.7 與 6 題隨堂測驗。
+        </li>
+        <li>
+          <strong>v2.0 (2026-10-20 演化增補版)：</strong><br>
+          保持前半部全部內容完整不動；全新擴充<strong>下半段「課後 14 大試煉非 Excel 經典題庫詳解（Problems 1~18）」</strong>，涵蓋 Honda 汽車促銷折價、大蝦跨國外匯貿易、玉米轉化乙醇臨界定價、年終股票獎金一年閉鎖期、長野滑雪過期哩程、日本跨國專案評估、鍵盤無本融資採購、兩大銀行跨行套利、美日利差投機迷思、ADR 股價推算匯率、ETF 搬磚套利、零息債券組裝天平與反推殖利率；同步收錄 Fisher 等四大經典學術文獻思想導讀與頁碼索引。
+        </li>
+      </ul>
+    </section>
 
     <!-- 序章 -->
     <section id="intro">
@@ -1226,7 +1324,7 @@ Price(C) = Price(A + B) = Price(A) + Price(B)
           <button class="quiz-opt" onclick="checkQuiz(this, true, 'q5', '滿分理解！在正常市場中，證券市價恰好等於未來現金流的折現值，所以成本 = 效益，NPV 永遠為零！金融交易本身不創造實體財富。')">B. 恰好等於 0</button>
           <button class="quiz-opt" onclick="checkQuiz(this, false, 'q5', '若是負數，理性投資人就不會進場自願交易！')">C. 小於 0</button>
         </div>
-        <div id="q5-fb" class="quiz-feedback"></div>
+        <div id="q4-fb" class="quiz-feedback"></div>
       </div>
 
       <!-- 題 6 -->
@@ -1242,109 +1340,741 @@ Price(C) = Price(A + B) = Price(A) + Price(B)
 
     </section>
 
-    <!-- 術語字典庫 -->
-    <section id="glossary">
-      <h2>📚 必背英漢專業術語字典庫</h2>
+    <!-- 第八節：下半段增補 課後 14 大試煉題庫 -->
+    <section id="textbook-problems">
+      <h2>🔥 下半段增補：課後 14 大試煉題庫（Problems 1~18 詳解）</h2>
+      <p class="lead"><strong>歡迎進入「大掌櫃魔鬼修煉場」！</strong> 這是課本第 113~116 頁最新釋出的非 Excel 課後習題。我們將分為 5 大模組，用最生動的比喻與精準算式，手把手帶你全數通關！</p>
+
+      <!-- 模組 A：決策評估 (Valuing Decisions) -->
+      <div id="prob-valuing">
+        <h3>⚔️ 模組 A：決策評估篇（Valuing Decisions）</h3>
+
+        <!-- Problem 1 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🚗 Problem 1：Honda 汽車促銷折價方案</span>
+            <span class="example-badge">PROBLEM 1</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Honda Motor Company is considering offering a $1,600 rebate on its minivan, lowering the vehicle’s price from $29,000 to $27,400. The marketing group estimates that this rebate will increase sales over the next year from 42,000 to 60,000 vehicles. Suppose Honda’s profit margin with the rebate is $5,400 per vehicle. If the change in sales is the only consequence of this decision, what are its costs and benefits? Is it a good idea?
+              </div>
+              <p>Honda 車廠考慮推出促銷方案：休旅車每輛折價 <strong>$1,600</strong>（售價從 $29,000 降到 $27,400）。行銷團隊預估：這會讓明年銷量從 42,000 輛暴增到 60,000 輛。假設降價後每輛車的邊際利潤為 <strong>$5,400</strong>。這項促銷方案的成本與效益是多少？這是一筆好生意嗎？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：新舊銷量分流思考】</strong><br>
+              很多初學者會把降價前後的總營收整個相乘減來減去，容易算錯。大掌櫃教你一秒看透的<strong>「增量分析法（Incremental Analysis）」</strong>：
+              <ul>
+                <li><strong>付出的代價（Costs）：</strong> 原本就算不促銷，閉著眼睛也能賣掉的 <strong>42,000 輛</strong>，現在每輛都平白無故少賺了 $1,600 折扣！<br>
+                ➔ $\text{Cost} = 42,000 \text{ 輛} \times \$1,600 = \mathbf{\$67,200,000}$（成本為 6,720 萬美元）。</li>
+                <li><strong>得到的效益（Benefits）：</strong> 因為促銷而額外多吸引來的新買家，新增銷量為 $60,000 - 42,000 = \mathbf{18,000 \text{ 輛}}$！每一輛帶來 $5,400 的淨利潤。<br>
+                ➔ $\text{Benefit} = 18,000 \text{ 輛} \times \$5,400 = \mathbf{\$97,200,000}$（效益為 9,720 萬美元）。</li>
+                <li><strong>淨利潤（Net Value）：</strong><br>
+                ➔ $\text{Net Value} = \$97,200,000 - \$67,200,000 = \mathbf{+\$30,000,000}$（淨賺 3,000 萬美元！）。</li>
+              </ul>
+              <strong>🎯 結論：</strong> 效益遠大於成本，淨賺 3,000 萬美元！<strong>這是一個超級讚的點子（Definitely a Good Idea）！</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 2 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🦐 Problem 2：國際大蝦跨國貿易陷阱</span>
+            <span class="example-badge">PROBLEM 2</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                You are an international shrimp trader. A food producer in the Czech Republic offers to pay you 2.9 million Czech koruna today in exchange for a year’s supply of frozen shrimp. Your Thai supplier will provide you with the same supply for 22 million Thai baht today. If the current competitive market exchange rates are 24.24 koruna per dollar and 37.74 baht per dollar, what is the value of this deal?
+              </div>
+              <p>你是個跨國冷凍白蝦貿易商。捷克食品廠開出合約：今天付你 <strong>290 萬捷克克朗 (CZK)</strong> 買一整年的白蝦。你的泰國供應商報價：今天要你付 <strong>2,200 萬泰銖 (THB)</strong> 供貨。市場競爭匯率為：24.24 克朗/美元、37.74 泰銖/美元。這筆交易的淨價值是多少？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：統一幣別天平】</strong><br>
+              在遊戲拍賣所，你不能拿「金幣」去直接減「銀幣」，必須先換算成同一貨幣（例如美元 USD）：
+              <ul>
+                <li><strong>收入（Benefit 現金流入）：</strong><br>
+                $2,900,000 \text{ CZK} \div 24.24 \text{ CZK/\$} = \mathbf{\$119,636.96}$ 美元。</li>
+                <li><strong>成本（Cost 現金流出）：</strong><br>
+                $22,000,000 \text{ THB} \div 37.74 \text{ THB/\$} = \mathbf{\$582,935.88}$ 美元。</li>
+                <li><strong>交易淨值（Net Value）：</strong><br>
+                $\text{Net Value} = \$119,636.96 - \$582,935.88 = \mathbf{-\$463,298.92}$ 美元！</li>
+              </ul>
+              <strong>🎯 結論：</strong> 做這單會慘賠 <strong>46.3 萬美元</strong>！千萬不能接！這充分說明了為什麼必須用客觀競爭市場價格將各國貨幣量化，否則光看「290萬」跟「2200萬」數字根本不知道誰大誰小！
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 3 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🌽 Problem 3：玉米轉化乙醇的煉金術</span>
+            <span class="example-badge">PROBLEM 3</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Suppose the current market price of corn is $3.75 per bushel. Your firm has a technology that can convert 1 bushel of corn to 3 gallons of ethanol. If the cost of conversion is $1.84 per bushel, at what market price of ethanol does conversion become attractive?
+              </div>
+              <p>目前玉米市價每蒲式耳 <strong>$3.75</strong>。你公司擁有黑科技，能把 1 蒲式耳玉米轉化為 <strong>3 加侖乙醇（酒精燃料）</strong>，轉化加工成本為每蒲式耳 <strong>$1.84</strong>。乙醇的市場價格要達到多少以上，這項轉化技術才有利可圖？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：算出一加侖成本臨界點】</strong><br>
+              <ul>
+                <li><strong>提煉 3 加侖乙醇的總成本：</strong> 買 1 蒲式耳玉米 ($3.75) + 工廠加工費 ($1.84) = <strong>$5.59 美元</strong>。</li>
+                <li>因為 1 蒲式耳能產出 3 加侖乙醇，所以<strong>每加侖乙醇的損益平衡底線</strong>為：<br>
+                $P_{\text{ethanol}} \ge \frac{\$5.59}{3 \text{ 加侖}} = \mathbf{\$1.8633 \text{ 美元/加侖}}$（約 $1.86/加侖）。</li>
+              </ul>
+              <strong>🎯 結論：</strong> 只要市場上乙醇價格<strong>高於 $1.8633/加侖</strong>，開機轉化就是賺錢的好生意！
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 4 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🎁 Problem 4：年終獎金二選一（現金 vs 股票）</span>
+            <span class="example-badge">PROBLEM 4</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Suppose your employer offers you a choice between a $6,900 bonus and 400 shares of the company stock. Whichever one you choose will be awarded today. The stock is currently trading for $52 per share.<br>
+                a. Suppose that if you receive the stock bonus, you are free to trade it. Which form of the bonus should you choose? What is its value?<br>
+                b. Suppose that if you receive the stock bonus, you are required to hold it for at least one year. What can you say about the value of the stock bonus now? What will your decision depend on?
+              </div>
+              <p>老闆發年終給你二選一：今天領 <strong>$6,900 現金</strong>，或是領 <strong>400 股公司股票</strong>。目前股票市價為每股 $52。<br>
+              a. 如果股票今天就能自由在市場上轉賣，你該選哪一個？它的價值是多少？<br>
+              b. 如果股票被強制閉鎖「至少要抱緊一年不能賣」，此時股票的價值該怎麼評估？你的選擇會取決於什麼？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：流動性決定評價原則是否完全生效】</strong><br>
+              <ul>
+                <li><strong>子題 a（可自由交易）：</strong><br>
+                400 股股票在競爭市場上的客觀現值 = $400 \times \$52 = \mathbf{\$20,800}$！<br>
+                根據評價原則，<strong>果斷選股票！</strong> 就算你極度渴望現金，選股票後立刻在市場賣掉拿回 $20,800 現金，也比直接拿 $6,900 <strong>暴增了整整 $13,900 現金</strong>！</li>
+                <li><strong>子題 b（閉鎖一年不能賣）：</strong><br>
+                當資產失去競爭市場的即時流動性時，<strong>評價原則無法給出單一客觀現金現值</strong>！<br>
+                股票價值現在充滿不確定性（一年後股價可能漲到 $100，也可能跌到 $10）。此時你的決策將高度取決於：
+                <ol>
+                  <li><strong>你的個人風險偏好（Risk Preferences）：</strong> 你是喜歡冒險還是害怕虧損？</li>
+                  <li><strong>你今天對現金的迫切程度：</strong> 如果你今天不繳房租就會被房東趕出去，現金 $6,900 雖然少但能救命！</li>
+                  <li><strong>你對公司未來一年獲利與股價的預期！</strong></li>
+                </ol>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 5 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">⛷️ Problem 5：長野滑雪哩程的機會成本</span>
+            <span class="example-badge">PROBLEM 5</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                You have decided to take your daughter skiing in Nagano, Japan. The best price you have been able to find for a roundtrip air ticket is $555. You notice that you have 20,000 frequent flyer miles that are about to expire, but you need 25,000 miles to get her a free ticket. The airline offers to sell you 5,000 additional miles for $0.05 per mile.<br>
+                a. Suppose that if you don’t use the miles for your daughter’s ticket they will become worthless. What should you do?<br>
+                b. What additional information would your decision depend on if the miles were not expiring? Why?
+              </div>
+              <p>你要帶女兒去日本長野滑雪，來回機票查到最便宜是 <strong>$555</strong>。你發現手上有 <strong>20,000 哩即將過期的航空哩程</strong>，但兌換免費機票需要 25,000 哩。航空公司同意讓你補買 5,000 哩，每哩售價 <strong>$0.05</strong>。<br>
+              a. 如果這次不用，這 2 萬哩馬上過期變廢紙。你該自費買機票還是補買哩程換票？<br>
+              b. 如果這些哩程永遠不會過期，你的決策還需要什麼額外資訊？為什麼？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：沉沒成本與機會成本】</strong><br>
+              <ul>
+                <li><strong>子題 a（即將過期）：</strong><br>
+                補買 5,000 哩的成本 = $5,000 \times \$0.05 = \mathbf{\$250}$。<br>
+                付出 $250 就能省下原價 $555 的機票，相當於現賺 $\$555 - \$250 = \mathbf{\$305}$！<br>
+                原本的 20,000 哩不用就歸零，機會成本為 0。<strong>明智選擇：立刻花 $250 買哩程換機票！</strong></li>
+                <li><strong>子題 b（不會過期）：</strong><br>
+                如果哩程不過期，那 20,000 哩就有<strong>「未來的使用價值（機會成本 Opportunity Cost）」</strong>！<br>
+                決策取決於：<strong>這 20,000 哩未來能換到什麼價值的機票？</strong><br>
+                例如：如果你未來打算換一張價值 $1,000 的歐美長途機票，那麼現在把哩程用在只值 $555 的日本線上就浪費了；反之，若你未來根本不常搭這家航空，那現在換掉依然最划算！</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 模組 B：貨幣時間價值篇 (TVM) -->
+      <div id="prob-tvm">
+        <h3>⏳ 模組 B：時間價值與跨國利率篇（TVM）</h3>
+
+        <!-- Problem 6 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">⏰ Problem 6：3.2% 利率下的時空穿越</span>
+            <span class="example-badge">PROBLEM 6</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Suppose the risk-free interest rate is 3.2%.<br>
+                a. Having $500 today is equivalent to having what amount in one year?<br>
+                b. Having $500 in one year is equivalent to having what amount today?<br>
+                c. Which would you prefer, $500 today or $500 in one year? Does your answer depend on when you need the money? Why or why not?
+              </div>
+              <p>市場無風險年利率為 <strong>3.2%</strong>。<br>
+              a. 今天的 $500，相當於一年後的多少錢？<br>
+              b. 一年後的 $500，相當於今天的多少錢？<br>
+              c. 今天的 $500 跟一年後的 $500，你會選哪一個？這會取決於你何時需要錢嗎？為什麼？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：利率就是時間轉換器】</strong><br>
+              <ul>
+                <li><strong>子題 a（往未來推 FV）：</strong><br>
+                $\text{FV} = \$500 \times (1 + 0.032) = \mathbf{\$516.00}$（一年後的等價金幣）。</li>
+                <li><strong>子題 b（往今天拉 PV）：</strong><br>
+                $\text{PV} = \$500 \div (1 + 0.032) = \mathbf{\$484.50}$（今天的等價金幣）。</li>
+                <li><strong>子題 c（偏好抉擇）：</strong><br>
+                <strong>永遠優先選「今天的 $500」！而且跟何時需要錢完全無關！</strong><br>
+                • 如果你今天需要錢：拿今天的 $500 剛好花掉，比拿一年後的 $500（今天只值 $484.50）多賺 $15.50。<br>
+                • 如果你一年後才需要錢：拿今天的 $500 存進銀行賺 3.2% 利息，一年後會變成 <strong>$516</strong>，依然比苦等一年只拿 $500 多賺了 <strong>$16 元利息</strong>！</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 7 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🗾 Problem 7：跨國投資日本專案 NPV 陷阱</span>
+            <span class="example-badge">PROBLEM 7</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                You have an investment opportunity in Japan. It requires an investment of $0.98 million today and will produce a cash flow of ¥107 million in one year with no risk. Suppose the risk-free interest rate in the United States is 3.9%, the risk-free interest rate in Japan is 2.3%, and the current competitive exchange rate is ¥110 per $1. What is the NPV of this investment? Is it a good opportunity?
+              </div>
+              <p>日本有一個無風險投資專案：今天需要投入 <strong>98 萬美元（$0.98M）</strong>，保證在一年後回收 <strong>1.07 億日圓（¥107M）</strong>。<br>
+              已知：美國無風險利率 3.9%，日本無風險利率 2.3%，目前市場競爭即期匯率為 <strong>¥110 / $1 美元</strong>。請問該專案的 NPV 是多少？這是一個好投資嗎？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：在日圓的世界折現，再走匯率傳送門】</strong><br>
+              注意陷阱！未來的日圓現金流，必須用<strong>「日圓的無風險利率 (2.3%)」</strong>折現成今天的日圓，再用即期匯率換回美元：
+              <ol>
+                <li><strong>一年後日圓折現為今天的日圓現值：</strong><br>
+                $\text{PV(日圓)} = 107,000,000 \text{ 円} \div 1.023 = \mathbf{¥104,594,330.40}$。</li>
+                <li><strong>通過即期匯率門換算為今天的美元價值：</strong><br>
+                $\text{PV(美元效益)} = ¥104,594,330.40 \div 110 = \mathbf{\$950,857.55}$（約 95.09 萬美元）。</li>
+                <li><strong>計算淨現值 NPV：</strong><br>
+                $\text{NPV} = \text{效益現值} - \text{成本投入} = \$950,857.55 - \$980,000 = \mathbf{-\$29,142.45}$（負 2.91 萬美元！）。</li>
+              </ol>
+              <strong>🎯 結論：</strong> NPV < 0，做了會虧損近 3 萬美元！<strong>絕不是好專案，果斷拒絕（Reject）！</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 8 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">📈 Problem 8：無風險投資的吸引力利率門檻</span>
+            <span class="example-badge">PROBLEM 8</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Your firm has a risk-free investment opportunity where it can invest $163,000 today and receive $179,000 in one year. For what level of interest rates is this project attractive?
+              </div>
+              <p>你的公司有一個無風險專案：今天投資 <strong>$163,000</strong>，一年後保證拿回 <strong>$179,000</strong>。在什麼樣的市場利率水準下，這個專案才具有投資吸引力？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：算出專案本身的內建報酬率】</strong><br>
+              專案本身的年收益率（投資報酬率 Return / 隱含利率）為：
+              <div class="formula-banner">
+專案回報率 r* = (179,000 - 163,000) ÷ 163,000 = 16,000 ÷ 163,000 ≈ 9.816% (約 9.82%)
+              </div>
+              <ul>
+                <li>只要市場無風險利率 <strong>$r < 9.82\%$</strong>：<br>
+                這項專案賺的比銀行多，NPV 就會是正的（$\text{NPV} = \frac{179,000}{1+r} - 163,000 > 0$），深具吸引力！</li>
+                <li>若市場利率 $r > 9.82\%$：直接把錢存銀行利息還比較多，專案 NPV < 0 失去吸引力。</li>
+              </ul>
+              <strong>🎯 結論：</strong> 只要市場無風險利率<strong>低於 9.82%</strong>，該專案就是好專案！
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 模組 C：NPV 決策與無本借貸篇 -->
+      <div id="prob-npv">
+        <h3>💎 模組 C：NPV 決策與無本借貸篇（NPV & Financing）</h3>
+
+        <!-- Problem 11 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">⌨️ Problem 11：鍵盤採購案與無本借貸魔術</span>
+            <span class="example-badge">PROBLEM 11</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Your computer manufacturing firm must purchase 12,000 keyboards from a supplier. One supplier demands a payment of $144,000 today plus $12 per keyboard payable in one year. Another supplier will charge $25 per keyboard, also payable in one year. The risk-free interest rate is 6%.<br>
+                a. What is the difference in their offers in terms of dollars today? Which offer should your firm take?<br>
+                b. Suppose your firm does not want to spend cash today. How can it take the first offer and not spend $144,000 of its own cash today?
+              </div>
+              <p>你的電腦工廠需要採購 <strong>12,000 個鍵盤</strong>。有兩家供應商開價（年利率 6%）：<br>
+              • <strong>供應商 A：</strong> 今天先付 <strong>$144,000 現金</strong>，一年後每個鍵盤再付 $12。<br>
+              • <strong>供應商 B：</strong> 今天 0 元，一年後每個鍵盤收 $25。<br>
+              a. 以「今天的現值（Dollars Today）」衡量，兩家差多少？該選誰？<br>
+              b. 假設公司今天「一毛自備款都不想花」，如何選擇供應商 A 卻不用掏出自己半毛錢？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：NPV 換算 + 銀行信用大借款】</strong><br>
+              <ul>
+                <li><strong>子題 a（折現比較現值成本）：</strong><br>
+                • <strong>供應商 A 總現值：</strong><br>
+                今天付 $144,000。<br>
+                一年後付：$12,000 \times \$12 = \$144,000$。折現回今天 = $\$144,000 \div 1.06 = \$135,849.06$。<br>
+                ➔ <strong>總現值成本 A = $\$144,000 + \$135,849.06 = \mathbf{\$279,849.06}$</strong>。<br><br>
+                • <strong>供應商 B 總現值：</strong><br>
+                一年後一次付：$12,000 \times \$25 = \$300,000$。<br>
+                折現回今天 = $\$300,000 \div 1.06 = \mathbf{\$283,018.87}$。<br>
+                ➔ <strong>成本差距：</strong> $\$283,018.87 - \$279,849.06 = \mathbf{\$3,169.81}$。<br>
+                <strong>結論：選供應商 A！今天現省 $3,169.81 現金！</strong></li>
+
+                <li><strong>子題 b（零自備款的無本操作法）：</strong><br>
+                如果公司今天不想拿出現金，直接<strong>向銀行以 6% 利率借款 $144,000</strong> 付給供應商 A！<br>
+                • <strong>今天現金流：</strong> 借到 +$144,000，付給廠商 -$144,000，<strong>自掏腰包 = $0 元</strong>！<br>
+                • <strong>一年後總還款：</strong><br>
+                還銀行本利和：$\$144,000 \times 1.06 = \$152,640$。<br>
+                付廠商尾款：$\$144,000$。<br>
+                一年後合計支出：$\$152,640 + \$144,000 = \mathbf{\$296,640}$。<br>
+                <strong>驗證奇蹟：</strong> 就算加上銀行利息，一年後付 $296,640 依然比供應商 B 的 $300,000 <strong>足足省下了 $3,360</strong>！這就是分離原則與借貸調控的終極威力！</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 模組 D：套利與單一價格法則篇 -->
+      <div id="prob-arbitrage">
+        <h3>🦊 模組 D：套利與單一價格法則篇（Arbitrage & LOOP）</h3>
+
+        <!-- Problem 12 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🏦 Problem 12：兩家銀行的跨行無本套利</span>
+            <span class="example-badge">PROBLEM 12</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Suppose Bank One offers a risk-free interest rate of 9% on both savings and loans, and Bank Enn offers a risk-free interest rate of 9.5% on both savings and loans.<br>
+                a. What arbitrage opportunity is available?<br>
+                b. Which bank would experience a surge in the demand for loans? Which bank would receive a surge in deposits?<br>
+                c. What would you expect to happen to the interest rates the two banks are offering?
+              </div>
+              <p>假設第一銀行（Bank One）的無風險存款與放款利率都是 <strong>9%</strong>，而恩恩銀行（Bank Enn）的無風險存款與放款利率都是 <strong>9.5%</strong>。<br>
+              a. 有什麼套利機會可以大賺一筆？<br>
+              b. 哪家銀行的借款需求會被擠爆？哪家銀行的存款會排隊擠破頭？<br>
+              c. 隨著套利者瘋狂湧入，兩家銀行的利率最終會怎麼演化變動？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：搬金幣跨行洗錢術】</strong><br>
+              <ul>
+                <li><strong>子題 a（套利密碼）：</strong><br>
+                <strong>在 Bank One 以 9% 借錢，轉身存進 Bank Enn 賺 9.5%！</strong><br>
+                假設你借 1,000 萬美元：<br>
+                • 今天：向 Bank One 借 $1,000 萬，全數存入 Bank Enn。淨掏腰包 = <strong>$0</strong>。<br>
+                • 一年後：Bank Enn 領回本利和 $1,095 萬，還給 Bank One $1,090 萬。<br>
+                • <strong>口袋純落袋淨賺：$50,000 美元純利潤！</strong> 零成本、零風險！</li>
+                <li><strong>子題 b（市場擠兌風暴）：</strong><br>
+                • <strong>Bank One（借錢便宜 9%）：</strong> 大家搶著借，<strong>借款（Loans）需求引發暴衝</strong>！<br>
+                • <strong>Bank Enn（利息超高 9.5%）：</strong> 大家搶著存，<strong>存款（Deposits）金額瘋狂湧入</strong>！</li>
+                <li><strong>子題 c（利率演化回歸均衡）：</strong><br>
+                • Bank One 發現資金快被借光了，必須<strong>提高利率（>9%）</strong>來抑制借款。<br>
+                • Bank Enn 發現收了太多存款要付高額利息，必須<strong>調降利率（<9.5%）</strong>。<br>
+                • 最終兩家銀行的利率會在中間拉平（例如拉平在 9.25%），套利機會徹底蒸發，單一價格法則再度君臨！</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 13 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">💴 Problem 13：90 年代美日利差不是套利？</span>
+            <span class="example-badge">PROBLEM 13</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Throughout the 1990s, interest rates in Japan were lower than interest rates in the United States. As a result, many Japanese investors were tempted to borrow in Japan and invest the proceeds in the United States. Explain why this strategy does not represent an arbitrage opportunity.
+              </div>
+              <p>整個 1990 年代，日本的利率接近 0%，遠低於美國的利率。許多投資人借入低息日圓，換成美元投資美國高息國債。請解釋：為什麼這項操作<strong>「根本不是套利（NOT an arbitrage opportunity）」</strong>？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：請背誦套利的最嚴格鐵律】</strong><br>
+              在財務學中，套利的定義只有一個：<strong>【零初始資金 + 零風險 + 保證有正利潤】</strong>！<br>
+              借日圓買美債的操作（市場稱為渡邊太太的利差交易 Carry Trade），存在一個巨大的致命破綻——<strong>外匯匯率風險（Currency Exchange Risk）</strong>！
+              <ul>
+                <li>今天你把日圓換成美元，一年後你賺到了美元利息，但<strong>你最終必須把美元換回日圓去還債</strong>！</li>
+                <li>如果這一年內日圓對美元大幅升值（例如從 120 升到 90），你賺到的那點微薄美債利差，還不夠補貼匯率暴跌的虧損，甚至會直接破產！</li>
+              </ul>
+              <strong>🎯 核心考點：</strong> 既然承擔了可能賠錢的匯率波動風險，這就叫做<strong>「投機賭博（Speculation）」</strong>，絕不是無風險套利！
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 14 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">📱 Problem 14：Nokia ADR 推算跨國匯率</span>
+            <span class="example-badge">PROBLEM 14</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                An American Depositary Receipt (ADR) is a security issued by a U.S. bank and traded on a U.S. stock exchange that represents a specific number of shares of a foreign stock. For example, Nokia Corporation trades as an ADR with symbol NOK on the NYSE. Each ADR represents one share of Nokia Corporation stock, which trades with symbol NOK1V on the Helsinki stock exchange. If the U.S. ADR for Nokia is trading for $7.12 per share, and Nokia stock is trading on the Helsinki exchange for €5.01 per share, use the Law of One Price to determine the current $/€ exchange rate.
+              </div>
+              <p>美國存託憑證（ADR）是代表外國公司股票的證券。Nokia 在紐約證交所交易的 ADR（代碼 NOK），1 單位 ADR 恰好代表 1 股在芬蘭赫爾辛基證交所上市的 Nokia 原股（代碼 NOK1V）。<br>
+              若美國 ADR 股價為 <strong>$7.12 美元</strong>，芬蘭赫爾辛基股價為 <strong>€5.01 歐元</strong>。請利用單一價格法則（LOOP），推算目前的美元/歐元（$/€）匯率是多少？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：相同資產必有相同價格】</strong><br>
+              因為 1 單位 ADR 與 1 股芬蘭股票代表完全相同的公司所有權與分紅權益（現金流完全等價）。根據單一價格法則，兩者折算後的價格必須完全相等：
+              <div class="formula-banner">
+美國市價 ($7.12) = 芬蘭市價 (€5.01) × 匯率 ($/€)
+              </div>
+              倒推匯率：
+              $$\text{匯率 (\$/€)} = \frac{\$7.12}{€5.01} \approx \mathbf{1.4212 \text{ 美元/歐元}}$$
+              <strong>🎯 結論：</strong> 目前的均衡市場匯率必然是 <strong>1 歐元兌 1.4212 美元</strong>（或 1 美元兌 0.7037 歐元）！若非如此，就會立刻引發跨洋 ADR 搬磚套利！
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 模組 E：證券無套利定價與價值加總篇 -->
+      <div id="prob-securities">
+        <h3>📜 模組 E：證券定價與價值加總篇（Securities Pricing）</h3>
+
+        <!-- Problem 16 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🧺 Problem 16：ETF 投資組合定價與搬磚實戰</span>
+            <span class="example-badge">PROBLEM 16</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                An Exchange-Traded Fund (ETF) is a security that represents a portfolio of individual stocks. Consider an ETF for which each share represents a portfolio of two shares of Hewlett-Packard (HPQ), three shares of Sears (SHLD), and three shares of General Electric (GE). Suppose the current stock prices of each individual stock are: HPQ = $28, SHLD = $38, GE = $17.<br>
+                a. What is the price per share of the ETF in a normal market?<br>
+                b. If the ETF currently trades for $203, what arbitrage opportunity is available? What trades would you make?<br>
+                c. If the ETF currently trades for $233, what arbitrage opportunity is available? What trades would you make?
+              </div>
+              <p>某檔 ETF 是一籃子股票投資組合。每 1 股 ETF 包含：<strong>2 股 HPQ ($28) + 3 股 Sears ($38) + 3 股 GE ($17)</strong>。<br>
+              a. 在正常市場中，每股 ETF 的公平價格是多少？<br>
+              b. 若 ETF 市價跌到 <strong>$203</strong>，有何套利機會？如何具體操作？<br>
+              c. 若 ETF 市價漲到 <strong>$233</strong>，有何套利機會？如何具體操作？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：組合包與單買的價格天平】</strong><br>
+              <ul>
+                <li><strong>子題 a（計算組合包公平無套利市價）：</strong><br>
+                根據價值加總原則，組合包價格等於各成分股單買總和：<br>
+                $\text{Price(ETF)} = (2 \times \$28) + (3 \times \$38) + (3 \times \$17) = \$56 + \$114 + \$51 = \mathbf{\$221}$ 美元。</li>
+
+                <li><strong>子題 b（ETF 只要 $203：組合包太便宜了！）：</strong><br>
+                • <strong>套利策略（買便宜、賣昂貴）：</strong><br>
+                1. 在市場上用 <strong>$203 買進 1 股 ETF</strong>。<br>
+                2. 同時在市場上<strong>賣空（或拆分賣出）2 股 HPQ、3 股 SHLD、3 股 GE</strong>，收回 <strong>$221 現金</strong>！<br>
+                • <strong>純獲利：</strong> $\$221 - \$203 = \mathbf{+\$18 \text{ 美元}}$！無成本、零風險淨賺！</li>
+
+                <li><strong>子題 c（ETF 飆到 $233：組合包太昂貴了！）：</strong><br>
+                • <strong>套利策略（放空組合包、買入散裝）：</strong><br>
+                1. <strong>賣空（Short Sale）1 股 ETF</strong>，市價賣出拿到 <strong>$233 現金</strong>。<br>
+                2. 同時花 <strong>$221</strong> 在市場上買進散裝成分股（2 HPQ + 3 SHLD + 3 GE）鎖定風險！<br>
+                • <strong>純獲利：</strong> $\$233 - \$221 = \mathbf{+\$12 \text{ 美元}}$！口袋立刻落袋為安！</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 17 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">⚖️ Problem 17：零息債券積木拼圖與套利</span>
+            <span class="example-badge">PROBLEM 17</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Consider two securities that pay risk-free cash flows over the next two years and that have the current market prices shown here:<br>
+                • B1: Price = $279, Cash flow Year 1 = $300, Cash flow Year 2 = $0<br>
+                • B2: Price = $255, Cash flow Year 1 = $0, Cash flow Year 2 = $300<br>
+                a. What is the no-arbitrage price of a security that pays cash flows of $300 in one year and $300 in two years?<br>
+                b. What is the no-arbitrage price of a security that pays cash flows of $300 in one year and $2,700 in two years?<br>
+                c. Suppose a security with cash flows of $150 in one year and $300 in two years is trading for a price of $390. What arbitrage opportunity is available?
+              </div>
+              <p>市場上有兩張無風險債券：<br>
+              • <strong>B1 債券：</strong> 現價 <strong>$279</strong>，第一年付 $300，第二年付 $0。<br>
+              • <strong>B2 債券：</strong> 現價 <strong>$255</strong>，第一年付 $0，第二年付 $300。<br>
+              a. 一張「第一年付 $300、第二年付 $300」的證券，其無套利價格是多少？<br>
+              b. 一張「第一年付 $300、第二年付 $2,700」的證券，其無套利價格是多少？<br>
+              c. 若市場出現一張證券 X，「第一年付 $150、第二年付 $300」，目前市價賣 <strong>$390</strong>。請問有何套利機會？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：樂高積木組裝法】</strong><br>
+              把 B1 當作「一年後交貨積木」，B2 當作「兩年後交貨積木」：
+              <ul>
+                <li><strong>子題 a：</strong> 恰好等於 <strong>1 個 B1 + 1 個 B2</strong>！<br>
+                $\text{Price} = \$279 + \$255 = \mathbf{\$534}$ 美元。</li>
+
+                <li><strong>子題 b：</strong> 第一年需要 $300（買 1 個 B1），第二年需要 $2,700（相當於買 9 個 B2，因為 $9 \times 300 = 2,700$）！<br>
+                $\text{Price} = (1 \times \$279) + (9 \times \$255) = \$279 + \$2,295 = \mathbf{\$2,574}$ 美元。</li>
+
+                <li><strong>子題 c（尋找定價 Bug 套利）：</strong><br>
+                • <strong>該證券 X 的客觀公平價值：</strong><br>
+                第一年 $150 = 0.5 個 B1（值 $0.5 \times \$279 = \$139.50$）；<br>
+                第二年 $300 = 1 個 B2（值 $\$255$）。<br>
+                理論公平價格 = $\$139.50 + \$255 = \mathbf{\$394.50}$！<br>
+                • <strong>市場現實：</strong> 市面上只賣 <strong>$390</strong>（被低估了 $4.50，太便宜了！）<br>
+                • <strong>套利策略（買進便宜貨，賣出散裝積木）：</strong><br>
+                1. 買進 1 單位該證券（付現 -$390）。<br>
+                2. 同時賣空 0.5 單位 B1，並賣空 1 單位 B2（收回現金 +$139.50 + $255 = +$394.50）。<br>
+                • <strong>現金流驗證：</strong><br>
+                • 今天現金淨利：$-\$390 + \$394.50 = \mathbf{+\$4.50}$ 純利落袋！<br>
+                • 第一年：證券給我們 $150，剛好還給 0.5 個 B1 的買家（淨額 $0）。<br>
+                • 第二年：證券給我們 $300，剛好還給 1 個 B2 的買家（淨額 $0）。<br>
+                <strong>完美無風險空手套白狼淨賺 $4.50！</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem 18 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">🎯 Problem 18：從債券市價反推無風險利率</span>
+            <span class="example-badge">PROBLEM 18</span>
+          </div>
+          <div class="example-body">
+            <div class="example-problem">
+              <strong>【題目原文與情境】</strong>
+              <div class="orig-en">
+                Suppose a security with a risk-free cash flow of $147 in one year trades for $135 today. If there are no arbitrage opportunities, what is the current risk-free interest rate?
+              </div>
+              <p>某張證券保證一年後支付 <strong>$147</strong>，今天的市場交易價格為 <strong>$135</strong>。若市場不存在套利機會，目前的市場無風險利率是多少？</p>
+            </div>
+            <div class="example-solution">
+              <strong>【15歲公會掌櫃拆解法：現值公式倒推法】</strong><br>
+              根據無套利定價公式：
+              $$\text{Price} = \frac{\text{FV}}{1 + r} \implies \$135 = \frac{\$147}{1 + r}$$
+              將式子變形移項：
+              $$1 + r = \frac{\$147}{\$135} \approx 1.088889 \implies r = \mathbf{8.89\%}$$
+              <strong>🎯 結論：</strong> 目前的無風險利率必然是 <strong>8.89%</strong>！金融新聞每天報的國債殖利率，就是用這個簡單的公式天天反推算出來的！
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 第九節：經典文獻與學術延伸 -->
+    <section id="further-reading">
+      <h2>🔬 經典學術文獻與思想源流（Further Reading）</h2>
+      <p>想成為全伺服器最頂尖的傳奇大掌櫃嗎？課本推薦的這四部金融學經典著作，是支撐現代金融大廈的四根神柱：</p>
+      
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>英文專有名詞</th>
-              <th>繁體中文</th>
-              <th>15歲極簡秒懂比喻</th>
-              <th>核心公式 / 關聯原則</th>
+              <th>文獻與大師</th>
+              <th>經典著作 / 論文</th>
+              <th>大掌櫃的核心洞見與啟發</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>The Valuation Principle</strong></td>
+              <td><strong>Irving Fisher (費雪, 1930)</strong></td>
+              <td><em>The Theory of Interest</em><br>《利息理論》</td>
+              <td><strong>利率的始祖！</strong> 費雪提出時間偏好（不耐性）與投資機會的交互作用，確立了「資本與收入」、「跨期消費選擇」與 NPV 原則的理論根基。</td>
+            </tr>
+            <tr>
+              <td><strong>Stephen Ross (羅斯, 2004)</strong></td>
+              <td><em>Neoclassical Finance</em><br>《新古典金融學》</td>
+              <td><strong>無套利定價的教父！</strong> 證明了「沒有套利機會」是整個資產定價理論（APT 模型、選擇權定價）最強大、最優美的單一公理。</td>
+            </tr>
+            <tr>
+              <td><strong>Mark Rubinstein (2001)</strong></td>
+              <td><em>Rational Markets: Yes or No?</em><br>《理性市場：肯定論》</td>
+              <td>為「市場效率」與「單一價格法則」強烈辯護，論證為什麼在絕大多數競爭市場中，價格能神速反映真實價值。</td>
+            </tr>
+            <tr>
+              <td><strong>Shleifer & Vishny (1997, 2000)</strong></td>
+              <td><em>Limits of Arbitrage</em><br>《套利的極限與行為金融》</td>
+              <td><strong>現實世界的清醒劑！</strong> 揭示了在真實世界中，套利者也需要借錢（槓桿）、面臨市場非理性維持太久的爆倉風險，解釋了金融危機與泡沫成因。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 第十節：術語字典庫與頁碼索引 -->
+    <section id="glossary">
+      <h2>📚 必背英漢專業術語字典庫（含原書頁碼對照）</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>英文專有名詞 (Key Term)</th>
+              <th>繁體中文</th>
+              <th>原書頁碼</th>
+              <th>15歲極簡秒懂比喻與核心公式</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Valuation Principle</strong></td>
               <td>評價原則</td>
-              <td>不管老闆喜不喜歡，以市場拍賣所公定價為準</td>
-              <td>價值 = 競爭市場價格</td>
+              <td>p. 68</td>
+              <td>不管老闆喜不喜歡，以市場拍賣所公定價為準（價值 = 競爭市場價格）</td>
             </tr>
             <tr>
               <td><strong>Competitive Market</strong></td>
               <td>競爭市場</td>
-              <td>買進價跟賣出價完全相同的透明市集</td>
-              <td>無個人偏見影響</td>
+              <td>p. 67</td>
+              <td>買進價跟賣出價完全相同的透明市集，無個人偏見影響</td>
             </tr>
             <tr>
-              <td><strong>Time Value of Money (TVM)</strong></td>
+              <td><strong>Time Value of Money</strong></td>
               <td>貨幣時間價值</td>
-              <td>今天的錢大於未來的錢，時間會讓金幣生利息</td>
-              <td>(1 + r) 是穿越時間的匯率</td>
+              <td>p. 69</td>
+              <td>今天的錢大於未來的錢，時間會讓金幣生利息；(1 + r) 是穿越時間的匯率</td>
             </tr>
             <tr>
-              <td><strong>Risk-Free Interest Rate (r<sub>f</sub>)</strong></td>
+              <td><strong>Risk-Free Interest Rate</strong></td>
               <td>無風險利率</td>
-              <td>絕對不會倒閉的時光穿梭匯率</td>
-              <td>銀行存貸基準</td>
+              <td>p. 70</td>
+              <td>絕對不會倒閉的時光穿梭基準匯率</td>
+            </tr>
+            <tr>
+              <td><strong>Interest Rate Factor</strong></td>
+              <td>利率因子</td>
+              <td>p. 70</td>
+              <td>(1 + r)，把今天的 1 塊錢推向未來的換算倍數</td>
             </tr>
             <tr>
               <td><strong>Present Value (PV)</strong></td>
               <td>現值</td>
-              <td>把未來的金幣拉回今天口袋值多少</td>
-              <td>PV = FV ÷ (1 + r)</td>
+              <td>p. 71</td>
+              <td>把未來的金幣拉回今天口袋值多少：PV = FV ÷ (1 + r)</td>
             </tr>
             <tr>
               <td><strong>Future Value (FV)</strong></td>
               <td>終值</td>
-              <td>今天的金幣放在未來會長大成多少</td>
-              <td>FV = PV × (1 + r)</td>
+              <td>p. 71</td>
+              <td>今天的金幣放在未來會長大成多少：FV = PV × (1 + r)</td>
             </tr>
             <tr>
-              <td><strong>Discount Factor</strong></td>
-              <td>折現因子</td>
-              <td>一年後的一塊錢在今天相當於幾毛錢</td>
-              <td>1 ÷ (1 + r)</td>
+              <td><strong>Discount Factor / Rate</strong></td>
+              <td>折現因子 / 折現率</td>
+              <td>p. 71</td>
+              <td>折現因子為 1 ÷ (1 + r)；折現率為評估未來現金流的折算利率</td>
             </tr>
             <tr>
               <td><strong>Net Present Value (NPV)</strong></td>
               <td>淨現值</td>
-              <td>扣除所有成本後，今天立刻多放進口袋的現金</td>
-              <td>NPV = PV(效益) - PV(成本)</td>
+              <td>p. 72</td>
+              <td>扣除成本後，今天立刻多放進口袋的淨現金：NPV = PV(效益) - PV(成本)</td>
             </tr>
             <tr>
-              <td><strong>Arbitrage</strong></td>
-              <td>套利</td>
-              <td>遊戲中零風險、零本金的合法刷錢機制</td>
-              <td>低買高賣，NPV > 0</td>
+              <td><strong>NPV Decision Rule</strong></td>
+              <td>NPV 決策法則</td>
+              <td>p. 73</td>
+              <td>接受所有 NPV > 0 的專案；在互斥專案中永遠選 NPV 最高的！</td>
+            </tr>
+            <tr>
+              <td><strong>Arbitrage / Arbitrage Opportunity</strong></td>
+              <td>套利 / 套利機會</td>
+              <td>p. 76</td>
+              <td>遊戲中零風險、零自備款的合法刷錢機制（正 NPV 免費午餐）</td>
             </tr>
             <tr>
               <td><strong>Law of One Price (LOOP)</strong></td>
               <td>單一價格法則</td>
-              <td>一模一樣的兩樣東西在競爭市場必只有一個價</td>
-              <td>無套利均衡的基石</td>
+              <td>p. 77</td>
+              <td>一模一樣的兩樣東西在競爭市場中必只有一個相同價格</td>
+            </tr>
+            <tr>
+              <td><strong>Financial Security / Security</strong></td>
+              <td>金融證券</td>
+              <td>p. 77</td>
+              <td>在金融市場中交易、承諾未來特定現金流的合約</td>
+            </tr>
+            <tr>
+              <td><strong>Bond</strong></td>
+              <td>債券</td>
+              <td>p. 78</td>
+              <td>發行方承諾在未來特定時間還本付息的借貸憑據</td>
+            </tr>
+            <tr>
+              <td><strong>Portfolio</strong></td>
+              <td>投資組合</td>
+              <td>p. 78</td>
+              <td>把一籃子不同的證券或資產打包放在一起的組合包</td>
+            </tr>
+            <tr>
+              <td><strong>Normal Market</strong></td>
+              <td>正常市場</td>
+              <td>p. 79</td>
+              <td>沒有任何套利機會存活的均衡競爭市場</td>
             </tr>
             <tr>
               <td><strong>No-Arbitrage Price</strong></td>
               <td>無套利價格</td>
-              <td>金融證券未來所有現金流折現回今天的總和</td>
-              <td>Price = PV(All Future Cash Flows)</td>
+              <td>p. 79</td>
+              <td>金融證券未來所有現金流折現回今天的總和：Price = PV(All Future CFs)</td>
             </tr>
             <tr>
               <td><strong>Short Sale</strong></td>
               <td>賣空（融券放空）</td>
-              <td>手上沒貨借來賣，太貴時用來痛擊高價的招式</td>
-              <td>先借先賣，未來歸還</td>
+              <td>p. 79</td>
+              <td>手上沒貨借來賣，太貴時用來痛擊高價的招式（先借先賣，未來歸還）</td>
             </tr>
             <tr>
               <td><strong>Separation Principle</strong></td>
               <td>分離原則</td>
-              <td>做實體投資（蓋廠）跟怎麼借錢（融資）分開評估</td>
-              <td>金融交易 NPV = 0</td>
+              <td>p. 82</td>
+              <td>做實體投資（蓋廠）跟怎麼籌錢（融資）完全分開評估，因為金融交易 NPV = 0</td>
             </tr>
             <tr>
               <td><strong>Value Additivity</strong></td>
               <td>價值加總性</td>
-              <td>組合包的價格等於各個單品價格直接相加</td>
-              <td>Price(A+B) = Price(A) + Price(B)</td>
+              <td>p. 83</td>
+              <td>組合包的價格等於各個單品價格直接相加：Price(A+B) = Price(A) + Price(B)</td>
             </tr>
             <tr>
-              <td><strong>Liquidity</strong></td>
-              <td>流動性</td>
-              <td>隨時想買就有人賣、想賣就有人買的順暢度</td>
-              <td>失去流動性則價格資訊功能崩潰</td>
+              <td><strong>Return</strong></td>
+              <td>投資報酬率</td>
+              <td>p. 70</td>
+              <td>投資獲得的淨利潤佔初始投入成本的百分比：(期末收益 - 成本) ÷ 成本</td>
             </tr>
           </tbody>
         </table>
