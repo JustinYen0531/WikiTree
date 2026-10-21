@@ -540,6 +540,59 @@
       .hero { padding: 3rem 5vw 2.5rem; }
     }
   </style>
+  <!-- 數學公式渲染雙保險：MathJax 3 + 離線優雅降級 Fallback -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    // 離線降級防護：若 2 秒內 MathJax 未加載（如離線無網環境），自動啟動純本地輕量替換，確保絕不露出原始碼
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (!window.MathJax || !window.MathJax.typeset) {
+          console.warn("MathJax CDN 連線超時或處於離線狀態，啟動本地輕量公式美化引擎...");
+          const walk = (node) => {
+            if (node.nodeType === 3) {
+              let text = node.nodeValue;
+              if (text.includes('$') || text.includes('\\times') || text.includes('\\frac')) {
+                let replaced = text
+                  .replace(/\\\$/g, '＄')
+                  .replace(/\$([^\$]+)\$/g, '<span style="font-family: Consolas, monospace; color: #0d5f4e; font-weight: 600;">$1</span>')
+                  .replace(/\\times/g, ' × ')
+                  .replace(/\\div/g, ' ÷ ')
+                  .replace(/\\mathbf\{([^\}]+)\}/g, '<strong>$1</strong>')
+                  .replace(/\\text\{([^\}]+)\}/g, '$1')
+                  .replace(/\\approx/g, ' ≈ ')
+                  .replace(/\\ge/g, ' ≥ ')
+                  .replace(/\\le/g, ' ≤ ')
+                  .replace(/\\([a-zA-Z]+)/g, '')
+                  .replace(/＄/g, '$');
+                if (replaced !== text) {
+                  const span = document.createElement('span');
+                  span.innerHTML = replaced;
+                  node.parentNode.replaceChild(span, node);
+                }
+              }
+            } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE', 'PRE', 'CODE'].includes(node.tagName)) {
+              Array.from(node.childNodes).forEach(walk);
+            }
+          };
+          walk(document.body);
+        }
+      }, 2000);
+    });
+  </script>
+
 </head>
 <body>
 
