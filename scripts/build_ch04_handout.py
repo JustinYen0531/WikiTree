@@ -1,0 +1,1515 @@
+# -*- coding: utf-8 -*-
+"""
+Generate Chapter 4 Handout HTML: The Time Value of Money
+Berk & DeMarzo Corporate Finance Chapter 4.
+Comprehensive, with 8 End-of-chapter worked problems, 6 interactive Concept Quizzes,
+5 Interactive JavaScript Widgets, Timeline visualizer, and Glossary.
+"""
+import os
+import shutil
+
+html_content = r'''<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 4 貨幣時間價值｜冒險者公會的首席大掌櫃修煉秘笈 [時空魔導書篇]</title>
+  <style>
+    :root {
+      --ink: #1f2d3d;
+      --muted: #5a6e85;
+      --paper: #fcfbf7;
+      --wash: #f4f1ea;
+      --line: #e2e8e5;
+      --accent: #196b58;
+      --accent-light: #eaf5f1;
+      --accent-dark: #0f4538;
+      --gold: #d48b28;
+      --gold-light: #fef8ec;
+      --gold-border: #f2d49c;
+      --alert: #c0392b;
+      --alert-light: #fdf2f0;
+      --card-bg: #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(31, 45, 61, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.8;
+    }
+
+    /* 頂部英雄導覽 Banner */
+    .hero {
+      background: linear-gradient(135deg, #0f3d32 0%, #176554 60%, #20876f 100%);
+      color: #ffffff;
+      padding: 4.5rem 5vw 3.5rem;
+      border-bottom: 4px solid var(--gold);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "⏳ 📈 💰 🏰 ♾️";
+      position: absolute;
+      right: 3vw;
+      bottom: -15px;
+      font-size: 6rem;
+      opacity: 0.12;
+      pointer-events: none;
+      letter-spacing: 0.5rem;
+    }
+    .eyebrow {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.18);
+      color: #f7e6a7;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 20px;
+      margin-bottom: 1.2rem;
+    }
+    .version-tag {
+      display: inline-block;
+      background: var(--gold);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+      letter-spacing: 0.05em;
+    }
+    .hero h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+      margin: 0 0 0.8rem;
+      line-height: 1.25;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+      font-size: 1.25rem;
+      color: #d1ebe3;
+      max-width: 820px;
+      margin: 0 0 1.2rem;
+      font-weight: 300;
+    }
+    .hero .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      font-size: 0.88rem;
+    }
+    .meta-tag {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* 佈局容器 */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: clamp(2rem, 4vw, 5rem);
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 3rem 4vw;
+    }
+
+    /* 側邊 Sticky 目錄 */
+    .toc {
+      position: sticky;
+      top: 1.8rem;
+      align-self: start;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+      box-shadow: var(--shadow);
+    }
+    .toc-title {
+      font-weight: 800;
+      color: var(--accent-dark);
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--accent-light);
+      padding-bottom: 0.6rem;
+    }
+    .toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      padding: 0.38rem 0.55rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      line-height: 1.4;
+      margin-bottom: 0.2rem;
+    }
+    .toc a:hover {
+      color: var(--accent);
+      background: var(--accent-light);
+      padding-left: 0.8rem;
+    }
+    .toc .toc-sub {
+      padding-left: 1.4rem;
+      font-size: 0.82rem;
+      color: #728498;
+    }
+
+    /* 主體內容 */
+    main { min-width: 0; }
+    section {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      margin-bottom: 3.5rem;
+      box-shadow: var(--shadow);
+      scroll-margin-top: 2rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      color: var(--accent-dark);
+      margin: 0 0 1.2rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    h3 {
+      font-size: 1.32rem;
+      color: #174239;
+      margin: 2rem 0 0.8rem;
+    }
+    h4 {
+      font-size: 1.1rem;
+      color: #2c4a43;
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    p { margin: 0.8rem 0; }
+    strong { color: var(--accent-dark); font-weight: 700; }
+    
+    /* 專有名詞徽章 */
+    .en-term {
+      display: inline-flex;
+      align-items: baseline;
+      background: #eef5f3;
+      color: #115243;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      font-family: inherit;
+      font-weight: 600;
+      border: 1px solid #d1e5df;
+      font-size: 0.94em;
+    }
+    .en-term small {
+      color: #63857d;
+      font-weight: 500;
+      margin-left: 0.35rem;
+      font-size: 0.85em;
+    }
+
+    /* 故事公會情境卡片 */
+    .rpg-box {
+      background: linear-gradient(135deg, #f8fbf9, #edf5f1);
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.3rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .rpg-box h4 {
+      margin: 0 0 0.5rem;
+      color: var(--accent-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* 警告 / 重點提示卡片 */
+    .highlight-box {
+      background: var(--gold-light);
+      border: 1px solid var(--gold-border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .highlight-box h4 { margin: 0 0 0.4rem; color: #8a5814; }
+
+    .law-box {
+      background: #11362d;
+      color: #f0fdf9;
+      border-radius: 10px;
+      padding: 1.6rem 2rem;
+      margin: 1.8rem 0;
+      box-shadow: 0 8px 24px rgba(17, 54, 45, 0.15);
+      border: 2px solid var(--gold);
+    }
+    .law-box h3 { color: #fcebbd; margin-top: 0; }
+    .law-box p { color: #d6eee7; margin-bottom: 0; }
+
+    /* 原書 Example / Problem 詳解卡片 */
+    .example-card {
+      background: #ffffff;
+      border: 1px solid #cbdad4;
+      border-radius: 10px;
+      margin: 2rem 0;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+    }
+    .example-header {
+      background: #edf5f2;
+      padding: 0.8rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #dce8e3;
+    }
+    .example-title {
+      font-weight: 700;
+      color: var(--accent-dark);
+      font-size: 1.05rem;
+    }
+    .example-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .example-body {
+      padding: 1.4rem 1.6rem;
+    }
+    .example-problem {
+      background: #fafaf8;
+      padding: 1rem 1.2rem;
+      border-radius: 6px;
+      border-left: 3px solid #7c988f;
+      margin-bottom: 1.2rem;
+    }
+    .example-problem .orig-en {
+      font-size: 0.92rem;
+      color: #4b635c;
+      font-style: italic;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #d5dedb;
+    }
+    .example-solution {
+      padding: 0.5rem 0.2rem;
+    }
+
+    /* 互動小實驗 Widget 容器 */
+    .widget-container {
+      background: #f7faf8;
+      border: 2px solid #b7d6cb;
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      margin: 2rem 0;
+      box-shadow: 0 4px 16px rgba(25, 107, 88, 0.08);
+    }
+    .widget-title {
+      font-size: 1.22rem;
+      font-weight: 800;
+      color: var(--accent-dark);
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-bottom: 1px dashed #c0ded4;
+      padding-bottom: 0.7rem;
+    }
+    .widget-intro {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+    }
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.3rem;
+    }
+    .control-group {
+      background: #ffffff;
+      padding: 0.9rem 1.1rem;
+      border-radius: 8px;
+      border: 1px solid #dce5e1;
+    }
+    .control-group label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin-bottom: 0.4rem;
+    }
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .control-group input[type="number"] {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #cbd7d2;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .control-group .val-display {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-top: 0.3rem;
+    }
+
+    .widget-result-box {
+      background: #ffffff;
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.3rem 1.6rem;
+      text-align: center;
+      margin-top: 1.2rem;
+    }
+    .result-big {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent-dark);
+      line-height: 1.2;
+    }
+    .result-desc {
+      font-size: 0.98rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    /* 表格樣式 */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1.4rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.94rem;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: #edf5f2;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+    tr:nth-child(even) td { background: #fafaf8; }
+
+    /* 公式高亮框 */
+    .formula-banner {
+      font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+      background: #202b38;
+      color: #9feaf9;
+      padding: 1.1rem 1.4rem;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      margin: 1.2rem 0;
+      overflow-x: auto;
+      border-left: 5px solid #28b485;
+    }
+
+    /* 時間軸可視化組件 */
+    .timeline-visual {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      margin: 2.5rem 1rem 1.5rem;
+      padding: 0 1rem;
+    }
+    .timeline-visual::before {
+      content: "";
+      position: absolute;
+      top: 25px;
+      left: 2rem;
+      right: 2rem;
+      height: 4px;
+      background: var(--accent);
+      z-index: 1;
+    }
+    .timeline-node {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      background: var(--paper);
+      padding: 0 0.5rem;
+    }
+    .timeline-dot {
+      width: 22px;
+      height: 22px;
+      background: var(--accent);
+      border: 4px solid #ffffff;
+      border-radius: 50%;
+      margin: 0 auto 0.4rem;
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+    .timeline-date {
+      font-weight: 800;
+      color: var(--accent-dark);
+      font-size: 0.95rem;
+    }
+    .timeline-cf {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 0.3rem;
+    }
+    .cf-in { color: #196b58; }
+    .cf-out { color: #c0392b; }
+
+    /* 測驗組件 */
+    .quiz-card {
+      background: #fafaf7;
+      border: 1px solid #dce2de;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .quiz-q {
+      font-weight: 700;
+      color: #1a3c34;
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+    }
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .quiz-opt {
+      background: #ffffff;
+      border: 1px solid #d1d9d5;
+      padding: 0.75rem 1.1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.96rem;
+      text-align: left;
+    }
+    .quiz-opt:hover {
+      background: #edf5f2;
+      border-color: var(--accent);
+    }
+    .quiz-feedback {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.9rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+    }
+    .feedback-correct {
+      background: #eaf6ef;
+      border: 1px solid #73c799;
+      color: #0e542c;
+    }
+    .feedback-wrong {
+      background: #fdf2f0;
+      border: 1px solid #f19f96;
+      color: #8c261b;
+    }
+
+    /* 響應式 */
+    @media (max-width: 960px) {
+      .layout {
+        display: block;
+        padding: 1.5rem 4vw;
+      }
+      .toc {
+        position: static;
+        max-height: none;
+        margin-bottom: 2rem;
+      }
+      section { padding: 1.6rem; }
+      .hero { padding: 3rem 5vw 2.5rem; }
+      .timeline-visual { overflow-x: auto; padding-bottom: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 頂部 Hero Banner -->
+<header class="hero">
+  <div class="eyebrow">Corporate Finance · Berk & DeMarzo · Chapter 4</div>
+  <h1>Chapter 4｜貨幣時間價值 <span class="version-tag">時空魔導書</span></h1>
+  <div class="subtitle">The Time Value of Money —— 掌控複利暴擊、年金速算與 IRR 尋寶術的終極指南！</div>
+  <div class="meta-tags">
+    <span class="meta-tag">⏳ 核心：時間旅行三大法則 (Three Rules of Time Travel)</span>
+    <span class="meta-tag">♾️ 神器：永續年金 (Perpetuity) & 普通年金 (Annuity)</span>
+    <span class="meta-tag">🌱 生長：成長型年金 (Growing Cash Flows)</span>
+    <span class="meta-tag">🎯 終極指針：內部報酬率 (IRR) & 房貸精算</span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- 側邊導航目錄 -->
+  <nav class="toc" aria-label="講義目錄">
+    <div class="toc-title">📖 時空魔導目錄</div>
+    <a href="#intro">🏰 序章：跨越十年的研發之賭</a>
+    <a href="#sec1">🗺️ 4.1 時間軸：財務的地圖繪製術</a>
+    <a href="#sec2">⏳ 4.2 時間旅行的三大法則</a>
+    <a href="#sec3">💎 4.3 現金流串流的現值與 NPV</a>
+    <a href="#sec4">🚀 4.4 終值計算與複利暴擊</a>
+    <a href="#sec5">♾️ 4.5 永續年金與一般年金</a>
+    <a href="#sec6">🌱 4.6 成長型現金流 (Growing CF)</a>
+    <a href="#sec7">🎯 4.7 求解年金付款、期數與 IRR</a>
+    <a href="#integration">🧩 全章心智地圖與八大魔王公式</a>
+    <a href="#concept-quiz">🎯 隨堂實戰：6 題觀念通關測驗</a>
+    <a href="#practice">🧪 實戰試煉：課後代表題深度詳解</a>
+    <a href="#glossary">📚 必背英漢專業術語字典庫</a>
+  </nav>
+
+  <!-- 主體講義內容 -->
+  <main>
+
+    <!-- 序章 -->
+    <section id="intro">
+      <h2>🏰 序章：跨越十年的研發之賭</h2>
+      <div class="rpg-box">
+        <h4>🎮 蘋果執行長 Tim Cook 的百億金幣豪賭！</h4>
+        <p>在 2016 年，科技巨頭蘋果公司（Apple）做出了一項震撼決策：年度研發支出（R&D）首度衝破 <strong>100 億美元大關</strong>！執行長庫克公開宣布，蘋果正傾全力投入擴增實境（Augmented Reality, AR）等革命性技術。</p>
+        <p>這筆巨額研發支出是<strong>「今天就要掏出來的真金白銀」</strong>，而它可能帶來的龐大營收，卻要等 5 年、10 年甚至 20 年後才會陸續回流。</p>
+      </div>
+      <p>身為公會首席大掌櫃，你該如何評估這種<strong>「跨越多個年份」</strong>的長期冒險專案？</p>
+      <p>在上一章（Chapter 3）中，我們學會了最基礎的「單期比較」；而到了這一章，我們將徹底解鎖<strong>【多期現金流的時空跳躍術（Stream of Cash Flows）】</strong>！掌握了本章的武器，不管是算房貸、退休金、彩券頭獎，還是評估百億級晶片研發，你都能在幾秒鐘內精準算出它們在「今天」究竟值幾枚金幣！</p>
+    </section>
+
+    <!-- 4.1 時間軸 -->
+    <section id="sec1">
+      <h2>🗺️ 4.1 時間軸：財務的地圖繪製術</h2>
+      <p class="lead"><strong>大掌櫃的第一鐵律：解決任何複雜財務難題的第一步，永遠是畫出一條清晰的「時間軸（Timeline）」！</strong></p>
+
+      <h3>1. 什麼是時間軸（Timeline）？</h3>
+      <p><strong><span class="en-term">Timeline<small>時間軸</small></span></strong> 是一條線性時間尺規，用來視覺化標記未來的預期現金流發生在「哪一個時間點」。</p>
+      
+      <div class="timeline-visual">
+        <div class="timeline-node">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">Date 0<br><small>(今天 Today)</small></div>
+          <div class="timeline-cf cf-out">-$10,000</div>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">Date 1<br><small>(第 1 年末)</small></div>
+          <div class="timeline-cf cf-in">+$6,000</div>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">Date 2<br><small>(第 2 年末)</small></div>
+          <div class="timeline-cf cf-in">+$6,000</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <h4>⚠️ 15歲小孩最容易踩的陷阱：日期標記的秘密</h4>
+        <ul>
+          <li><strong>Date 0：</strong> 代表「當下此時此刻（Today）」，也就是第 1 年的開始！</li>
+          <li><strong>Date 1：</strong> 代表「從今天起算 1 年後的那個時間點」，也是<strong>「第 1 年的結束（End of Year 1）」</strong>與「第 2 年的開始」！</li>
+          <li><strong>現金流入 vs 現金流出：</strong> 我們收到錢記為<strong>正數（+）</strong>，我們掏腰包付錢記為<strong>負數（-）</strong>。</li>
+        </ul>
+      </div>
+
+      <!-- Example 4.1 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💡 教科書範例 4.1：借錢給兄弟的時間軸</span>
+          <span class="example-badge">EXAMPLE 4.1</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目情境】</strong><br>
+            你今天借給親兄弟 <strong>$10,000</strong>。他答應在未來的兩年內分期還款：在第 1 年底還 <strong>$6,000</strong>，在第 2 年底再還 <strong>$6,000</strong>。請從你的角度畫出這筆貸款的時間軸。
+          </div>
+          <div class="example-solution">
+            <strong>【解題思維】</strong><br>
+            • Date 0（今天）：你付出了 $10,000，是現金流出 ➔ 記為 <strong>-$10,000</strong>。<br>
+            • Date 1（1 年後）：兄弟還你 $6,000，是現金流入 ➔ 記為 <strong>+$6,000</strong>。<br>
+            • Date 2（2 年後）：兄弟再還你 $6,000，是現金流入 ➔ 記為 <strong>+$6,000</strong>。<br>
+            <strong>注意：</strong> 表面上他總共還了 $12,000，看起來賺了 $2,000？但因為時間不同，不能直接相加！我們必須靠接下來的三大法則來換算！
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4.2 時間旅行三大法則 -->
+    <section id="sec2">
+      <h2>⏳ 4.2 時間旅行的三大法則 (Rules of Time Travel)</h2>
+      <p class="lead"><strong>在財務學的世界裡，錢就像是穿越時空的冒險者。要想在時間軸上移動金錢，必須恪守宇宙的三大鐵律！</strong></p>
+
+      <div class="law-box">
+        <h3>📜 宇宙三大時間旅行法則（Three Rules of Time Travel）</h3>
+        <p><strong>• 法則一（Rule 1 - 跨期不可直接相加）：</strong> 只有處在「同一個時間點」的現金流，才能直接加減或比較！不同年份的錢直接相加，就像把「日圓」跟「新台幣」不看匯率直接加總一樣荒謬！<br>
+        <strong>• 法則二（Rule 2 - 時光向前，複利膨脹）：</strong> 要把現金流移到「未來的時間點」，必須乘上利率因子 $(1 + r)$！<br>
+        <strong>• 法則三（Rule 3 - 時光倒流，折現縮水）：</strong> 要把現金流拉回「過去或今天」，必須除以利率因子 $(1 + r)$！</p>
+      </div>
+
+      <div class="formula-banner">
+【Rule 2 移向未來 (Compounding)】:  FV_n = C × (1 + r)^n
+【Rule 3 拉回現在 (Discounting)】:   PV = C ÷ (1 + r)^n = C × (1 + r)^(-n)
+      </div>
+
+      <h3>單利 vs 複利：時間的原子彈威力！</h3>
+      <p>為什麼 Rule 2 乘的是 $(1 + r)^n$ 而不是 $(1 + n \times r)$？</p>
+      <ul>
+        <li><strong>單利（<span class="en-term">Simple Interest</span>）：</strong> 只有最初的本金在生利息，利息被拿走不滾動。</li>
+        <li><strong>複利（<span class="en-term">Compound Interest</span>）：</strong> <strong>利滾利（Interest on Interest）</strong>！第一年賺到的利息，在第二年會變成新的本金繼續幫你賺利息！隨著時間 $n$ 變長，呈幾何級數（指數爆炸）飆升！</li>
+      </ul>
+
+      <!-- 互動組件 1：三大法則模擬器 -->
+      <div class="widget-container">
+        <div class="widget-title">🧪 互動實驗 1：時光任意門（複利暴擊 vs 單利龜速）</div>
+        <div class="widget-intro">拉動年限與利率滑桿，親眼看見「利滾利」如何在 20 年後將原本微小的本金放大成驚人的天文數字！</div>
+        <div class="control-row">
+          <div class="control-group">
+            <label>初期存入本金 ($)</label>
+            <input type="number" id="travelPrincipal" value="1000" step="500" oninput="calcTimeTravel()">
+          </div>
+          <div class="control-group">
+            <label>年利率 (r)</label>
+            <input type="range" id="travelRate" min="1" max="20" value="8" oninput="calcTimeTravel()">
+            <div class="val-display" id="travelRateDisp">8.0%</div>
+          </div>
+          <div class="control-group">
+            <label>穿越時間 (年 N)</label>
+            <input type="range" id="travelYears" min="1" max="30" value="10" oninput="calcTimeTravel()">
+            <div class="val-display" id="travelYearsDisp">10 年</div>
+          </div>
+        </div>
+        <div class="widget-result-box">
+          <div class="result-big" id="travelCompoundFV">$2,158.92</div>
+          <div class="result-desc" id="travelDetail">複利終值為 $2,158.92（單利僅為 $1,800.00）。純靠「利息生的利息」就額外貢獻了 $358.92！</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4.3 現金流串流現值與 NPV -->
+    <section id="sec3">
+      <h2>💎 4.3 現金流串流的現值與 NPV</h2>
+      <p class="lead"><strong>如果未來陸續有多筆錢在不同時間點進來，怎麼算出它們「今天合起來值多少」？</strong></p>
+
+      <p>答案就是<strong>疊加原理（Superposition）</strong>：運用 Rule 3，把每一筆未來的現金流各自折現回 Date 0，然後通通加在一起！</p>
+
+      <div class="formula-banner">
+現金流串流現值 PV = C_0 + C_1/(1 + r) + C_2/(1 + r)^2 + ... + C_N/(1 + r)^N = Σ [ C_n / (1 + r)^n ]
+      </div>
+
+      <!-- Example 4.5 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💡 教科書範例 4.5：多期現金流現值大運算</span>
+          <span class="example-badge">EXAMPLE 4.5</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目情境】</strong><br>
+            假設年利率為 <strong>10%</strong>。某項投資承諾在未來提供以下現金流：<br>
+            • Date 1（1 年後）：<strong>$1,000</strong><br>
+            • Date 2（2 年後）：<strong>$2,000</strong><br>
+            • Date 3（3 年後）：<strong>$3,000</strong><br>
+            請問這串現金流在今天的現值（PV）是多少？
+          </div>
+          <div class="example-solution">
+            <strong>【15歲公會掌櫃拆解法：分頭抓回今天】</strong><br>
+            <ul>
+              <li>第 1 年的 $1,000 折現：$1,000 ÷ 1.10 = <strong>$909.09</strong></li>
+              <li>第 2 年的 $2,000 折現：$2,000 ÷ (1.10)^2 = <strong>$1,652.89</strong></li>
+              <li>第 3 年的 $3,000 折現：$3,000 ÷ (1.10)^3 = <strong>$2,253.94</strong></li>
+            </ul>
+            <strong>總現值 PV = $909.09 + $1,652.89 + $2,253.94 = $4,815.92 美元！</strong><br>
+            也就是說，如果有人今天願意用 <strong>$4,500</strong> 賣你這份合約，NPV = $4,815.92 - $4,500 = <strong>+$315.92 > 0</strong>，果斷買下！
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4.4 終值計算 -->
+    <section id="sec4">
+      <h2>🚀 4.4 終值計算：現金流串流的未來總身價</h2>
+      <p>如果你每年存入一筆錢，想知道 $N$ 年後你的戶頭裡總共有多少錢（<span class="en-term">Future Value, FV<small>終值</small></span>），有兩種等價的算法：</p>
+      <ol>
+        <li><strong>方法一（先算現值再時空推移）：</strong> 先把所有現金流折現算出 Date 0 的總現值 $\text{PV}$，然後利用 Rule 2 一次性將 $\text{PV}$ 複利推移到 Date $N$：<br>
+        $\mathbf{FV_N = PV \times (1 + r)^N}$。</li>
+        <li><strong>方法二（各筆現金流各自推到期末）：</strong> 把每一筆錢分別乘上它剩餘的存款年數 $(1 + r)^{N-n}$，再加總。</li>
+      </ol>
+      <p>方法一通常更快速乾淨！這證明了時間旅行公式的美妙對稱性！</p>
+    </section>
+
+    <!-- 4.5 永續年金與一般年金 -->
+    <section id="sec5">
+      <h2>♾️ 4.5 永續年金與一般年金：財務學的兩大魔法捷徑</h2>
+      <p class="lead"><strong>如果現金流有 30 期，甚至「永遠付下去（無窮多期）」，難道我們要手算折現 30 次或無窮次嗎？</strong></p>
+      <p>當然不用！數學家與財務學家為我們準備了極度震撼的<strong>「秒殺公式」</strong>！</p>
+
+      <h3>1. 永續年金（Perpetuity）：源源不絕的魔法噴泉</h3>
+      <p><strong><span class="en-term">Perpetuity<small>永續年金</small></span></strong>：每隔一段固定時間，就支付一筆固定金額 $C$，並且<strong>「永遠領下去（Lasts Forever）」</strong>！</p>
+      <p>直觀推導：想像你在銀行存入一筆本金 $P$。如果每年銀行給你的利息正好等於 $C$（即 $P \times r = C$），你每年只領走利息花用，本金 $P$ 永遠留在銀行不動。這樣一來，你不就能每年領 $C$ 領到宇宙毀滅嗎？</p>
+
+      <div class="formula-banner">
+【永續年金現值公式】:  PV(Perpetuity) = C / r
+      </div>
+
+      <!-- Example 4.7 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💡 教科書範例 4.7：捐贈大學永久獎學金</span>
+          <span class="example-badge">EXAMPLE 4.7</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目情境】</strong><br>
+            富豪想捐錢給母校設立一個永久獎學金，約定從一年後開始，每年支付 <strong>$100,000</strong> 給優秀學子，永不停止。若市場年利率為 <strong>8%</strong>，富豪今天必須掏出多少捐款？
+          </div>
+          <div class="example-solution">
+            <strong>【解題思維】</strong><br>
+            利用永續年金公式：<br>
+            $\text{PV} = \frac{C}{r} = \frac{\$100,000}{0.08} = \mathbf{\$1,250,000}$ 美元！<br>
+            富豪只要今天存入 125 萬美元，每年產生的 8% 利息正好就是 10 萬美元，足以世世代代發放獎學金！
+          </div>
+        </div>
+      </div>
+
+      <h3>2. 普通年金（Annuity）：有限期數的等額金流</h3>
+      <p><strong><span class="en-term">Annuity<small>普通年金</small></span></strong>：在固定的 $N$ 期內，每期定期支付固定金額 $C$（如車貸、房貸、退休俸）。</p>
+      <div class="rpg-box">
+        <h4>🪄 精彩推導魔術：年金是怎麼被切出來的？</h4>
+        <p>一筆 $N$ 期年金，本質上就等於：<strong>「一張從今天開始的永續年金」減去「一張從第 N+1 期才開始的延後永續年金」</strong>！<br>
+        • 今天開始的永續年金價值：$\frac{C}{r}$<br>
+        • 第 $N$ 年末開始的永續年金，在第 $N$ 年值 $\frac{C}{r}$，折現回今天就是：$\frac{C}{r} \times \frac{1}{(1 + r)^N}$<br>
+        兩者相減，就導出了震古爍今的年金公式！</p>
+      </div>
+
+      <div class="formula-banner">
+【普通年金現值公式】:  PV = C × (1/r) × [ 1 - 1/(1 + r)^N ]
+【普通年金終值公式】:  FV = C × (1/r) × [ (1 + r)^N - 1 ]
+      </div>
+
+      <h3>3. 期初年金（Annuity Due）：先付後享受</h3>
+      <p>如果每期款項是<strong>「期初（Date 0, 1, ..., N-1）立刻支付」</strong>（如租房子每個月初就要交房租）：<br>
+      因為所有現金流都比普通年金提早了一期，多賺了一年的利息，因此：<br>
+      $\mathbf{PV(\text{Annuity Due}) = PV(\text{Ordinary Annuity}) \times (1 + r)}$。</p>
+
+      <!-- 互動組件 2：年金與永續年金產生器 -->
+      <div class="widget-container">
+        <div class="widget-title">🧪 互動實驗 2：永續年金 vs 普通年金魔法產生器</div>
+        <div class="widget-intro">輸入每年領取金額、期數與利率，即時對比「領一輩子」與「領有限期數」的現值差別！</div>
+        <div class="control-row">
+          <div class="control-group">
+            <label>每年領取金額 (C)</label>
+            <input type="number" id="annuityC" value="10000" step="1000" oninput="calcAnnuityLab()">
+          </div>
+          <div class="control-group">
+            <label>領取期數 (N 年)</label>
+            <input type="range" id="annuityN" min="5" max="50" value="20" oninput="calcAnnuityLab()">
+            <div class="val-display" id="annuityNDisp">20 年</div>
+          </div>
+          <div class="control-group">
+            <label>市場利率 (r)</label>
+            <input type="range" id="annuityR" min="1" max="15" value="6" oninput="calcAnnuityLab()">
+            <div class="val-display" id="annuityRDisp">6.0%</div>
+          </div>
+        </div>
+        <div class="widget-result-box">
+          <div class="result-big" id="annuityResultPV">$114,699.21</div>
+          <div class="result-desc" id="annuityResultDesc">20 年年金現值為 $114,699.21。若改為無限期永續年金，現值則是 $166,666.67！</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4.6 成長型現金流 -->
+    <section id="sec6">
+      <h2>🌱 4.6 成長型現金流 (Growing Cash Flows)</h2>
+      <p class="lead"><strong>現實生活中有通膨，租金與薪水每年都會按百分比 $g$ 長大！這時公式該怎麼進化？</strong></p>
+
+      <h3>1. 成長型永續年金（Growing Perpetuity）</h3>
+      <p>第 1 年末收到 $C$，之後每年以成長率 $g$ 持續成長（第 2 年 $C(1+g)$、第 3 年 $C(1+g)^2$ ... 直到永遠）。只要市場利率 $r > g$：</p>
+
+      <div class="formula-banner">
+【成長型永續年金現值】:  PV = C / (r - g)
+      </div>
+
+      <div class="highlight-box">
+        <h4>💡 為什麼分母是 (r - g)？</h4>
+        <p>因為分子每年會長大 $g$，抵消了一部分折現率 $r$ 的衰減威力！因此「有效折現率」變成了淨值 $r - g$。如果 $r \le g$，說明金流長大的速度比折現還快，現值將會發散至無窮大！</p>
+      </div>
+
+      <h3>2. 成長型年金（Growing Annuity）</h3>
+      <p>如果是有限的 $N$ 期成長型年金：</p>
+      <div class="formula-banner">
+【成長型普通年金現值】:  PV = [ C / (r - g) ] × [ 1 - ((1 + g) / (1 + r))^N ]
+      </div>
+
+      <!-- Example 4.10 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💡 教科書範例 4.10：退休生活費與抗通膨年金</span>
+          <span class="example-badge">EXAMPLE 4.10</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目情境】</strong><br>
+            你打算為未來 20 年的退休生活準備一筆基金。預計第 1 年末提取 <strong>$30,000</strong>，之後為了對抗通膨，每年提領金額增加 <strong>5%（g = 5%）</strong>。若年投資報酬率為 <strong>8%（r = 8%）</strong>，你今天總共需要準備多少退休本金？
+          </div>
+          <div class="example-solution">
+            <strong>【解題思維】</strong><br>
+            帶入成長型年金公式：<br>
+            $\text{PV} = \frac{\$30,000}{0.08 - 0.05} \times \left[ 1 - \left(\frac{1.05}{1.08}\right)^{20} \right] = \$1,000,000 \times [1 - 0.5636] = \mathbf{\$436,419}$ 美元！<br>
+            大掌櫃只要準備不到 44 萬美元，就能支援未來 20 年逐年遞增的生活開銷！
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 4.7 求解年金付款、期數與 IRR -->
+    <section id="sec7">
+      <h2>🎯 4.7 求解未知數：房貸、存錢目標與內部報酬率 (IRR)</h2>
+      <p class="lead"><strong>在實務上，現值或終值通常已知，我們要反推的是「每個月要付多少房貸」、「要存幾年」，或是「投資報酬率到底是多少」！</strong></p>
+
+      <h3>1. 求解每期付款金額 $C$（房貸 / 車貸精算）</h3>
+      <p>向銀行借房貸本金 $P$（相當於現值 $\text{PV}$），約定分 $N$ 期攤還，每期要繳多少月付金？</p>
+      <div class="formula-banner">
+每期月付金 C = P ÷ { (1/r) × [ 1 - 1/(1 + r)^N ] }
+      </div>
+
+      <!-- 互動組件 3：房貸與貸款試算機 -->
+      <div class="widget-container">
+        <div class="widget-title">🧪 互動實驗 3：大掌櫃房貸與分期償還試算機</div>
+        <div class="widget-intro">輸入貸款金額、年限與利率，即時試算每期應繳金額與總支付利息！</div>
+        <div class="control-row">
+          <div class="control-group">
+            <label>貸款本金 ($)</label>
+            <input type="number" id="loanP" value="300000" step="10000" oninput="calcLoan()">
+          </div>
+          <div class="control-group">
+            <label>貸款年限 (N 年)</label>
+            <input type="range" id="loanN" min="5" max="30" value="30" oninput="calcLoan()">
+            <div class="val-display" id="loanNDisp">30 年</div>
+          </div>
+          <div class="control-group">
+            <label>年利率 (%)</label>
+            <input type="range" id="loanR" min="1" max="15" value="6" oninput="calcLoan()">
+            <div class="val-display" id="loanRDisp">6.0%</div>
+          </div>
+        </div>
+        <div class="widget-result-box">
+          <div class="result-big" id="loanPaymentResult">$21,794.63 / 年</div>
+          <div class="result-desc" id="loanPaymentDesc">每年需還款 $21,794.63。30 年總共還款 $653,838.83，其中利息高達 $353,838.83！</div>
+        </div>
+      </div>
+
+      <h3>2. 內部報酬率（Internal Rate of Return, IRR）</h3>
+      <p><strong><span class="en-term">IRR<small>內部報酬率</small></span></strong>：是讓該專案的<strong>淨現值恰好等於 0（$\text{NPV} = 0$）</strong>的那個神奇折現率！它代表該投資專案本身蘊含的真實年化獲利能力！</p>
+      
+      <ul>
+        <li><strong>兩期現金流（今天投 $P$，第 $N$ 年收 $\text{FV}$）：</strong><br>
+        $\mathbf{IRR = \left(\frac{FV}{P}\right)^{1/N} - 1}$。</li>
+        <li><strong>永續年金（今天投 $P$，每年收 $C$）：</strong><br>
+        $\mathbf{IRR = \frac{C}{P}}$。</li>
+        <li><strong>成長型永續年金：</strong><br>
+        $\mathbf{IRR = \frac{C}{P} + g}$。</li>
+      </ul>
+
+      <!-- 互動組件 4：IRR 尋寶天平 -->
+      <div class="widget-container">
+        <div class="widget-title">🧪 互動實驗 4：IRR 內部報酬率尋寶天平</div>
+        <div class="widget-intro">今天投資 $10,000，未來 3 年分別收回 $4,000、$4,000、$4,000。拖動折現率，找出讓 NPV = 0 的真實 IRR！</div>
+        <div class="control-row">
+          <div class="control-group">
+            <label>試驗折現率 (r)</label>
+            <input type="range" id="irrGuess" min="1" max="25" value="5" oninput="calcIRRDemo()">
+            <div class="val-display" id="irrGuessDisp">5.0%</div>
+          </div>
+        </div>
+        <div class="widget-result-box">
+          <div class="result-big" id="irrNpvStatus">NPV: +$906.94</div>
+          <div class="result-desc" id="irrNpvDesc">當利率為 5.0% 時 NPV > 0。繼續往右調高利率試試，直到 NPV 歸零（真正的 IRR 約為 9.7%）！</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 全章整合與心智圖 -->
+    <section id="integration">
+      <h2>🧩 全章心智地圖與八大魔王公式速查表</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>現金流型態</th>
+              <th>現值公式 (PV)</th>
+              <th>終值公式 (FV)</th>
+              <th>15歲小孩記憶口訣</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>單筆現金流 (Single CF)</strong></td>
+              <td>$C \div (1 + r)^n$</td>
+              <td>$C \times (1 + r)^n$</td>
+              <td>時光前進乘 $(1+r)$，時光倒退除 $(1+r)$</td>
+            </tr>
+            <tr>
+              <td><strong>永續年金 (Perpetuity)</strong></td>
+              <td>$C \div r$</td>
+              <td>無窮大 (永遠領)</td>
+              <td>存本取息，母金生生不息</td>
+            </tr>
+            <tr>
+              <td><strong>普通年金 (Annuity)</strong></td>
+              <td>$\frac{C}{r} [1 - (1+r)^{-N}]$</td>
+              <td>$\frac{C}{r} [(1+r)^N - 1]$</td>
+              <td>兩張永續年金頭尾相減的落差</td>
+            </tr>
+            <tr>
+              <td><strong>期初年金 (Annuity Due)</strong></td>
+              <td>$\text{PV}(\text{普通}) \times (1 + r)$</td>
+              <td>$\text{FV}(\text{普通}) \times (1 + r)$</td>
+              <td>每期提早付，全員多滾一年利息</td>
+            </tr>
+            <tr>
+              <td><strong>成長型永續年金</strong></td>
+              <td>$C \div (r - g)$</td>
+              <td>無窮大</td>
+              <td>分母扣掉成長率，有效折現率變小</td>
+            </tr>
+            <tr>
+              <td><strong>成長型普通年金</strong></td>
+              <td>$\frac{C}{r - g} [1 - (\frac{1+g}{1+r})^N]$</td>
+              <td>$\text{PV} \times (1+r)^N$</td>
+              <td>抵抗通膨的神裝，年年遞增領取</td>
+            </tr>
+            <tr>
+              <td><strong>房貸月付金求解</strong></td>
+              <td>$C = \text{Loan} \div \text{年金因子}$</td>
+              <td>-</td>
+              <td>本金平攤到各期，連本帶利全清空</td>
+            </tr>
+            <tr>
+              <td><strong>內部報酬率 (IRR)</strong></td>
+              <td>使 $\text{NPV}(r) = 0$ 之 $r$</td>
+              <td>-</td>
+              <td>專案天平正負打平的黃金平衡點</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 隨堂測驗 -->
+    <section id="concept-quiz">
+      <h2>🎯 隨堂實戰：6 題觀念通關測驗</h2>
+      <p>點選你認為正確的選項，系統將即時告訴你對錯與完整思路剖析！</p>
+
+      <div class="quiz-card">
+        <div class="quiz-q">1. （時間旅行第一法則）你可以在什麼情況下將「第一年的 $1,000」與「第二年的 $1,000」直接加總？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq1', '跨時空的金錢絕對不能直接加總！')">A. 隨時都可以，因為數字都是 1,000</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq1', '賓果！只有當年利率 r = 0% 時，錢在未來的價值才不會縮水或膨脹，此時才能直接相加！')">B. 只有當市場利率恰好等於 0% 時</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq1', '只要利率不是零，貨幣時間價值就存在！')">C. 只要兩筆都是現金流入就可以</button>
+        </div>
+        <div id="cq1-fb" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">2. （年金 vs 期初年金）為什麼「期初年金（Annuity Due）」的現值永遠大於「普通年金（Ordinary Annuity）」？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq2', '太棒了！因為期初年金第一筆錢在 Date 0 立刻拿到，所有款項都提早了一年，折現懲罰更小！')">A. 因為每期付款都提早了一期，多賺了一年的複利（現值乘上了 (1+r)）</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq2', '兩者的總期數是完全相同的 N 期。')">B. 因為期初年金的付款期數比普通年金多一期</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq2', '利率是一樣的，差別在於金流發生的時間點！')">C. 因為銀行的利率不一樣</button>
+        </div>
+        <div id="cq2-fb" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">3. （永續年金）如果你想每年都領 $50,000 領到永遠，市場利率為 5%，你今天必須在銀行存多少母金？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq3', '算錯囉！$50,000 / 0.05 應該是 100 萬！')">A. $500,000</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq3', '正確！PV = C / r = $50,000 / 0.05 = $1,000,000！存入 100 萬，每年利息剛好就是 5 萬！')">B. $1,000,000</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq3', '不需要這麼多！')">C. $2,500,000</button>
+        </div>
+        <div id="cq3-fb" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">4. （成長型年金限制）在計算成長型永續年金 PV = C / (r - g) 時，為什麼必須限制利率 r > 成長率 g？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq4', '現實中有很多資產在特定時期成長率會高於利率，但不能持續到無窮！')">A. 因為法律規定利率必須大於成長率</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq4', '沒錯！若 g >= r，現金流膨脹的速度追上甚至超越折現率，無限期加總的現值將會發散至正無窮大，失去實務意義！')">B. 若 g >= r，金流膨脹速度快於折現，無限期現值總和會變成無窮大！</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq4', 'IRR 不受此公式定義約束。')">C. 否則 IRR 會變成負數</button>
+        </div>
+        <div id="cq4-fb" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">5. （房貸提前清償）如果你繳了幾年房貸後發大財想提前清償，此時需繳給銀行的「剩餘本金」等於什麼？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq5', '那樣忽略了時間價值，會多付很多利息給銀行！')">A. 把未來所有還款金額直接相加</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq5', '滿分！剩餘本金永遠等於「未來剩餘所有分期付款在當下的折現值總和」！')">B. 未來剩下所有期數月付金，以房貸利率折現到當下的現值</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq5', '原本借的本金早就隨每期還款一部分而減少了！')">C. 最初向銀行借的原始本金</button>
+        </div>
+        <div id="cq5-fb" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-q">6. （內部報酬率 IRR 定義）當一個投資專案的折現率剛好等於它的 IRR 時，該專案的淨現值 (NPV) 是多少？</div>
+        <div class="quiz-options">
+          <button class="quiz-opt" onclick="checkQuiz(this, true, 'cq6', '完全正確！IRR 的定義就是「讓專案 NPV 剛好等於零的那個折現率」！')">A. 恰好等於 0</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq6', 'NPV > 0 表示市場資金成本低於該專案的 IRR。')">B. 大於 0</button>
+          <button class="quiz-opt" onclick="checkQuiz(this, false, 'cq6', 'NPV 不會是負數。')">C. 小於 0</button>
+        </div>
+        <div id="cq6-fb" class="quiz-feedback"></div>
+      </div>
+
+    </section>
+
+    <!-- 實戰試煉：課後經典精選全詳解 -->
+    <section id="practice">
+      <h2>🧪 實戰試煉：課後代表題深度詳解（OCR 修正版）</h2>
+      <p class="lead">精選課本第 164~167 頁中，最能貫穿全章知識的 8 道硬核題目，完整修正 OCR 錯字並提供 step-by-step 解析！</p>
+
+      <!-- 題目 4.7：存錢複利增長 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💰 Problem 4.7：1,000 美元的複利增長</span>
+          <span class="example-badge">PROBLEM 4.7</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              Suppose you invest $1,000 in an account paying 6% interest per year.<br>
+              a. How much do you have in the account in 5 years? in 10 years? in 20 years?<br>
+              b. How much of the balance in (a) after 5 years is due to simple interest, and how much is due to interest on interest?
+            </div>
+            <p>你將 <strong>$1,000</strong> 存入年利率 <strong>6%</strong> 的帳戶中：<br>
+            a. 5 年後、10 年後、20 年後帳戶裡分別有多少錢？<br>
+            b. 5 年後的帳戶總額中，有多少是「單利產生的」，有多少是「利滾利（利息生的利息）」？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法】</strong><br>
+            <ul>
+              <li><strong>子題 a：</strong><br>
+              • 5 年後：$FV_5 = \$1,000 \times (1.06)^5 = \mathbf{\$1,338.23}$<br>
+              • 10 年後：$FV_{10} = \$1,000 \times (1.06)^{10} = \mathbf{\$1,790.85}$<br>
+              • 20 年後：$FV_{20} = \$1,000 \times (1.06)^{20} = \mathbf{\$3,207.14}$（翻了 3.2 倍！）</li>
+              <li><strong>子題 b：</strong><br>
+              • 本金：$1,000<br>
+              • 單利（每年固定 $60 利息）：$5 \text{ 年} \times \$60 = \$300<br>
+              • 總利息 = $1,338.23 - $1,000 = $338.23<br>
+              • <strong>利滾利貢獻額：</strong> $\$338.23 - \$300 = \mathbf{\$38.23}$！</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.8：女兒上大學基金規劃 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">🎓 Problem 4.8：女兒 7 年後的大學學費規劃</span>
+          <span class="example-badge">PROBLEM 4.8</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              Your daughter is currently 11 years old. You anticipate that she will be going to college in seven years (at age 18). You would like to have $100,000 in a savings account to fund her education at that time. If the account pays 5% interest per year, how much must you deposit today to achieve your goal?
+            </div>
+            <p>女兒現在 11 歲，預計 7 年後（18 歲）上大學。你希望到時候帳戶裡剛好有 <strong>$100,000</strong> 教育基金。若存款年利率為 <strong>5%</strong>，你今天必須一次存入多少錢？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：單筆折現】</strong><br>
+            未來的目標金額是 Date 7 的 $100,000：
+            $$\text{PV} = \frac{\text{FV}_7}{(1 + r)^7} = \frac{\$100,000}{(1.05)^7} = \frac{\$100,000}{1.4071} = \mathbf{\$71,068.13 \text{ 美元}}$$
+            大掌櫃今天只要準備 7.1 萬美元，7 年後就能自然長大成 10 萬美元學費！
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.10：祖父的生日存款 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">🎂 Problem 4.10：祖父在出生那天存的神秘基金</span>
+          <span class="example-badge">PROBLEM 4.10</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              Your grandfather put some money in an account for you on the day you were born. You are now 18 years old and are allowed to withdraw the money for the first time. The current balance is $6,000. If the account earned 7% interest per year:<br>
+              a. How much did your grandfather deposit on the day you were born?<br>
+              b. How much would be in the account if you left the money there until your 25th birthday?
+            </div>
+            <p>祖父在你出生的那一天為你存了一筆錢。今天是你 18 歲生日，你第一次獲准領取，目前帳戶餘額為 <strong>$6,000</strong>。若該帳戶年利率為 <strong>7%</strong>：<br>
+            a. 祖父在 18 年前你出生那天存了多少錢？<br>
+            b. 如果你忍住不領，繼續放到你 25 歲生日，帳戶裡會有多少錢？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：時光前進與後退】</strong><br>
+            <ul>
+              <li><strong>子題 a（回到過去 Date -18）：</strong><br>
+              $\text{PV}_0 = \frac{\$6,000}{(1.07)^{18}} = \frac{\$6,000}{3.3799} = \mathbf{\$1,775.18}$ 美元！祖父當初只花了 1,775 美元！</li>
+              <li><strong>子題 b（邁向未來 7 年後）：</strong><br>
+              從 18 歲到 25 歲還要再放 7 年：<br>
+              $\text{FV}_{25} = \$6,000 \times (1.07)^7 = \$6,000 \times 1.60578 = \mathbf{\$9,634.71}$ 美元！</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.13：貸款重組談判 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">📑 Problem 4.13：六年貸款的重組談判</span>
+          <span class="example-badge">PROBLEM 4.13</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              You have a loan outstanding that requires making six annual payments at the end of the next six years of $9,000 each. Your bank has offered to restructure the loan so that instead of making six payments, you make a single balloon payment in six years. If the interest rate on the loan is 8%, what is the fair amount of this single payment?
+            </div>
+            <p>你有一筆貸款，原定在未來 6 年每年末償還 <strong>$9,000</strong>。銀行同意讓你「債務重組」：前 5 年一毛錢都不用繳，改在<strong>第 6 年末一次性全額清償（Balloon Payment）</strong>。若年利率為 <strong>8%</strong>，第 6 年末這筆一次性款項應該是多少才公平？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：求 6 年年金的終值 FV】</strong><br>
+            這筆交易就是求 6 期普通年金在第 6 年末的終值：
+            $$\text{FV} = C \times \frac{1}{r} \left[ (1 + r)^6 - 1 \right] = \$9,000 \times \frac{1}{0.08} \left[ (1.08)^6 - 1 \right] = \$9,000 \times 7.3359 = \mathbf{\$66,023.35 \text{ 美元}}$$
+            <strong>注意：</strong> 原本 6 年繳 $9,000 總額是 $54,000，延後到第 6 年一次付清必須加上利息膨脹，共需支付 $66,023.35！
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.26：新藥專利的價值 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">💊 Problem 4.26：製藥公司的新藥專利估值</span>
+          <span class="example-badge">PROBLEM 4.26</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              You work for a pharmaceutical company that has developed a new drug. The patent on the drug will last for 17 years. You expect the drug to generate cash flows of $10 million at the end of each year for the next 17 years. If your firm’s discount rate is 10%, what is the present value of this drug’s cash flows?
+            </div>
+            <p>你的藥廠研發出一款新專利藥，專利保護期還有 <strong>17 年</strong>。預估未來 17 年每年底可產生 <strong>$1,000 萬美元</strong>的現金流。若折現率為 <strong>10%</strong>，這款新藥在今天的現值是多少？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：17期普通年金現值】</strong><br>
+            帶入年金現值公式：
+            $$\text{PV} = \$10\text{M} \times \frac{1}{0.10} \left[ 1 - \frac{1}{(1.10)^{17}} \right] = \$10\text{M} \times 8.02155 = \mathbf{\$80.22 \text{ 百萬美元（約 8,022 萬美元）}}$$
+            這項專利在今天的公允身價為 8,022 萬美元！
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.29：熱門網路公司的成長型獲利 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">🌐 Problem 4.29：網路新創公司的成長型獲利估值</span>
+          <span class="example-badge">PROBLEM 4.29</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              You are running a hot Internet company. Analysts predict that its earnings will grow at 10% per year for the next five years. At the end of year 1, earnings will be $2 million. If the appropriate discount rate is 12%, what is the present value of the earnings over the next five years?
+            </div>
+            <p>你經營一家火紅的網路公司。分析師預測未來 5 年獲利每年成長 <strong>10%（g = 10%）</strong>，第 1 年末獲利為 <strong>$200 萬美元</strong>。若折現率為 <strong>12%（r = 12%）</strong>，未來 5 年獲利的現值總和是多少？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：成長型普通年金】</strong><br>
+            帶入成長型年金公式：
+            $$\text{PV} = \frac{C}{r - g} \left[ 1 - \left(\frac{1 + g}{1 + r}\right)^N \right] = \frac{\$2\text{M}}{0.12 - 0.10} \left[ 1 - \left(\frac{1.10}{1.12}\right)^5 \right]$$
+            $$\text{PV} = \$100\text{M} \times [ 1 - 0.9139 ] = \$100\text{M} \times 0.0861 = \mathbf{\$8.61 \text{ 百萬美元（約 861 萬美元）}}$$
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.33：電子帳單的永續節省 -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">📧 Problem 4.33：全面改用電子帳單的無窮價值</span>
+          <span class="example-badge">PROBLEM 4.33</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              Your firm spends $60,000 every year on printing and mailing costs sending statements to customers. If you switch to paperless electronic statements, you can eliminate these costs in perpetuity. If the interest rate is 6% per year, what is the maximum amount your firm should be willing to spend today to build the electronic system?
+            </div>
+            <p>公司每年花費 <strong>$60,000</strong> 在紙本帳單印刷與郵寄上。若升級系統全面改用電子帳單，可以<strong>永遠省下這筆開銷（in perpetuity）</strong>。若市場利率為 <strong>6%</strong>，公司今天最多願意花多少錢建置這套系統？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：永續年金省錢現值】</strong><br>
+            每年省下 $60,000 直到永遠，其現值為：
+            $$\text{PV} = \frac{C}{r} = \frac{\$60,000}{0.06} = \mathbf{\$1,000,000 \text{ 美元}}$$
+            只要建置系統的費用低於 <strong>100 萬美元</strong>，這項專案的 NPV > 0，就值得立刻開工！
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目 4.49：車商廣告的真實 IRR -->
+      <div class="example-card">
+        <div class="example-header">
+          <span class="example-title">🚗 Problem 4.49：車行「零頭款分期」背後的真實 IRR</span>
+          <span class="example-badge">PROBLEM 4.49</span>
+        </div>
+        <div class="example-body">
+          <div class="example-problem">
+            <strong>【題目原文與情境】</strong>
+            <div class="orig-en">
+              You are shopping for a car and read the following advertisement: “Own a new car today for $0 down and only $3,000 per year for 4 years!” The cash price of the car is $10,000. What interest rate (IRR) is the dealer charging you?
+            </div>
+            <p>你在報紙上看到車行廣告：「0 元頭期款開走新車！未來 4 年每年底只要繳 <strong>$3,000</strong>！」而這輛車的現金直購價為 <strong>$10,000</strong>。車商實際上向你收取的<strong>內部報酬率（IRR / 貸款利率）</strong>是多少？</p>
+          </div>
+          <div class="example-solution">
+            <strong>【大掌櫃拆解法：解年金方程式求 r】</strong><br>
+            建立 NPV = 0 方程式：
+            $$\$10,000 = \$3,000 \times \frac{1}{r} \left[ 1 - \frac{1}{(1 + r)^4} \right]$$
+            年金因子 $= \frac{10,000}{3,000} \approx 3.3333$。
+            <ul>
+              <li>若猜 $r = 7\%$：年金因子 $= 3.3872$（現值太高）</li>
+              <li>若猜 $r = 8\%$：年金因子 $= 3.3121$（現值太低）</li>
+              <li>經內插法或財務計算機精算：$\mathbf{IRR \approx 7.71\%}$！</li>
+            </ul>
+            <strong>🎯 結論：</strong> 車商名目上說很划算，背後偷偷收了高達 <strong>7.71%</strong> 的年化借款利率！
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 術語字典庫 -->
+    <section id="glossary">
+      <h2>📚 必背英漢專業術語字典庫</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>英文專有名詞</th>
+              <th>繁體中文</th>
+              <th>15歲極簡秒懂比喻</th>
+              <th>核心公式 / 符號</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Stream of Cash Flows</strong></td>
+              <td>現金流量串流</td>
+              <td>在不同時間陸續進出的一連串金幣隊伍</td>
+              <td>$\{C_0, C_1, C_2, ...\}$</td>
+            </tr>
+            <tr>
+              <td><strong>Timeline</strong></td>
+              <td>時間軸</td>
+              <td>標註每個金幣進出時間點的財務地圖</td>
+              <td>Date 0, Date 1, ...</td>
+            </tr>
+            <tr>
+              <td><strong>Compounding</strong></td>
+              <td>複利（時光向前）</td>
+              <td>把今天的錢存進未來，利滾利幾何爆炸</td>
+              <td>$\text{FV} = \text{PV} \times (1 + r)^n$</td>
+            </tr>
+            <tr>
+              <td><strong>Discounting</strong></td>
+              <td>折現（時光倒流）</td>
+              <td>把未來的錢拉回今天，看縮水剩多少</td>
+              <td>$\text{PV} = \text{FV} \div (1 + r)^n$</td>
+            </tr>
+            <tr>
+              <td><strong>Perpetuity</strong></td>
+              <td>永續年金</td>
+              <td>永遠不會枯竭的魔法噴泉，每年領固定金額</td>
+              <td>$\text{PV} = C / r$</td>
+            </tr>
+            <tr>
+              <td><strong>Annuity</strong></td>
+              <td>普通年金</td>
+              <td>固定領 $N$ 期的年金合約（房貸、分期付款）</td>
+              <td>$\text{PV} = \frac{C}{r}[1 - (1+r)^{-N}]$</td>
+            </tr>
+            <tr>
+              <td><strong>Annuity Due</strong></td>
+              <td>期初年金</td>
+              <td>每期一開始就付錢（如房租），全員多滾一期利息</td>
+              <td>$\text{PV} \times (1 + r)$</td>
+            </tr>
+            <tr>
+              <td><strong>Growing Perpetuity</strong></td>
+              <td>成長型永續年金</td>
+              <td>每年領的錢會按固定比率 $g$ 長大，無限期領</td>
+              <td>$\text{PV} = C / (r - g)$</td>
+            </tr>
+            <tr>
+              <td><strong>Growing Annuity</strong></td>
+              <td>成長型普通年金</td>
+              <td>在有限 $N$ 年內，每年領的錢按比率 $g$ 成長</td>
+              <td>$\frac{C}{r-g}[1 - (\frac{1+g}{1+r})^N]$</td>
+            </tr>
+            <tr>
+              <td><strong>Internal Rate of Return (IRR)</strong></td>
+              <td>內部報酬率</td>
+              <td>讓專案淨現值剛好等於 0 的天平平衡利率</td>
+              <td>$\text{NPV}(r) = 0$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- 互動實驗腳本 -->
+<script>
+  // 實驗 1：三大時間法則
+  function calcTimeTravel() {
+    const P = parseFloat(document.getElementById('travelPrincipal').value) || 0;
+    const r = parseFloat(document.getElementById('travelRate').value) / 100;
+    const n = parseInt(document.getElementById('travelYears').value);
+
+    document.getElementById('travelRateDisp').innerText = (r * 100).toFixed(1) + '%';
+    document.getElementById('travelYearsDisp').innerText = n + ' 年';
+
+    const compoundFV = P * Math.pow(1 + r, n);
+    const simpleFV = P * (1 + r * n);
+    const diff = compoundFV - simpleFV;
+
+    document.getElementById('travelCompoundFV').innerText = '$' + compoundFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('travelDetail').innerHTML = `穿越 ${n} 年後，<strong>複利終值為 $${compoundFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>（單利僅為 $${simpleFV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}）。<br>光是<strong>「利息生的利息」</strong>就額外多賺了 <strong>$${diff.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>！`;
+  }
+
+  // 實驗 2：年金與永續年金
+  function calcAnnuityLab() {
+    const C = parseFloat(document.getElementById('annuityC').value) || 0;
+    const N = parseInt(document.getElementById('annuityN').value);
+    const r = parseFloat(document.getElementById('annuityR').value) / 100;
+
+    document.getElementById('annuityNDisp').innerText = N + ' 年';
+    document.getElementById('annuityRDisp').innerText = (r * 100).toFixed(1) + '%';
+
+    const annuityPV = (C / r) * (1 - Math.pow(1 + r, -N));
+    const perpPV = C / r;
+
+    document.getElementById('annuityResultPV').innerText = '$' + annuityPV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('annuityResultDesc').innerHTML = `領 ${N} 年的年金現值為 <strong>$${annuityPV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>。<br>如果是無限期的永續年金，現值則是 <strong>$${perpPV.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>！領 ${N} 年已經拿到了永續價值的 ${((annuityPV/perpPV)*100).toFixed(1)}%！`;
+  }
+
+  // 實驗 3：房貸計算機
+  function calcLoan() {
+    const P = parseFloat(document.getElementById('loanP').value) || 0;
+    const N = parseInt(document.getElementById('loanN').value);
+    const r = parseFloat(document.getElementById('loanR').value) / 100;
+
+    document.getElementById('loanNDisp').innerText = N + ' 年';
+    document.getElementById('loanRDisp').innerText = (r * 100).toFixed(1) + '%';
+
+    const factor = (1 / r) * (1 - Math.pow(1 + r, -N));
+    const pmt = P / factor;
+    const totalPaid = pmt * N;
+    const totalInterest = totalPaid - P;
+
+    document.getElementById('loanPaymentResult').innerText = '$' + pmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' / 年';
+    document.getElementById('loanPaymentDesc').innerHTML = `每年需繳 <strong>$${pmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>。<br>${N} 年總還款 <strong>$${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>，其中給銀行的利息高達 <strong>$${totalInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>！`;
+  }
+
+  // 實驗 4：IRR 尋寶天平
+  function calcIRRDemo() {
+    const r = parseFloat(document.getElementById('irrGuess').value) / 100;
+    document.getElementById('irrGuessDisp').innerText = (r * 100).toFixed(1) + '%';
+
+    // 專案：今天 -10000，未來 3 年分別 +4000
+    const npv = -10000 + (4000 / (1 + r)) + (4000 / Math.pow(1 + r, 2)) + (4000 / Math.pow(1 + r, 3));
+    const statusElem = document.getElementById('irrNpvStatus');
+    const descElem = document.getElementById('irrNpvDesc');
+
+    if (npv > 50) {
+      statusElem.innerText = 'NPV: +$' + npv.toFixed(2);
+      statusElem.style.color = '#196b58';
+      descElem.innerHTML = `折現率 ${(r*100).toFixed(1)}% 太低了，NPV 依然大於 0。請繼續往右拉高利率試試！`;
+    } else if (npv < -50) {
+      statusElem.innerText = 'NPV: -$' + Math.abs(npv).toFixed(2);
+      statusElem.style.color = '#c0392b';
+      descElem.innerHTML = `折現率 ${(r*100).toFixed(1)}% 太高了，NPV 已經變成負數。請往左微調！`;
+    } else {
+      statusElem.innerText = '🎉 找到黃金平衡！NPV ≈ $0.00';
+      statusElem.style.color = '#d48b28';
+      descElem.innerHTML = `太神了！當折現率約為 <strong>${(r*100).toFixed(1)}%</strong> 時，天平完美打平！這就是該專案的 <strong>IRR（內部報酬率）</strong>！`;
+    }
+  }
+
+  // 測驗檢查函數
+  function checkQuiz(btn, isCorrect, qId, explanation) {
+    const fb = document.getElementById(qId + '-fb');
+    fb.style.display = 'block';
+    if (isCorrect) {
+      fb.className = 'quiz-feedback feedback-correct';
+      fb.innerHTML = '<strong>✅ 答對了！恭喜大掌櫃！</strong><br>' + explanation;
+    } else {
+      fb.className = 'quiz-feedback feedback-wrong';
+      fb.innerHTML = '<strong>❌ 哎呀，選錯囉！再想想看～</strong><br>' + explanation;
+    }
+  }
+
+  // 初始化計算
+  window.onload = function() {
+    calcTimeTravel();
+    calcAnnuityLab();
+    calcLoan();
+    calcIRRDemo();
+  };
+</script>
+
+</body>
+</html>
+'''
+
+target_paths = [
+    r"收件苗圃\學習講義合輯\Ch04_貨幣時間價值_學習講義.html",
+    r"C:\Users\閻星澄\Documents\WikiTree\收件苗圃\學習講義合集\Ch04_貨幣時間價值_學習講義.html",
+    r"C:\Users\閻星澄\Desktop\學習講義合集\Ch04_貨幣時間價值_學習講義.html"
+]
+
+ws_path = target_paths[0]
+with open(ws_path, "w", encoding="utf-8") as f:
+    f.write(html_content)
+print(f"Generated workspace file: {ws_path} ({os.path.getsize(ws_path)} bytes)")
+
+for p in target_paths[1:]:
+    try:
+        shutil.copy2(ws_path, p)
+        print(f"Synced to: {p}")
+    except Exception as e:
+        print(f"Failed to copy to {p}: {e}")
