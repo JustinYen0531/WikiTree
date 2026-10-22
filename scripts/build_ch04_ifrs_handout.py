@@ -1,0 +1,1621 @@
+# -*- coding: utf-8 -*-
+# Intermediate Accounting IFRS 5e Chapter 4 Handout Builder
+import os
+import shutil
+
+html_content = r'''<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="中級會計學 IFRS 第五版 第四章：會計與貨幣時間價值（Accounting and the Time Value of Money）繁體中文精緻學習講義。包含複利、年金、遞延年金、公司債折溢價有效利息法、IFRS 13 期望現金流量法與五大互動實驗室。">
+  <title>Chapter 4 會計與貨幣時間價值｜IFRS 中級會計學精緻學習講義 [時空魔導精算法篇]</title>
+
+  <!-- 數學公式渲染雙保險協議：MathJax 3 + 離線優雅降級 Fallback -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    // 離線降級防護：若 2 秒內 MathJax 未加載，自動啟動純本地輕量替換，確保絕不露出原始碼
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (!window.MathJax || !window.MathJax.typeset) {
+          console.warn("MathJax CDN 連線超時或處於離線狀態，啟動本地輕量公式美化引擎...");
+          const walk = (node) => {
+            if (node.nodeType === 3) {
+              let text = node.nodeValue;
+              if (text.includes('$') || text.includes('\\times') || text.includes('\\frac')) {
+                let replaced = text
+                  .replace(/\\\$/g, '＄')
+                  .replace(/\$([^\$]+)\$/g, '<span style="font-family: Consolas, monospace; color: #0f766e; font-weight: 600;">$1</span>')
+                  .replace(/\\times/g, ' × ')
+                  .replace(/\\div/g, ' ÷ ')
+                  .replace(/\\mathbf\{([^\}]+)\}/g, '<strong>$1</strong>')
+                  .replace(/\\text\{([^\}]+)\}/g, '$1')
+                  .replace(/\\approx/g, ' ≈ ')
+                  .replace(/\\ge/g, ' ≥ ')
+                  .replace(/\\le/g, ' ≤ ')
+                  .replace(/\\([a-zA-Z]+)/g, '')
+                  .replace(/＄/g, '$');
+                if (replaced !== text) {
+                  const span = document.createElement('span');
+                  span.innerHTML = replaced;
+                  node.parentNode.replaceChild(span, node);
+                }
+              }
+            } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE', 'PRE', 'CODE'].includes(node.tagName)) {
+              Array.from(node.childNodes).forEach(walk);
+            }
+          };
+          walk(document.body);
+        }
+      }, 2000);
+    });
+  </script>
+
+  <style>
+    :root {
+      --ink: #1e293b;
+      --muted: #64748b;
+      --paper: #fdfbf7;
+      --wash: #f8f6f0;
+      --line: #e2e8f0;
+      --accent: #0d9488; /* 翡翠碧綠 / 會計時間魔導色 */
+      --accent-light: #f0fdfa;
+      --accent-dark: #115e59;
+      --gold: #d97706;
+      --gold-light: #fffbeb;
+      --gold-border: #fde68a;
+      --alert: #dc2626;
+      --alert-light: #fef2f2;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --card-bg: #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(30, 41, 59, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.85;
+    }
+
+    /* 頂部英雄導覽 Banner */
+    .hero {
+      background: linear-gradient(135deg, #042f2e 0%, #0f766e 60%, #14b8a6 100%);
+      color: #ffffff;
+      padding: 4.5rem 5vw 3.5rem;
+      border-bottom: 4px solid var(--gold);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "⏳ 📈 💎 📜 ⚖️";
+      position: absolute;
+      right: 3vw;
+      bottom: -15px;
+      font-size: 6rem;
+      opacity: 0.12;
+      pointer-events: none;
+      letter-spacing: 0.5rem;
+    }
+    .eyebrow {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.18);
+      color: #fef08a;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 20px;
+      margin-bottom: 1.2rem;
+    }
+    .version-tag {
+      display: inline-block;
+      background: var(--gold);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+      letter-spacing: 0.05em;
+    }
+    .hero h1 {
+      font-size: clamp(2.1rem, 4.5vw, 3.4rem);
+      margin: 0 0 0.8rem;
+      line-height: 1.25;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+      font-size: 1.25rem;
+      color: #ccfbf1;
+      max-width: 880px;
+      margin: 0 0 1.5rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-size: 0.95rem;
+      color: #e6fffa;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 1.2rem;
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 0.4rem; }
+    .chapter-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.2rem;
+      font-size: 0.9rem;
+    }
+    .chapter-links a {
+      color: #fef08a;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .chapter-links a:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* 佈局容器 */
+    .container {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 5rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 3.5rem;
+      align-items: start;
+    }
+
+    /* 側邊導航目錄 */
+    .toc-sidebar {
+      position: sticky;
+      top: 2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+    .toc-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--accent-light);
+      padding-bottom: 0.5rem;
+    }
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.88rem;
+    }
+    .toc-list li { margin-bottom: 0.55rem; }
+    .toc-list a {
+      color: var(--muted);
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      line-height: 1.4;
+    }
+    .toc-list a:hover {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+      transform: translateX(3px);
+    }
+
+    /* 主內文模組 */
+    .main-content section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 2rem;
+    }
+    h2 {
+      font-size: 1.85rem;
+      color: var(--accent-dark);
+      border-left: 6px solid var(--accent);
+      padding-left: 1rem;
+      margin: 2.5rem 0 1.5rem;
+      line-height: 1.3;
+    }
+    h3 {
+      font-size: 1.35rem;
+      color: var(--accent);
+      margin: 2rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    p { margin: 0 0 1.2rem; }
+
+    /* 英文術語高亮徽章 */
+    .term {
+      font-weight: 700;
+      color: #0f766e;
+      background: #ccfbf1;
+      padding: 0.15rem 0.45rem;
+      border-radius: 5px;
+      display: inline-block;
+      margin: 0 0.1rem;
+    }
+    .en-term {
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.9em;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      margin-left: 0.25rem;
+      font-weight: 600;
+    }
+
+    /* 冒險故事與心法卡片 */
+    .story-card {
+      background: linear-gradient(145deg, #ffffff 0%, #f0fdfa 100%);
+      border: 1px solid #99f6e4;
+      border-left: 6px solid var(--accent);
+      padding: 1.5rem 1.8rem;
+      border-radius: var(--radius);
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+    .story-header {
+      font-weight: 700;
+      color: var(--accent-dark);
+      font-size: 1.15rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* 陷阱卡片 */
+    .trap-card {
+      background: linear-gradient(145deg, #ffffff 0%, var(--alert-light) 100%);
+      border: 1px solid #fecaca;
+      border-left: 6px solid var(--alert);
+      padding: 1.5rem 1.8rem;
+      border-radius: var(--radius);
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+    .trap-header {
+      font-weight: 700;
+      color: var(--alert);
+      font-size: 1.1rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* 準則與里程碑卡片 */
+    .rule-card {
+      background: linear-gradient(145deg, #ffffff 0%, var(--gold-light) 100%);
+      border: 1px solid var(--gold-border);
+      border-left: 6px solid var(--gold);
+      padding: 1.5rem 1.8rem;
+      border-radius: var(--radius);
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+    .rule-header {
+      font-weight: 700;
+      color: #92400e;
+      font-size: 1.15rem;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* 網格系統 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0 2rem;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+      margin: 1.5rem 0 2rem;
+    }
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0 2rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(30, 41, 59, 0.1);
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.6rem;
+      color: var(--accent-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* 互動元件容器樣式 */
+    .interactive-widget {
+      background: #ffffff;
+      border: 2px solid #99f6e4;
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      margin: 2.2rem 0;
+      box-shadow: 0 6px 24px rgba(13, 148, 136, 0.1);
+    }
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px dashed #99f6e4;
+      padding-bottom: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .widget-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .widget-badge {
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--ink);
+    }
+    .form-control {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 1rem;
+      background: #f8fafc;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #ffffff;
+    }
+    .btn-calc {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 0.75rem 1.6rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-calc:hover {
+      background: linear-gradient(135deg, #0f766e 0%, #042f2e 100%);
+      transform: translateY(-1px);
+    }
+    .calc-result-box {
+      margin-top: 1.5rem;
+      padding: 1.2rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    /* 表格樣式 */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0 2rem;
+      font-size: 0.95rem;
+      background: #ffffff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .compare-table th, .compare-table td {
+      padding: 0.85rem 1.1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .compare-table th {
+      background: #042f2e;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .compare-table tr:hover {
+      background: #f8fafc;
+    }
+
+    /* 題解折疊 */
+    .problem-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius);
+      padding: 1.5rem 1.8rem;
+      margin-bottom: 1.6rem;
+      box-shadow: var(--shadow);
+    }
+    .problem-head {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #0f172a;
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .problem-tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .solution-toggle {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: var(--accent-dark);
+      font-weight: 700;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.92rem;
+      margin-top: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.2s ease;
+    }
+    .solution-toggle:hover {
+      background: #e2e8f0;
+    }
+    .solution-body {
+      display: none;
+      margin-top: 1.2rem;
+      padding: 1.2rem;
+      background: #f8fafc;
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.96rem;
+    }
+
+    /* 頁尾 */
+    footer {
+      background: #042f2e;
+      color: #94a3b8;
+      text-align: center;
+      padding: 3rem 1rem;
+      font-size: 0.9rem;
+      border-top: 4px solid var(--gold);
+    }
+    footer a { color: #5eead4; text-decoration: none; }
+
+    @media (max-width: 992px) {
+      .container { grid-template-columns: 1fr; }
+      .toc-sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部英雄導覽 Banner -->
+  <header class="hero">
+    <div class="eyebrow">👑 Intermediate Accounting · IFRS Edition (5th Ed.) · Chapter 4</div>
+    <h1>Chapter 4：會計與貨幣時間價值</h1>
+    <div class="subtitle">
+      Accounting and the Time Value of Money：揭開現代會計「跨越時空的價值天秤」！從單筆複利、普通與到期年金，到公司債折溢價攤銷與 IFRS 13 期望現金流量法。
+    </div>
+    <div class="hero-meta">
+      <span>📚 教材對應：Kieso, Weygandt, Warfield <i>Intermediate Accounting (IFRS 5e)</i> Ch 4</span>
+      <span>🌲 知識架構：中級會計學核心工具論</span>
+      <span>🎮 學習導師：冒險者公會首席大掌櫃</span>
+      <span class="version-tag">雙保險 MathJax 3 &amp; 離線美化版</span>
+    </div>
+    <nav class="chapter-links" aria-label="相鄰章節">
+      <a href="Ch01_IFRS_學習講義.html">← Ch01 觀念架構與會計循環</a>
+      <a href="Ch02_IFRS_學習講義.html">← Ch02 損益表與權益變動表</a>
+      <a href="Ch03_IFRS_學習講義.html">← Ch03 財務狀況表與現金流量表</a>
+      <span style="color:#fef08a; font-weight:700;">★ 當前章節：Ch04 會計與貨幣時間價值</span>
+    </nav>
+  </header>
+
+  <div class="container">
+    
+    <!-- 主要內容區 -->
+    <main class="main-content">
+
+      <!-- 引言與冒險指南 -->
+      <section id="prologue">
+        <div class="story-card">
+          <div class="story-header">
+            <span>🛡️</span> 大掌櫃時空修煉心法：為什麼現代會計師必須掌握「時間魔法」？
+          </div>
+          <p>
+            嘿，各位年輕的公會掌櫃！在前面的章節裡，我們學會了如何記帳、編製資產負債表與現金流量表。但如果你以為「會計就是把發票上的數字加加減減」，那你就太天真了！
+          </p>
+          <p>
+            想像一下：巨龍答應<strong>「今天給你 100 枚金幣」</strong>，或是<strong>「十年後的今天給你 100 枚金幣」</strong>，這兩筆財富在帳面上能畫上等號嗎？當然不行！因為今天的金幣可以拿去冒險公會放貸生息、可以投資矮人工坊、更可以抵禦通貨膨脹。這句在商業世界響徹千古的金科玉律就是：
+          </p>
+          <p style="font-size:1.15rem; font-weight:800; color:var(--accent-dark); text-align:center; background:#ffffff; padding:0.8rem; border-radius:8px; border:1px solid #99f6e4;">
+            「今天的 1 塊錢，永遠比未來的 1 塊錢更值錢！」<br>
+            <span style="font-size:0.95rem; font-weight:600; color:var(--muted);">(A dollar received today is worth more than a dollar promised at some time in the future.)</span>
+          </p>
+          <p>
+            為了在評估長期應收應付票據、租賃、退休金負債、發行公司債或估算環保復原義務時，能站在同一個基準上<strong>「拿蘋果跟蘋果比（Compare apples to apples）」</strong>，我們必須借助<strong>貨幣時間價值（Time Value of Money, TVM）</strong>的時空折現術。本章將帶你完整征服單筆現值、普通年金、到期年金、遞延年金、公司債有效利息法，以及國際準則最前端的 IFRS 13 期望現金流量法！
+          </p>
+        </div>
+      </section>
+
+      <!-- LO 1：基本觀念與利息本質 -->
+      <section id="lo-1">
+        <h2>LO 1：貨幣時間價值的核心架構與利息本質</h2>
+        <p>
+          貨幣時間價值本質上是<strong>時間與金錢之間的函數關係</strong>。在 IFRS 國際財務報導準則中，時間價值貫穿了以下八大關鍵領域：
+        </p>
+
+        <!-- 8大應用領域網格 -->
+        <div class="grid-4" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1rem;">
+          <div class="card">
+            <div class="card-title">📜 長期票據 <span class="en-term">Notes</span></div>
+            <p>不附息或低利長期應收/應付票據的現值折現。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">🏢 租賃會計 <span class="en-term">Leases</span></div>
+            <p>IFRS 16 使用權資產與租賃負債的租金現值認列。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">👴 退休金義務 <span class="en-term">Pensions</span></div>
+            <p>確定福利義務精算現值（IAS 19）。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">🏭 非流動資產 <span class="en-term">Non-Current</span></div>
+            <p>分期付款購買廠房設備之現值衡量。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">🎁 股份基礎給付 <span class="en-term">Share-Based</span></div>
+            <p>員工認股權與薪酬合約的公允價值評估。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">🤝 企業合併 <span class="en-term">Combinations</span></div>
+            <p>或有對價與分期收購價款的折現值。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">📑 財報附註揭露 <span class="en-term">Disclosures</span></div>
+            <p>各類金融工具之未來現金流量公允價值折現。</p>
+          </div>
+          <div class="card">
+            <div class="card-title">🌲 環保除役負債 <span class="en-term">Environmental</span></div>
+            <p>核電廠、礦場數十年後的復原除役成本現值。</p>
+          </div>
+        </div>
+
+        <h3>🔍 利息的本質與三大變數</h3>
+        <p>
+          <strong>利息（Interest）</strong>是使用資金的代價（Payment for the use of money），也是借款人在到期時所償還的金額超過最初借入本金的超額部分。
+        </p>
+        <div class="card" style="border-left: 6px solid var(--accent); margin-bottom: 1.5rem;">
+          <p><strong>利息計算的三大核心變數：</strong></p>
+          <ol>
+            <li><strong>本金（Principal, $p$）：</strong>最初借入、貸出或投資的金額。</li>
+            <li><strong>利率（Interest Rate, $i$）：</strong>每期佔未償還本金的固定百分比。</li>
+            <li><strong>時間（Time, $n$）：</strong>本金流通的年數或幾分之幾年。</li>
+          </ol>
+        </div>
+
+        <!-- 單利 vs 複利 -->
+        <h3>⚔️ 單利 (Simple) vs 複利 (Compound)：時間魔導的倍增滾雪球</h3>
+        <p>
+          <strong>單利（Simple Interest）</strong>僅依據「最初本金」計算利息，賺到的利息擺在一旁發呆；而<strong>複利（Compound Interest）</strong>則是將每期賺到的利息滾入本金，在下一期繼續生息，也就是俗稱的「利滾利」！
+        </p>
+
+        <!-- 經典課堂範例：Barstow & Vasquez Company -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>Barstow Electric 單利計算</span>
+              <span class="en-term">Simple Interest</span>
+            </div>
+            <p>借入本金 $\$10,000$，年利率 $8\%$：</p>
+            <ul>
+              <li><strong>借 1 年利息：</strong>$$\text{Interest} = p \times i \times n = \$10,000 \times 0.08 \times 1 = \mathbf{\$800}$$</li>
+              <li><strong>借 3 年利息：</strong>$$\text{Interest} = \$10,000 \times 0.08 \times 3 = \mathbf{\$2,400}$$</li>
+              <li><strong>借 3 個月利息：</strong>$$\text{Interest} = \$10,000 \times 0.08 \times \frac{3}{12} = \mathbf{\$200}$$</li>
+            </ul>
+          </div>
+
+          <div class="card" style="background:#f0fdfa; border:2px solid var(--accent);">
+            <div class="card-title">
+              <span>Vasquez 雙銀行對比實驗 (Illustration 4.1)</span>
+              <span class="en-term">9% 單利 vs 9% 年複利</span>
+            </div>
+            <p>兩筆 $\$10,000$ 分別存入兩家銀行，滿 3 年領回：</p>
+            <table style="width:100%; font-size:0.88rem; border-collapse:collapse;">
+              <tr style="border-bottom:1px solid #cbd5e1;">
+                <th>年度</th><th>最後國立銀行 (9% 單利)</th><th>第一州立銀行 (9% 複利)</th>
+              </tr>
+              <tr>
+                <td>第 1 年</td><td>利息 $900 → 餘額 $10,900</td><td>利息 $900 → 餘額 $10,900</td>
+              </tr>
+              <tr>
+                <td>第 2 年</td><td>利息 $900 → 餘額 $11,800</td><td>利息 $981 → 餘額 $11,881</td>
+              </tr>
+              <tr>
+                <td>第 3 年</td><td>利息 $900 → 餘額 $12,700</td><td>利息 $1,069.29 → 餘額 <strong>$12,950.29</strong></td>
+              </tr>
+              <tr style="font-weight:700; color:var(--accent-dark);">
+                <td>總結</td><td>總利息 $2,700.00</td><td>總利息 $2,950.29 (多出 <span style="color:var(--alert);">$250.29</span>!)</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- 五大複利係數表與複利頻率換算 -->
+        <h3>📑 五大經典複利因子表 (Compound Interest Tables)</h3>
+        <p>在會計與財務計算中，最常用的五張經典係數表如下：</p>
+        <div class="grid-5">
+          <div class="card" style="text-align:center;">
+            <strong>Table 4.1</strong><br>
+            單筆終值<br>
+            <span class="en-term">FV of 1</span><br>
+            $(1 + i)^n$
+          </div>
+          <div class="card" style="text-align:center;">
+            <strong>Table 4.2</strong><br>
+            單筆現值<br>
+            <span class="en-term">PV of 1</span><br>
+            $\frac{1}{(1 + i)^n}$
+          </div>
+          <div class="card" style="text-align:center;">
+            <strong>Table 4.3</strong><br>
+            普通年金終值<br>
+            <span class="en-term">FV-OA</span><br>
+            $\frac{(1+i)^n - 1}{i}$
+          </div>
+          <div class="card" style="text-align:center;">
+            <strong>Table 4.4</strong><br>
+            普通年金現值<br>
+            <span class="en-term">PV-OA</span><br>
+            $\frac{1 - (1+i)^{-n}}{i}$
+          </div>
+          <div class="card" style="text-align:center;">
+            <strong>Table 4.5</strong><br>
+            到期年金現值<br>
+            <span class="en-term">PV-AD</span><br>
+            $\text{PV-OA} \times (1+i)$
+          </div>
+        </div>
+
+        <!-- 複利頻率的換算魔咒 -->
+        <div class="rule-card">
+          <div class="rule-header">
+            <span>⚙️</span> 複利頻率的黃金轉換法則 (Illustration 4.5)
+          </div>
+          <p>
+            當利息並非每年複利一次，而是半年、每季或每月複利時，必須同步調整<strong>期數 $n$</strong> 與 <strong>每期利率 $i$</strong>：
+          </p>
+          <p style="text-align:center; font-weight:700;">
+            每期計息利率 $i = \frac{\text{名目年利率 (Annual Rate)}}{\text{每年複利次數 (Compounding Periods per Year)}}$<br>
+            總計算期數 $n = \text{年數 (Years)} \times \text{每年複利次數}$
+          </p>
+          <div style="background:#ffffff; padding:0.8rem; border-radius:6px; font-size:0.95rem;">
+            <strong>範例：年利率 12%，借款 5 年：</strong><br>
+            • 每年複利 1 次：$i = 12\% \div 1 = \mathbf{12\%}, \quad n = 5 \times 1 = \mathbf{5 \text{ 期}}$<br>
+            • 半年複利 1 次：$i = 12\% \div 2 = \mathbf{6\%}, \quad n = 5 \times 2 = \mathbf{10 \text{ 期}}$<br>
+            • 每季複利 1 次：$i = 12\% \div 4 = \mathbf{3\%}, \quad n = 5 \times 4 = \mathbf{20 \text{ 期}}$<br>
+            • 每月複利 1 次：$i = 12\% \div 12 = \mathbf{1\%}, \quad n = 5 \times 12 = \mathbf{60 \text{ 期}}$
+          </div>
+          <p style="margin-top:0.8rem; font-size:0.92rem; color:var(--muted);">
+            💡 <strong>有效報酬率 (Effective Yield, Illustration 4.6)：</strong>複利頻率越密集，實質有效收益越高！例如 9% 年息若每日複利，實質有效年利率高達 <strong>9.42%</strong>（$10,000 一年利息由 $900 提升至 $942）！
+          </p>
+        </div>
+      </section>
+
+      <!-- LO 2：單筆款項問題 (Single-Sum Problems) -->
+      <section id="lo-2">
+        <h2>LO 2：單筆款項終值、現值與未知數求解 (Single-Sum Problems)</h2>
+        <p>
+          單筆款項（Single Sum）是指只有在「起點」與「終點」發生現金流動，中間沒有任何零星收支。包含兩大核心任務與兩大未知數求解：
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>單筆終值計算</span>
+              <span class="en-term">Future Value of Single Sum</span>
+            </div>
+            <p><strong>現在存入一筆錢，未來會滾成多少？</strong></p>
+            <p>$$\text{FV} = \text{PV} \times \text{FVF}_{n,i} = \text{PV} \times (1 + i)^n$$</p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.93rem;">
+              <strong>課堂實例 1 (Bruegger AG)：</strong><br>
+              投資 €50,000，年利率 6%，年複利 5 年。<br>
+              查表 Table 4.1 ($n=5, i=6\%$) 得係數 $1.33823$：<br>
+              $$\text{FV} = €50,000 \times 1.33823 = \mathbf{€66,912}$$
+              <hr style="border:none; border-top:1px dashed #cbd5e1; margin:0.6rem 0;">
+              <strong>課堂實例 2 (上海電力 Shanghai Electric)：</strong><br>
+              存入 ¥250,000,000 專戶，4 年期，年息 10% <strong>半年複利</strong>。<br>
+              $n = 4 \times 2 = 8 \text{ 期}, \quad i = 10\% \div 2 = 5\%$。<br>
+              查表 Table 4.1 ($n=8, i=5\%$) 得係數 $1.47746$：<br>
+              $$\text{FV} = ¥250,000,000 \times 1.47746 = \mathbf{¥369,365,000}$$
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>單筆現值計算</span>
+              <span class="en-term">Present Value of Single Sum</span>
+            </div>
+            <p><strong>未來想拿到一筆錢，現在必須存入多少？</strong></p>
+            <p>$$\text{PV} = \text{FV} \times \text{PVF}_{n,i} = \text{FV} \times \frac{1}{(1 + i)^n}$$</p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.93rem;">
+              <strong>課堂實例 3 (5 年後收取 €73,466)：</strong><br>
+              折現率 8%，年複利 5 年。<br>
+              查表 Table 4.2 ($n=5, i=8\%$) 得係數 $0.68058$：<br>
+              $$\text{PV} = €73,466 \times 0.68058 \approx \mathbf{€50,000}$$
+              <hr style="border:none; border-top:1px dashed #cbd5e1; margin:0.6rem 0;">
+              <strong>課堂實例 4 (叔叔贊助 3 年後歐洲畢業旅行 $2,000)：</strong><br>
+              年利率 8%，年複利 3 年，叔叔現在該存入多少？<br>
+              查表 Table 4.2 ($n=3, i=8\%$) 得係數 $0.79383$：<br>
+              $$\text{PV} = \$2,000 \times 0.79383 = \mathbf{\$1,587.66}$$
+            </div>
+          </div>
+        </div>
+
+        <!-- 單筆未知數逆向求解：求期數 n 與求利率 i -->
+        <h3>🎯 逆向反推神技：求解未知期數 $n$ 與未知利率 $i$</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>求未知期數 $n$</span>
+              <span class="en-term">Somonauk 退伍軍人紀念碑 (Ill. 4.11)</span>
+            </div>
+            <p>鎮公所想累積到 <strong>$70,000</strong>，年初存入 <strong>$47,811</strong>，年息 10% 複利。需要存幾年？</p>
+            <p>
+              $$\text{FVF}_{n, 10\%} = \frac{\$70,000}{\$47,811} = 1.46410$$
+              查 Table 4.1，沿著 10% 欄位往下找：<br>
+              在 <strong>$n = 4$ 行</strong> 正好出現 $1.46410$！<br>
+              👉 <strong>答案：需要 4 年！</strong>
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>求未知利率 $i$</span>
+              <span class="en-term">Advanced Design, SA 基礎研究金 (Ill. 4.13)</span>
+            </div>
+            <p>5 年後需要 <strong>€1,070,584</strong>，目前手上已有 <strong>€800,000</strong>。投資年報酬率必須達到多少？</p>
+            <p>
+              $$\text{FVF}_{5, i} = \frac{€1,070,584}{€800,000} = 1.33823$$
+              查 Table 4.1，水平檢視 <strong>$n=5$ 橫列</strong>：<br>
+              在 <strong>6% 欄位</strong> 正好出現 $1.33823$！<br>
+              👉 <strong>答案：必要年報酬率為 6%！</strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- 互動元件 1：單筆現值與終值時空穿梭機 -->
+        <div class="interactive-widget" id="widget-single-sum">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span>🧮 互動實驗室 1</span> 單筆複利現值與終值時空轉換模擬器
+            </div>
+            <span class="widget-badge">Interactive Single Sum</span>
+          </div>
+          <p style="font-size:0.95rem; color:var(--muted); margin-bottom:1.2rem;">
+            輸入本金、年利率、年數與複利頻率，體驗時間是如何將小本金滾成龐然大物，或將未來巨款折回當前現值！
+          </p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
+            <div class="form-group">
+              <label>本金或目標金額 ($)</label>
+              <input type="number" id="ss-amount" class="form-control" value="10000" step="100">
+            </div>
+            <div class="form-group">
+              <label>名目年利率 (%)</label>
+              <input type="number" id="ss-rate" class="form-control" value="8" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>年數 (Years)</label>
+              <input type="number" id="ss-years" class="form-control" value="5" step="1" min="1">
+            </div>
+            <div class="form-group">
+              <label>每年複利次數</label>
+              <select id="ss-freq" class="form-control">
+                <option value="1">每年複利 1 次 (Annual)</option>
+                <option value="2">每半年複利 2 次 (Semiannual)</option>
+                <option value="4">每季複利 4 次 (Quarterly)</option>
+                <option value="12">每月複利 12 次 (Monthly)</option>
+                <option value="365">每日複利 365 次 (Daily)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-calc" onclick="calcSingleSum()">
+            <span>⚡ 立即計算單筆終值 (FV) 與現值 (PV)</span>
+          </button>
+          <div id="ss-result" class="calc-result-box" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- LO 3：年金終值 (Future Value of Annuities) -->
+      <section id="lo-3">
+        <h2>LO 3：年金終值——普通年金 (Ordinary Annuity) 與 到期年金 (Annuity Due)</h2>
+        <p>
+          當款項不再是一次性進出，而是連續多期規律發生時，就進入了<strong>年金（Annuities）</strong>的領域！
+        </p>
+        <div class="rule-card">
+          <div class="rule-header">
+            <span>📌</span> 年金的三大必要特徵 (Three Requirements of Annuity)
+          </div>
+          <ol>
+            <li><strong>每期等額付款或收款（Periodic rents of the same amount）：</strong>每期金額必須完全相同。</li>
+            <li><strong>等長的時間間隔（Same-length interval between rents）：</strong>如固定每月、每半年或每年。</li>
+            <li><strong>每期間隔複利一次（Compounding once each interval）：</strong>計息頻率與付款間隔一致。</li>
+          </ol>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>普通年金 (Ordinary Annuity)</span>
+              <span class="en-term">期末付款 / 後付年金</span>
+            </div>
+            <p><strong>特徵：</strong>每期的款項發生在<strong>「期末（End of period）」</strong>。</p>
+            <p><strong>關鍵魔導細節：</strong>第一筆存入的款項在第一期內<strong>完全不計息</strong>！最後一筆存入的款項存進去的瞬間就到期了，同樣不計息。</p>
+            <p>$$\text{FV-OA} = R \times \text{FVF-OA}_{n,i} = R \times \frac{(1 + i)^n - 1}{i}$$</p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>實例 (連續 5 年期末存入 $5,000，年息 6%)：</strong><br>
+              查 Table 4.3 ($n=5, i=6\%$) 得係數 $5.63709$：<br>
+              $$\text{FV-OA} = \$5,000 \times 5.63709 = \mathbf{\$28,185.45}$$
+              <hr style="border:none; border-top:1px dashed #cbd5e1; margin:0.5rem 0;">
+              <strong>Hightown Electronics 償債基金：</strong><br>
+              每半年期末存入 $75,000，存 3 年，年息 10% 半年複利。<br>
+              $n = 6 \text{ 期}, i = 5\%$。查表得係數 $6.80191$：<br>
+              $$\text{FV-OA} = \$75,000 \times 6.80191 = \mathbf{\$510,143.25}$$
+            </div>
+          </div>
+
+          <div class="card" style="border:2px solid var(--accent); background:#f0fdfa;">
+            <div class="card-title">
+              <span>到期年金 (Annuity Due)</span>
+              <span class="en-term">期初付款 / 先付年金</span>
+            </div>
+            <p><strong>特徵：</strong>每期的款項發生在<strong>「期初（Beginning of period）」</strong>。</p>
+            <p><strong>關鍵魔導細節：</strong>第一筆存入的款項<strong>立即開始計息</strong>！相較於普通年金，每筆款項都<strong>多賺了一整期的利息</strong>！</p>
+            <p style="background:#ffffff; padding:0.5rem; border-radius:6px; font-weight:700;">
+              轉換黃金公式：<br>
+              $$\text{FV-AD} = \text{FV-OA} \times (1 + i)$$
+            </p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>實例 1 (Erin 媽媽為兒子存大學基金，Ill. 4.20)：</strong><br>
+              10 歲～17 歲生日<strong>期初</strong>各存 £800（共 8 次），年息 6%：<br>
+              1. 普通年金係數 ($n=8, 6\%$) = $9.89747$<br>
+              2. 乘以 $(1 + 0.06)$ 得到到期年金係數 = <strong>10.49132</strong><br>
+              3. 18 歲成年累積金額：$$£800 \times 10.49132 = \mathbf{£8,393.06}$$
+              <hr style="border:none; border-top:1px dashed #cbd5e1; margin:0.5rem 0;">
+              <strong>實例 2 (技工 Goodwrench 退休儲蓄，Ill. 4.22)：</strong><br>
+              今天起每年初存 $2,500，連續 30 年，年息 9%：<br>
+              係數 = $136.30754 \times 1.09 = 148.57522$<br>
+              $$\text{FV-AD} = \$2,500 \times 148.57522 = \mathbf{\$371,438}$$
+            </div>
+          </div>
+        </div>
+
+        <!-- 年金未知數求解：求每期存入金額 R 與求存款期數 n -->
+        <h3>🎯 年金終值未知數實戰逆推</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>求每期應存金額 $R$</span>
+              <span class="en-term">買房頭期款計畫 (Ill. 4.24)</span>
+            </div>
+            <p>5 年後想湊足公寓頭期款 <strong>CHF 14,000</strong>，年報酬率 8% 半年複利。每半年期末該存多少？</p>
+            <p>
+              $n = 5 \times 2 = 10 \text{ 期}, \quad i = 4\%$。<br>
+              查 Table 4.3 得 $\text{FVF-OA}_{10, 4\%} = 12.00611$。<br>
+              $$\text{CHF } 14,000 = R \times 12.00611 \implies R = \frac{14,000}{12.00611} = \mathbf{\text{CHF } 1,166.07}$$
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>求應存期數 $n$</span>
+              <span class="en-term">累積 $117,332 償債基金</span>
+            </div>
+            <p>每年期末存入 <strong>$20,000</strong>，年複利 8%，需存幾次才能累積到 <strong>$117,332</strong>？</p>
+            <p>
+              $$\text{FVF-OA}_{n, 8\%} = \frac{\$117,332}{\$20,000} = 5.86660$$
+              查 Table 4.3，順著 8% 欄位往下找：<br>
+              在 <strong>$n=5$ 橫列</strong> 正好為 $5.86660$！<br>
+              👉 <strong>答案：必須連續存入 5 次！</strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- 互動元件 2：普通年金 vs 到期年金 財富對比機 -->
+        <div class="interactive-widget" id="widget-annuity-fv">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span>⚖️ 互動實驗室 2</span> 普通年金 (期末) vs 到期年金 (期初) 累積終值天平
+            </div>
+            <span class="widget-badge">Annuity Comparison</span>
+          </div>
+          <p style="font-size:0.95rem; color:var(--muted); margin-bottom:1.2rem;">
+            「期初存」與「期末存」到底差多少？輸入每期存款金額與利率，親眼看見「多滾一期利息」帶來的複利神蹟！
+          </p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+            <div class="form-group">
+              <label>每期存款金額 $R$ ($)</label>
+              <input type="number" id="ann-r" class="form-control" value="5000" step="500">
+            </div>
+            <div class="form-group">
+              <label>每期計息利率 $i$ (%)</label>
+              <input type="number" id="ann-i" class="form-control" value="6" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>總存款期數 $n$</label>
+              <input type="number" id="ann-n" class="form-control" value="5" step="1" min="1">
+            </div>
+          </div>
+          <button class="btn-calc" onclick="calcAnnuityFV()">
+            <span>⚡ 立即比較普通年金與到期年金終值</span>
+          </button>
+          <div id="ann-result" class="calc-result-box" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- LO 4：年金現值 (Present Value of Annuities) -->
+      <section id="lo-4">
+        <h2>LO 4：年金現值——普通年金、到期年金與彩券大獎的實質真相</h2>
+        <p>
+          在企業借貸、分期付款採購、租賃資產認列與樂透獎金折現中，我們最關心的是：<strong>「未來這串源源不絕的現金流，折合現在一口氣拿走值多少錢？」</strong>
+        </p>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>普通年金現值 (PV-OA)</span>
+              <span class="en-term">期末折現 / 後付年金現值</span>
+            </div>
+            <p><strong>定義：</strong>一系列在每期「期末」發生的等額款項折回當前時點的總和。</p>
+            <p>$$\text{PV-OA} = R \times \text{PVF-OA}_{n,i} = R \times \left[ \frac{1 - \frac{1}{(1+i)^n}}{i} \right]$$</p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>實例 1 (未來 5 年期末收租 $6,000，折現率 6%)：</strong><br>
+              查 Table 4.4 ($n=5, i=6\%$) 得係數 $4.21236$：<br>
+              $$\text{PV-OA} = \$6,000 \times 4.21236 = \mathbf{\$25,274.16}$$
+              <hr style="border:none; border-top:1px dashed #cbd5e1; margin:0.5rem 0;">
+              <strong>實例 2 (幸運路易的 400 萬美元樂透頭獎真相！Ill. 4.29)：</strong><br>
+              州政府宣傳路易中了 400 萬美元大獎，但分 20 年每年期末支付 $200,000。若市場利率為 10%：<br>
+              查 Table 4.4 ($n=20, i=10\%$) 得係數 $8.51356$：<br>
+              $$\text{PV-OA} = \$200,000 \times 8.51356 = \mathbf{\$1,702,712}$$
+              💡 <strong>震撼真相：</strong>州政府現在只要在信託專戶存入 <strong>$1,702,712</strong>，靠著 10% 複利就足夠每年提領 20 萬發放給路易！所謂 400 萬大獎，今天的現值其實不到 171 萬！
+            </div>
+          </div>
+
+          <div class="card" style="border:2px solid var(--accent); background:#f0fdfa;">
+            <div class="card-title">
+              <span>到期年金現值 (PV-AD)</span>
+              <span class="en-term">期初折現 / 先付年金現值</span>
+            </div>
+            <p><strong>定義：</strong>每期款項在「期初」發生。第一筆款項在今天立即收到，<strong>完全不需要折現（折現係數為 1.0）</strong>！後續每筆款項少折現一期。</p>
+            <p style="background:#ffffff; padding:0.5rem; border-radius:6px; font-weight:700;">
+              轉換黃金公式：<br>
+              $$\text{PV-AD} = \text{PV-OA} \times (1 + i)$$
+            </p>
+            <div style="background:var(--wash); padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>實例 (太空奧德賽公司衛星租賃，Ill. 4.30)：</strong><br>
+              租賃通訊衛星 4 年，每年「年初」支付租金 $4.8 百萬美元，折現率 5%：<br>
+              1. 查 Table 4.4 ($n=4, 5\%$) 普通年金係數 = $3.54595$<br>
+              2. 乘以 $(1 + 0.05)$ 得到到期年金係數 = <strong>3.72325</strong>（或查 Table 4.5）<br>
+              3. 租賃負債現值：$$\$4,800,000 \times 3.72325 = \mathbf{\$17,871,600}$$
+            </div>
+          </div>
+        </div>
+
+        <!-- 信用卡循環利息與大學提款年金逆推 -->
+        <h3>🎯 年金現值實務逆向求解</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">
+              <span>求信用卡隱藏實質利率 $i$</span>
+              <span class="en-term">Visa 帳單 £528.77 分期 (Ill. 4.32)</span>
+            </div>
+            <p>卡債 <strong>£528.77</strong>，分 12 期每月還款 <strong>£50</strong>。銀行實際收你多少利率？</p>
+            <p>
+              $$\text{PVF-OA}_{12, i} = \frac{£528.77}{£50} = 10.57540$$
+              查 Table 4.4，在 12 期橫列找到 $10.57534$，對應欄位為 <strong>2%</strong>！<br>
+              • 每月月利率 = <strong>2%</strong><br>
+              • 名目年利率 (Nominal APR) = $2\% \times 12 = \mathbf{24\%}$<br>
+              • 實質有效年利率 (EAR) = $(1 + 0.02)^{12} - 1 = \mathbf{26.82\%}$！<br>
+              👉 <strong>掌櫃忠告：利率高得嚇人，千萬不要輕易啟動信用卡分期！</strong>
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>求每期固定提領金額 $R$</span>
+              <span class="en-term">Maria Perez 大學生活費 (Ill. 4.33)</span>
+            </div>
+            <p>父母在銀行存入 <strong>$36,000</strong>，年息 4% <strong>半年複利</strong>。女兒就讀大學 4 年（共 8 次），每半年底最多可提領多少？</p>
+            <p>
+              $n = 4 \times 2 = 8 \text{ 期}, \quad i = 4\% \div 2 = 2\%$。<br>
+              查 Table 4.4 得 $\text{PVF-OA}_{8, 2\%} = 7.32548$。<br>
+              $$\$36,000 = R \times 7.32548 \implies R = \frac{\$36,000}{7.32548} = \mathbf{\$4,914.35}$$
+              （若直接除以 8 只有 $4,500，考慮利息滾存每期可多拿 $414.35！）
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- LO 5：進階專題——遞延年金、公司債與 IFRS 13 期望現金流量法 -->
+      <section id="lo-5">
+        <h2>LO 5：進階魔導專題——遞延年金、公司債定價與 IFRS 13 期望現金流量法</h2>
+
+        <!-- 專題一：遞延年金 -->
+        <h3>1. 遞延年金 (Deferred Annuities)：跨越空窗期的雙解法</h3>
+        <p>
+          <strong>遞延年金</strong>是指現金流量並非立即開始，而是在經過特定<strong>遞延期間（Deferral Period）</strong>之後才開始規律收付。
+        </p>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Bob Boyd 高級會計教材版權轉讓 (Illustration 4.35)</span>
+            <span class="en-term">6 期每期 $5,000，遞延 4 期，折現率 8%</span>
+          </div>
+          <p>版權買方答應在 <strong>第 5 年底至第 10 年底</strong>，每年底支付 $5,000（共 6 筆）。求這 6 筆付款在今天的現值？</p>
+          
+          <div class="grid-2">
+            <div style="background:#ffffff; border:1px solid #cbd5e1; padding:1rem; border-radius:8px;">
+              <strong style="color:var(--accent-dark);">🔹 解法一：查一張表扣減法 (One Table Approach)</strong>
+              <p style="font-size:0.92rem;">把整個過程看作 10 期的虛擬年金，扣除前 4 期「根本沒付款」的空窗期年金：</p>
+              <ol style="font-size:0.9rem;">
+                <li>總期數 10 期的普通年金現值係數 ($8\%$)：<strong>6.71008</strong></li>
+                <li>減：前 4 期空窗期年金現值係數 ($8\%$)：<strong>3.31213</strong></li>
+                <li>有效淨係數差額：$$6.71008 - 3.31213 = 3.39795$$</li>
+                <li>今天現值：$$\$5,000 \times 3.39795 = \mathbf{\$16,989.75}$$</li>
+              </ol>
+            </div>
+
+            <div style="background:#ffffff; border:1px solid #cbd5e1; padding:1rem; border-radius:8px;">
+              <strong style="color:var(--accent-dark);">🔹 解法二：查兩張表兩階段折現 (Two Tables Approach)</strong>
+              <p style="font-size:0.92rem;">分兩步驟：先折現成年金起點的單筆金額，再折現回第 0 點：</p>
+              <ol style="font-size:0.9rem;">
+                <li><strong>第一步：</strong>將 6 筆年金折現到第 4 期末：<br>
+                  $$\text{PV}_4 = \$5,000 \times \text{PVF-OA}_{6, 8\%} = \$5,000 \times 4.62288 = \$23,114.40$$</li>
+                <li><strong>第二步：</strong>將第 4 期末的單筆金額折現回第 0 期：<br>
+                  $$\text{PV}_0 = \$23,114.40 \times \text{PVF}_{4, 8\%} = \$23,114.40 \times 0.73503 = \mathbf{\$16,989.78}$$</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- 專題二：長期公司債評價與有效利息法攤銷 -->
+        <h3>2. 長期公司債評價 (Bond Valuation) 與 有效利息法 (Effective-Interest Method)</h3>
+        <p>
+          公司債的發行價格，是以下<strong>兩大現金流量在發行日的折現值總和</strong>：
+        </p>
+        <div class="grid-2">
+          <div class="card" style="text-align:center;">
+            <strong style="font-size:1.1rem; color:var(--accent);">① 到期本金的面額 (Principal)</strong><br>
+            單筆款項現值（Single Sum）<br>
+            $$\text{PV} = \text{Face Value} \times \text{PVF}_{n, i_{\text{market}}}$$
+          </div>
+          <div class="card" style="text-align:center;">
+            <strong style="font-size:1.1rem; color:var(--accent);">② 每期支付的票面利息 (Interest)</strong><br>
+            普通年金現值（Ordinary Annuity）<br>
+            $$\text{PV} = (\text{Face Value} \times \text{Stated Rate}) \times \text{PVF-OA}_{n, i_{\text{market}}}$$
+          </div>
+        </div>
+
+        <!-- Alltech 公司債折價發行與攤銷表詳解 -->
+        <div class="card" style="border:2px solid var(--accent); margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Alltech Corporation 5 年期公司債折價發行全解析 (Ill. 4.39 ～ 4.41)</span>
+            <span class="en-term">面額 $100,000, 票面利率 5%, 市場利率 6%</span>
+          </div>
+          <p>
+            票面利率 $5\%$ 低於市場要求的報酬率 $6\%$，投資人只願意出較低的價格購買，形成<strong>折價發行（Discount on Bonds Issued）</strong>：
+          </p>
+          <div style="background:#ffffff; padding:1rem; border-radius:8px; border:1px solid #cbd5e1; font-size:0.95rem;">
+            1. 本金現值：$$\$100,000 \times \text{PVF}_{5, 6\%} = \$100,000 \times 0.74726 = \$74,726.00$$
+            2. 每期利息現值 ($R = \$100,000 \times 5\% = \$5,000$)：$$\$5,000 \times \text{PVF-OA}_{5, 6\%} = \$5,000 \times 4.21236 = \$21,061.80$$
+            3. <strong>發行所得現金 (發行日帳面價值)：</strong>$$\$74,726.00 + \$21,061.80 = \mathbf{\$95,787.80}$$
+            4. <strong>公司債折價總額：</strong>$$\$100,000.00 - \$95,787.80 = \mathbf{\$4,212.20}$$
+          </div>
+
+          <h4 style="color:var(--accent-dark); margin:1.2rem 0 0.5rem;">📊 有效利息法攤銷表 (Schedule of Bond Discount Amortization)</h4>
+          <p style="font-size:0.9rem; color:var(--muted);">
+            • <strong>利息費用 (Interest Expense)</strong> = 期初帳面價值 $\times$ 市場有效利率 ($6\%$)；<br>
+            • <strong>折價攤銷額 (Amortization)</strong> = 利息費用 $-$ 實付現金利息 ($$5,000$)；<br>
+            • <strong>期末帳面價值 (Carrying Value)</strong> = 期初帳面價值 $+$ 折價攤銷額。
+          </p>
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>實付現金利息 (5%)</th>
+                <th>利息費用 (期初帳面 × 6%)</th>
+                <th>折價攤銷額</th>
+                <th>期末帳面價值</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026/01/01</td><td>—</td><td>—</td><td>—</td><td><strong>$95,787.80</strong></td>
+              </tr>
+              <tr>
+                <td>2026/12/31</td><td>$5,000.00</td><td>$5,747.27</td><td>$747.27</td><td>$96,535.07</td>
+              </tr>
+              <tr>
+                <td>2027/12/31</td><td>$5,000.00</td><td>$5,792.10</td><td>$792.10</td><td>$97,327.17</td>
+              </tr>
+              <tr>
+                <td>2028/12/31</td><td>$5,000.00</td><td>$5,839.63</td><td>$839.63</td><td>$98,166.80</td>
+              </tr>
+              <tr>
+                <td>2029/12/31</td><td>$5,000.00</td><td>$5,890.01</td><td>$890.01</td><td>$99,056.81</td>
+              </tr>
+              <tr>
+                <td>2030/12/31</td><td>$5,000.00</td><td>$5,943.19</td><td>$943.19</td><td><strong>$100,000.00</strong></td>
+              </tr>
+              <tr style="font-weight:700; background:#f0fdfa;">
+                <td>合計</td><td>$25,000.00</td><td>$29,212.20</td><td>$4,212.20</td><td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 專題三：IFRS 13 公允價值與期望現金流量法 -->
+        <h3>3. IFRS 13 公允價值衡量：期望現金流量法 (Expected Cash Flow Approach)</h3>
+        <p>
+          當負債或資產缺乏活絡市場報價時（例如產品保固負債、拆卸復原義務），IFRS 13 規定採用<strong>期望現金流量法</strong>，根據機率加權評估所有可能的現金流，並以<strong>無風險利率（Risk-free Rate of Return）</strong>進行折現。
+        </p>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-title">
+            <span>Juno's Appliance Outlet 乾衣機二年保固合約負債 (Ill. 4.42 ～ 4.43)</span>
+            <span class="en-term">無風險利率 5%，機率加權折現</span>
+          </div>
+          <p>
+            Juno 公司銷售烘衣機並承擔二年保固服務，依過去經驗評估現金流出機率如下：
+          </p>
+          <div class="grid-2">
+            <div style="background:#ffffff; border:1px solid #cbd5e1; padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>2026 年預期現金流出：</strong><br>
+              • $3,800 × 20% = $760<br>
+              • $6,300 × 50% = $3,150<br>
+              • $7,500 × 30% = $2,250<br>
+              <strong>2026 期望流出總計 = <span style="color:var(--accent); font-weight:700;">$6,160</span></strong>
+            </div>
+            <div style="background:#ffffff; border:1px solid #cbd5e1; padding:0.8rem; border-radius:6px; font-size:0.92rem;">
+              <strong>2027 年預期現金流出：</strong><br>
+              • $5,400 × 30% = $1,620<br>
+              • $7,200 × 50% = $3,600<br>
+              • $8,400 × 20% = $1,680<br>
+              <strong>2027 期望流出總計 = <span style="color:var(--accent); font-weight:700;">$6,900</span></strong>
+            </div>
+          </div>
+          <p style="margin-top:1rem; font-size:0.95rem;">
+            以 5% 無風險利率折現至 2026 年底：<br>
+            • 2026 年現金流量現值：$$\$6,160 \times 0.95238 = \$5,866.66$$<br>
+            • 2027 年現金流量現值：$$\$6,900 \times 0.90703 = \$6,258.51$$<br>
+            • <strong>保固負債總公允價值：</strong>$$\$5,866.66 + \$6,258.51 = \mathbf{\$12,125.17}$$
+          </p>
+        </div>
+
+        <!-- 互動元件 3：公司債發行價格與攤銷表即時生成器 -->
+        <div class="interactive-widget" id="widget-bond">
+          <div class="widget-header">
+            <div class="widget-title">
+              <span>🏛️ 互動實驗室 3</span> 公司債折溢價發行定價與有效利息法即時生成器
+            </div>
+            <span class="widget-badge">Bond Engine</span>
+          </div>
+          <p style="font-size:0.95rem; color:var(--muted); margin-bottom:1.2rem;">
+            動手調整票面利率與市場利率，親身體驗折價（Discount）、溢價（Premium）與平價（Par）的形成機制！
+          </p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:1rem;">
+            <div class="form-group">
+              <label>公司債面額 ($)</label>
+              <input type="number" id="bd-face" class="form-control" value="100000" step="10000">
+            </div>
+            <div class="form-group">
+              <label>票面年利率 (%)</label>
+              <input type="number" id="bd-stated" class="form-control" value="5" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>市場有效利率 (%)</label>
+              <input type="number" id="bd-market" class="form-control" value="6" step="0.5">
+            </div>
+            <div class="form-group">
+              <label>發行年數 (Years)</label>
+              <input type="number" id="bd-years" class="form-control" value="5" step="1" min="1" max="10">
+            </div>
+          </div>
+          <button class="btn-calc" onclick="calcBondAmortization()">
+            <span>⚡ 立即計算發行價格並生成攤銷表</span>
+          </button>
+          <div id="bd-result" class="calc-result-box" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- 課後精選自我檢測 -->
+      <section id="review-quiz">
+        <h2>課後精選自我檢測與魔導試煉 (Review Quizzes)</h2>
+        
+        <div class="problem-box">
+          <div class="problem-head">
+            <span class="problem-tag">試煉題 1</span>
+            <span>普通年金 (Ordinary Annuity) 與 到期年金 (Annuity Due) 的關鍵差異何在？</span>
+          </div>
+          <p>若兩者的期數 $n$、每期金額 $R$ 與利率 $i$ 完全相同，哪一個年金的終值與現值較大？為什麼？</p>
+          <button class="solution-toggle" onclick="toggleSolution('sol-q1')">💡 展開掌櫃解析</button>
+          <div id="sol-q1" class="solution-body">
+            <p><strong>【核心解答】</strong></p>
+            <ul>
+              <li><strong>普通年金：</strong>款項發生在<strong>每期期末</strong>。</li>
+              <li><strong>到期年金：</strong>款項發生在<strong>每期期初</strong>。</li>
+            </ul>
+            <p>
+              在條件完全相同下，<strong>到期年金的終值與現值永遠比普通年金大</strong>！<br>
+              因為到期年金的每一筆現金流量都比普通年金<strong>提早一整期發生</strong>，因而都<strong>多滾了一期的複利利息</strong>：
+              $$\text{FV-AD} = \text{FV-OA} \times (1 + i), \quad \text{PV-AD} = \text{PV-OA} \times (1 + i)$$
+            </p>
+          </div>
+        </div>
+
+        <div class="problem-box">
+          <div class="problem-head">
+            <span class="problem-tag">試煉題 2</span>
+            <span>在公司債會計中，為什麼折價發行時，各期的「利息費用」會高於「實付現金利息」？</span>
+          </div>
+          <p>這兩者的差額在有效利息法下如何處理？</p>
+          <button class="solution-toggle" onclick="toggleSolution('sol-q2')">💡 展開掌櫃解析</button>
+          <div id="sol-q2" class="solution-body">
+            <p><strong>【核心解答】</strong></p>
+            <p>
+              公司債折價發行，是因為票面利率低於市場利率，發行公司在發行日少收了現金（發行所得小於面額）。對發行公司而言，這筆少收的「折價」本質上也是一種<strong>融資成本（借款代價）</strong>。
+            </p>
+            <p>
+              在有效利息法下：
+              $$\text{利息費用} = \text{期初帳面價值} \times \text{市場有效利率}$$
+              $$\text{實付利息} = \text{面額} \times \text{票面利率}$$
+              利息費用大於實付利息的差額，就是<strong>「公司債折價攤銷額」</strong>。每期將折價攤銷加入帳面價值，使得帳面價值逐期上升，直至到期日精準回到面額 $100,000。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 總結與記憶膠囊 -->
+      <section id="summary">
+        <div class="story-card" style="border-left-color: var(--gold); background: linear-gradient(145deg, #ffffff 0%, var(--gold-light) 100%);">
+          <div class="story-header" style="color: #92400e;">
+            <span>💎</span> 冒險者公會大掌櫃的「Chapter 4 核心記憶膠囊」
+          </div>
+          <ol>
+            <li><strong>時間價值的本質：</strong>今天的錢比未來的錢值錢。單利僅本金生息，複利利滾利。頻率換算謹記：名目利率除以頻率，期數乘以頻率！</li>
+            <li><strong>五大係數神器：</strong>
+              • 單筆終值 $(1+i)^n$ ｜ 單筆現值 $(1+i)^{-n}$<br>
+              • 普通年金終值 $\frac{(1+i)^n - 1}{i}$ ｜ 普通年金現值 $\frac{1 - (1+i)^{-n}}{i}$<br>
+              • 到期年金（先付）永遠是普通年金（後付）乘以 $(1+i)$！
+            </li>
+            <li><strong>遞延年金雙刀流：</strong>一張表扣減法（總期數現值減去未付款空窗期現值）；兩張表兩階段法（先折到第 $m$ 期末，再單筆折回第 0 期）。</li>
+            <li><strong>公司債定價心法：</strong>面額單筆折現 $+$ 票面年金折現。票面利率高於市場利率為溢價，低於為折價。有效利息法下：帳面乘有效利率為利息費用，與實付利息之差額攤銷。</li>
+            <li><strong>IFRS 13 期望現金流量法：</strong>無活絡市場時，將所有可能情境以機率加權求出期望值，並以「無風險利率」折現衡量公允價值。</li>
+          </ol>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 側邊目錄導航 -->
+    <aside class="toc-sidebar">
+      <div class="toc-title">
+        <span>📖</span> 本章探險章節目錄
+      </div>
+      <ul class="toc-list">
+        <li><a href="#prologue">0. 大掌櫃開篇引言</a></li>
+        <li><a href="#lo-1">LO 1：時間價值與利息本質</a></li>
+        <li><a href="#lo-2">LO 2：單筆終值、現值與逆推</a></li>
+        <li><a href="#widget-single-sum">└ 🧮 單筆時空轉換器</a></li>
+        <li><a href="#lo-3">LO 3：年金終值 (普通 vs 到期)</a></li>
+        <li><a href="#widget-annuity-fv">└ ⚖️ 年金終值天平</a></li>
+        <li><a href="#lo-4">LO 4：年金現值與彩券真相</a></li>
+        <li><a href="#lo-5">LO 5：進階魔導專題</a></li>
+        <li><a href="#widget-bond">└ 🏛️ 公司債有效利息法生成器</a></li>
+        <li><a href="#review-quiz">自我檢測與試煉題</a></li>
+        <li><a href="#summary">本章記憶膠囊</a></li>
+      </ul>
+    </aside>
+
+  </div>
+
+  <!-- 頁尾 -->
+  <footer>
+    <div style="max-width: 800px; margin: 0 auto;">
+      <p>🌲 <strong>WikiTree Living Knowledge Ecosystem</strong> · 中級會計學 IFRS 智慧分枝</p>
+      <p>教學對象：15 歲有志成為商業冒險傳奇的少年掌櫃 ｜ 標準 MathJax 3 雙保險渲染架構</p>
+      <p style="font-size: 0.8rem; color: #94a3b8;">
+        © 2026 Intermediate Accounting (IFRS 5e) Handout Collection. All rights reserved.
+      </p>
+    </div>
+  </footer>
+
+  <!-- 交互腳本邏輯 -->
+  <script>
+    function toggleSolution(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.style.display === "block") {
+        el.style.display = "none";
+      } else {
+        el.style.display = "block";
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          window.MathJax.typesetPromise([el]);
+        }
+      }
+    }
+
+    // 互動 1：單筆計算
+    function calcSingleSum() {
+      const amt = parseFloat(document.getElementById('ss-amount').value) || 0;
+      const rate = (parseFloat(document.getElementById('ss-rate').value) || 0) / 100;
+      const years = parseFloat(document.getElementById('ss-years').value) || 0;
+      const freq = parseInt(document.getElementById('ss-freq').value) || 1;
+
+      const n = years * freq;
+      const i = rate / freq;
+
+      const fv = amt * Math.pow(1 + i, n);
+      const pv = amt / Math.pow(1 + i, n);
+      const effRate = (Math.pow(1 + i, freq) - 1) * 100;
+
+      const box = document.getElementById('ss-result');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <h4 style="margin:0 0 0.8rem; color:var(--accent-dark);">📊 單筆計算分析報告：</h4>
+        <p>• 總計息期數 $n$: <strong>${n} 期</strong> ｜ 每期計息利率 $i$: <strong>${(i * 100).toFixed(4)}%</strong></p>
+        <p>• 實質有效年利率 (Effective Yield): <strong>${effRate.toFixed(4)}%</strong></p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+          <div style="background:#ffffff; padding:0.8rem; border-radius:6px; border:1px solid #cbd5e1;">
+            <strong style="color:var(--accent);">📈 若以 $${amt.toLocaleString()} 為現值：</strong><br>
+            經過 ${years} 年後將增值為終值 (FV)：<br>
+            <span style="font-size:1.25rem; font-weight:800; color:var(--accent-dark);">$${fv.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+          </div>
+          <div style="background:#ffffff; padding:0.8rem; border-radius:6px; border:1px solid #cbd5e1;">
+            <strong style="color:var(--gold);">📉 若以 $${amt.toLocaleString()} 為未來目標：</strong><br>
+            今天只需存入現值 (PV)：<br>
+            <span style="font-size:1.25rem; font-weight:800; color:#b45309;">$${pv.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // 互動 2：年金終值比較
+    function calcAnnuityFV() {
+      const r = parseFloat(document.getElementById('ann-r').value) || 0;
+      const rate = (parseFloat(document.getElementById('ann-i').value) || 0) / 100;
+      const n = parseInt(document.getElementById('ann-n').value) || 0;
+
+      if (rate === 0 || n === 0) return;
+
+      const fv_oa = r * ((Math.pow(1 + rate, n) - 1) / rate);
+      const fv_ad = fv_oa * (1 + rate);
+      const diff = fv_ad - fv_oa;
+
+      const box = document.getElementById('ann-result');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <h4 style="margin:0 0 0.8rem; color:var(--accent-dark);">⚖️ 普通年金 vs 到期年金 終值對比結果：</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div style="background:#ffffff; padding:0.8rem; border-radius:6px; border:1px solid #cbd5e1;">
+            <strong style="color:#0369a1;">📅 普通年金終值 (期末存)：</strong><br>
+            每期底存 $${r.toLocaleString()}，共 ${n} 期：<br>
+            <span style="font-size:1.25rem; font-weight:800; color:var(--ink);">$${fv_oa.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+          </div>
+          <div style="background:#ffffff; padding:0.8rem; border-radius:6px; border:1px solid #99f6e4;">
+            <strong style="color:var(--accent);">🌅 到期年金終值 (期初存)：</strong><br>
+            每期初存 $${r.toLocaleString()}，共 ${n} 期：<br>
+            <span style="font-size:1.25rem; font-weight:800; color:var(--accent-dark);">$${fv_ad.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+          </div>
+        </div>
+        <p style="margin:1rem 0 0; font-weight:700; color:var(--success);">
+          💡 到期年金因每筆存款提早一期存入生息，總共多賺了 <strong>$${diff.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong> 元的利息差額（增幅 ${(rate * 100).toFixed(1)}%）！
+        </p>
+      `;
+    }
+
+    // 互動 3：公司債發行與攤銷表
+    function calcBondAmortization() {
+      const face = parseFloat(document.getElementById('bd-face').value) || 0;
+      const stated = (parseFloat(document.getElementById('bd-stated').value) || 0) / 100;
+      const market = (parseFloat(document.getElementById('bd-market').value) || 0) / 100;
+      const years = parseInt(document.getElementById('bd-years').value) || 0;
+
+      if (market === 0 || years === 0) return;
+
+      const pmt = face * stated;
+      const pv_principal = face / Math.pow(1 + market, years);
+      const pv_interest = pmt * ((1 - Math.pow(1 + market, -years)) / market);
+      const price = pv_principal + pv_interest;
+      const diff = price - face;
+
+      let type = "平價發行 (Par)";
+      if (diff > 0.01) type = `溢價發行 (Premium)，溢價額：$${diff.toFixed(2)}`;
+      else if (diff < -0.01) type = `折價發行 (Discount)，折價額：$${Math.abs(diff).toFixed(2)}`;
+
+      let scheduleHtml = `
+        <table class="compare-table" style="margin-top:1rem; font-size:0.88rem;">
+          <thead>
+            <tr>
+              <th>年度</th>
+              <th>實付現金利息</th>
+              <th>利息費用 (期初帳面 × ${(market*100).toFixed(1)}%)</th>
+              <th>折溢價攤銷額</th>
+              <th>期末帳面價值</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>發行日</td><td>—</td><td>—</td><td>—</td><td><strong>$${price.toFixed(2)}</strong></td>
+            </tr>
+      `;
+
+      let currentBook = price;
+      let totalInterestExpense = 0;
+      let totalPaid = 0;
+      let totalAmort = 0;
+
+      for (let y = 1; y <= years; y++) {
+        const intExpense = currentBook * market;
+        const amort = intExpense - pmt; // 折價為正，溢價為負
+        currentBook += amort;
+
+        totalInterestExpense += intExpense;
+        totalPaid += pmt;
+        totalAmort += Math.abs(amort);
+
+        scheduleHtml += `
+          <tr>
+            <td>第 ${y} 年底</td>
+            <td>$${pmt.toFixed(2)}</td>
+            <td>$${intExpense.toFixed(2)}</td>
+            <td>$${Math.abs(amort).toFixed(2)}</td>
+            <td>$${y === years ? face.toFixed(2) : currentBook.toFixed(2)}</td>
+          </tr>
+        `;
+      }
+
+      scheduleHtml += `
+          <tr style="font-weight:700; background:#f0fdfa;">
+            <td>合計</td>
+            <td>$${totalPaid.toFixed(2)}</td>
+            <td>$${totalInterestExpense.toFixed(2)}</td>
+            <td>$${Math.abs(diff).toFixed(2)}</td>
+            <td>—</td>
+          </tr>
+        </tbody></table>
+      `;
+
+      const box = document.getElementById('bd-result');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <h4 style="margin:0 0 0.5rem; color:var(--accent-dark);">🏛️ 公司債定價分析：${type}</h4>
+        <p>• 本金折現值：$${pv_principal.toFixed(2)} ｜ 每期利息 ($${pmt.toFixed(2)}) 折現值：$${pv_interest.toFixed(2)}<br>
+           • <strong>發行所得總現金 (Initial Carrying Value)：$${price.toFixed(2)}</strong>
+        </p>
+        ${scheduleHtml}
+      `;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calcSingleSum();
+      calcAnnuityFV();
+      calcBondAmortization();
+    });
+  </script>
+</body>
+</html>
+'''
+
+# 目標儲存路徑
+target_paths = [
+    r"收件苗圃\學習講義合輯\Ch04_IFRS_學習講義.html",
+    r"C:\Users\閻星澄\Documents\WikiTree\收件苗圃\學習講義合集\Ch04_IFRS_學習講義.html",
+    r"C:\Users\閻星澄\Desktop\學習講義合集\Ch04_IFRS_學習講義.html"
+]
+
+def main():
+    print("=" * 60)
+    print("開始編譯與發布 Chapter 4 IFRS 會計與貨幣時間價值 學習講義...")
+    print("=" * 60)
+
+    for path in target_paths:
+        dir_name = os.path.dirname(path)
+        if dir_name and not os.path.exists(dir_name):
+            try:
+                os.makedirs(dir_name, exist_ok=True)
+                print(f"建立目錄: {dir_name}")
+            except Exception as e:
+                print(f"無法建立目錄 {dir_name}: {e}")
+
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            print(f"✅ 成功產出講義至: {path} (檔案大小: {len(html_content):,} 位元組)")
+        except Exception as e:
+            print(f"❌ 寫入失敗 {path}: {e}")
+
+    print("=" * 60)
+    print("Chapter 4 IFRS 講義生成與多點發布完成！")
+    print("=" * 60)
+
+if __name__ == "__main__":
+    main()
