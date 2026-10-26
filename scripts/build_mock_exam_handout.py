@@ -1,0 +1,1835 @@
+# -*- coding: utf-8 -*-
+"""
+Generate Mock Exam Handout HTML:
+Financial Management Midterm Mock Exam Deep-Dive & Review Handout
+40 MCQs + 2 Short Answer Multi-part Questions (Total 45 sub-questions)
+"""
+
+import os
+
+HTML_CONTENT = r'''<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>財務管理期中高壓 Mock Exam 完整深度解析講義 | 冒險公會真題秘寶</title>
+  
+  <!-- MathJax 3 雙保險渲染引擎 -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    // 離線優雅降級 Fallback 腳本 (若 2 秒內 CDN 未載入)
+    setTimeout(() => {
+      if (!window.MathJax || !window.MathJax.typeset) {
+        console.warn("MathJax CDN 加載逾時，啟動離線公式美化降級協議...");
+        document.querySelectorAll('.math-tex, .formula-box, p, li, td, span').forEach(el => {
+          let html = el.innerHTML;
+          html = html.replace(/\$([^\$]+)\$/g, '<span class="offline-math"><em>$1</em></span>');
+          html = html.replace(/\\times/g, ' × ')
+                     .replace(/\\approx/g, ' ≈ ')
+                     .replace(/\\le/g, ' ≤ ')
+                     .replace(/\\ge/g, ' ≥ ')
+                     .replace(/\\ne/g, ' ≠ ')
+                     .replace(/\\sqrt\{([^\}]+)\}/g, '√($1)')
+                     .replace(/\\frac\{([^\}]+)\}\{([^\}]+)\}/g, '($1 / $2)')
+                     .replace(/\\mathbf\{([^\}]+)\}/g, '<strong>$1</strong>')
+                     .replace(/\\text\{([^\}]+)\}/g, '$1');
+          el.innerHTML = html;
+        });
+      }
+    }, 2000);
+  </script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --secondary: #10b981;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --dark: #0f172a;
+      --gray-light: #f8fafc;
+      --gray-border: #e2e8f0;
+      --text: #334155;
+      --sidebar-width: 290px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      line-height: 1.75;
+      color: var(--text);
+      background: #f1f5f9;
+      display: flex;
+    }
+
+    /* 側邊欄 */
+    #sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 1.5rem 1rem;
+      overflow-y: auto;
+      flex-shrink: 0;
+      border-right: 1px solid #334155;
+    }
+    #sidebar h2 {
+      font-size: 1.15rem;
+      color: #60a5fa;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #sidebar p.sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.75rem;
+    }
+    #sidebar ul { list-style: none; }
+    #sidebar li { margin-bottom: 0.4rem; }
+    #sidebar a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.82rem;
+      display: block;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    #sidebar a:hover, #sidebar a.active {
+      background: rgba(37, 99, 235, 0.25);
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    #sidebar .badge {
+      background: #f59e0b;
+      color: #000;
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 10px;
+      float: right;
+      font-weight: bold;
+    }
+
+    /* 主內容區域 */
+    #main-content {
+      flex: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2.5rem 2.2rem 6rem;
+      background: #ffffff;
+      min-height: 100vh;
+      box-shadow: 0 0 25px rgba(0,0,0,0.06);
+    }
+
+    /* 頂部橫幅 */
+    .hero-banner {
+      background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 50%, #2563eb 100%);
+      color: white;
+      padding: 2.5rem 2rem;
+      border-radius: 16px;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 10px 25px rgba(30, 58, 138, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::after {
+      content: "MOCK EXAM";
+      position: absolute;
+      right: -15px;
+      bottom: -15px;
+      font-size: 4.2rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.05);
+      pointer-events: none;
+    }
+    .hero-banner .meta-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(4px);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-bottom: 0.75rem;
+      color: #93c5fd;
+      font-weight: 600;
+    }
+    .hero-banner h1 {
+      font-size: 2.1rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+    .hero-banner p {
+      font-size: 0.98rem;
+      color: #e0e7ff;
+      max-width: 720px;
+    }
+
+    /* 角色卡片 */
+    .role-capsule {
+      background: #f8fafc;
+      border: 1px dashed #3b82f6;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .role-avatar {
+      font-size: 2.2rem;
+      background: #e0e7ff;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .role-dialogue h4 {
+      color: #1e3a8a;
+      font-size: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    .role-dialogue p {
+      font-size: 0.92rem;
+      color: #334155;
+      margin: 0;
+    }
+
+    /* 考卷控制浮動列 */
+    .control-panel {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .control-stat {
+      font-size: 0.92rem;
+      color: #475569;
+    }
+    .control-stat strong {
+      color: #0f172a;
+      font-size: 1.1rem;
+    }
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    .btn-skip {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .btn-skip:hover {
+      background: #fde68a;
+    }
+    .btn-toggle-all {
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .btn-toggle-all:hover {
+      background: #cbd5e1;
+    }
+
+    /* 模塊大標題 */
+    h2.module-title {
+      font-size: 1.55rem;
+      color: #0f172a;
+      border-left: 5px solid var(--primary);
+      padding-left: 0.75rem;
+      margin: 2.8rem 0 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h2.module-title .tag {
+      font-size: 0.8rem;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-weight: normal;
+    }
+
+    /* 題目卡片 */
+    .q-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.35rem;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      transition: all 0.2s;
+    }
+    .q-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .q-card.correct {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    .q-card.incorrect {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+    .q-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+    }
+    .q-badge {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+    .q-meta {
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+    .q-text {
+      font-size: 1rem;
+      color: #1e293b;
+      margin-bottom: 0.9rem;
+      font-weight: 500;
+      line-height: 1.6;
+    }
+    .q-table {
+      width: 100%;
+      max-width: 500px;
+      border-collapse: collapse;
+      margin: 0.8rem 0 1rem;
+      font-size: 0.88rem;
+    }
+    .q-table th, .q-table td {
+      border: 1px solid #cbd5e1;
+      padding: 0.45rem 0.75rem;
+      text-align: center;
+    }
+    .q-table th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+
+    /* 選項群組 */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .opt-label {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 7px;
+      border: 1px solid #f1f5f9;
+      cursor: pointer;
+      font-size: 0.93rem;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .opt-label:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .opt-label input[type="radio"] {
+      accent-color: var(--primary);
+    }
+
+    /* 簡答題輸入框 */
+    .short-input-box {
+      margin-top: 0.75rem;
+    }
+    .short-input-box textarea {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    /* 解題思路剖析盒 */
+    .breakdown-box {
+      margin-top: 1.1rem;
+      padding: 1.1rem 1.25rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+      font-size: 0.91rem;
+      color: #334155;
+      line-height: 1.65;
+      display: none;
+    }
+    .breakdown-box.active {
+      display: block;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .breakdown-box .ans-line {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .breakdown-box .core-formula {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      margin: 0.5rem 0;
+      color: #1e3a8a;
+      font-family: inherit;
+    }
+    .breakdown-box .pitfall-alert {
+      color: #b91c1c;
+      font-weight: 600;
+      margin-top: 0.4rem;
+      display: block;
+    }
+
+    /* 成績公報板 */
+    #score-board {
+      display: none;
+      background: white;
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-top: 2.5rem;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(37,99,235,0.15);
+    }
+    .score-grade {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: var(--primary-dark);
+      margin: 0.5rem 0;
+    }
+    .score-comment {
+      font-size: 1.05rem;
+      color: #334155;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* 響應式 */
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      #sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #334155;
+      }
+      #main-content { padding: 1.5rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 側邊目錄導航 -->
+  <aside id="sidebar">
+    <h2>🌲 WikiTree 導航</h2>
+    <p class="sub">Corporate Finance / 期中真題 Mock Exam</p>
+    <ul>
+      <li><a href="#hero-section">🏰 冒險序章：真題試煉總覽</a></li>
+      <li><a href="#sec-mod1">🏛️ 模組 1：公司組織與金融市場 (Q1~Q5)</a></li>
+      <li><a href="#sec-mod2">⚖️ 模組 2：單一價格法則與套利 (Q6~Q15)</a></li>
+      <li><a href="#sec-mod3">⏳ 模組 3：時間價值與年金現值 (Q16~Q28)</a></li>
+      <li><a href="#sec-mod4">📈 模組 4：利率報價與殖利率曲線 (Q29~Q35)</a></li>
+      <li><a href="#sec-mod5">🛡️ 模組 5：債券定價與動態行為 (Q36~Q40)</a></li>
+      <li><a href="#sec-short-ans"><span class="badge">手算大題</span> 📝 簡答計算大題 (SA1~SA2)</a></li>
+      <li><a href="#formula-sheet">📜 官方期中必備公式大全 (Cheat Sheet)</a></li>
+    </ul>
+  </aside>
+
+  <!-- 主講義內容 -->
+  <main id="main-content">
+
+    <!-- 頂部橫幅 -->
+    <section id="hero-section" class="hero-banner">
+      <div class="meta-tag">FINANCIAL MANAGEMENT · MIDTERM MOCK EXAM REVIEW</div>
+      <h1>期中高壓 Mock Exam 完整深度解析講義<br><small style="font-size: 1.2rem; font-weight: normal; opacity: 0.9;">全卷 40 題單選 + 2 大計算題（共 45 題子任務）逐題穿透拆解</small></h1>
+      <p>「這不是一份簡單的解答，這是一張將每道題目的『考點陷阱』、『秒殺思路』與『防雷指南』徹底標記的藏寶圖。」—— 冒險者公會首席大掌櫃</p>
+    </section>
+
+    <!-- 角色引導 -->
+    <div class="role-capsule">
+      <div class="role-avatar">🧙‍♂️</div>
+      <div class="role-dialogue">
+        <h4>大掌櫃考前動員令</h4>
+        <p>這份試卷完全涵蓋了 Berk & DeMarzo 財務管理第 1 章到第 6 章的全部心臟地帶！從<strong>公司組織雙重課稅</strong>、<strong>單一價格法則與套利</strong>、<strong>房貸與退休金時間價值精算</strong>，到<strong>殖利率曲線</strong>與<strong>債券定價溢折價行為</strong>。你既可以直接自我測驗點擊批改，也可以使用「⏩ 略過/一鍵展開」模式直接閱讀每題的極致解讀！</p>
+      </div>
+    </div>
+
+    <!-- 考卷控制浮動列 -->
+    <div class="control-panel">
+      <div class="control-stat">
+        題量：<strong>40 題單選 + 5 題手算</strong> | 滿分：<strong>100 分</strong>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="gradeAll()">🎯 智能批改試卷</button>
+        <button class="btn btn-skip" onclick="autoFillAndReveal()">⏩ 略過（填入答案並展開全部思路）</button>
+        <button class="btn btn-toggle-all" onclick="toggleAllBreakdowns()">👁️ 切換展開/收合思路</button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 模組 1：公司型態與股票市場 (Q1 - Q5) -->
+    <!-- ========================================== -->
+    <section id="sec-mod1">
+      <h2 class="module-title">🏛️ 模組 1：公司組織型態與股票市場運作 (Ch01) <span class="tag">Q1 ~ Q5</span></h2>
+
+      <!-- Q1 -->
+      <div class="q-card" id="qc-1">
+        <div class="q-top">
+          <span class="q-badge">第 1 題 (單選)</span>
+          <span class="q-meta">Ch 1.1 The Types of Firms | Diff: 1</span>
+        </div>
+        <div class="q-text">Which of the following organization forms accounts for the most revenue? (下列哪種企業組織型態佔據了整個經濟體中絕大部分的營業收入？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q1" value="A"> A) Sole proprietorship (獨資企業)</label>
+          <label class="opt-label"><input type="radio" name="q1" value="B"> B) Partnership (合夥企業)</label>
+          <label class="opt-label"><input type="radio" name="q1" value="C"> C) "Corporation" (股份有限公司/法人公司)</label>
+          <label class="opt-label"><input type="radio" name="q1" value="D"> D) Limited Partnership (有限合夥)</label>
+        </div>
+        <div class="breakdown-box" id="bb-1">
+          <div class="ans-line">✅ 正確解答：(C) Corporation</div>
+          <p><strong>【核心觀念拆解】</strong> 雖然在「企業數量（Number of firms）」上，獨資企業（Sole proprietorships）佔了全美 70% 以上，但在<strong>「營業收入（Revenue）與經濟影響力」</strong>上，大型股份有限公司（Corporations）貢獻了超過 85% 的總營收！因為股份公司具備有限責任與股份可自由轉讓性，能吸納海量資本。</p>
+          <span class="pitfall-alert">⚠️ 陷阱提醒：看清楚題目問的是「revenue（營業額）」還是「number of businesses（家數）」！家數最多是獨資，營收最高是公司！</span>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="q-card" id="qc-2">
+        <div class="q-top">
+          <span class="q-badge">第 2 題 (單選)</span>
+          <span class="q-meta">Ch 1.1 The Types of Firms | Diff: 1</span>
+        </div>
+        <div class="q-text">Which of the following are subject to double taxation? (下列何種企業型態必須承受「雙重課稅」？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q2" value="A"> A) Corporation (C-Corporation)</label>
+          <label class="opt-label"><input type="radio" name="q2" value="B"> B) Partnership</label>
+          <label class="opt-label"><input type="radio" name="q2" value="C"> C) Sole proprietorship</label>
+          <label class="opt-label"><input type="radio" name="q2" value="D"> D) A and B</label>
+        </div>
+        <div class="breakdown-box" id="bb-2">
+          <div class="ans-line">✅ 正確解答：(A) Corporation</div>
+          <p><strong>【核心觀念拆解】</strong> 雙重課稅（Double Taxation）是標準公司（C-Corp）的最大劣勢：</p>
+          <ul>
+            <li>第一道稅：公司本身的淨利潤要繳納「公司所得稅（Corporate Income Tax）」。</li>
+            <li>第二道稅：剩餘利潤以股利（Dividends）分派給股東時，股東個人還要再繳一次「個人股利所得稅」。</li>
+          </ul>
+          <p>獨資與一般合夥屬於「轉嫁課稅主體（Pass-through entities）」，利潤直接穿透由個人報稅，沒有雙重課稅問題。</p>
+        </div>
+      </div>
+
+      <!-- Q3 & Q4 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>📊 題組背景 (Q3 & Q4)：</strong> Consider the following two quotes for XYZ shares:
+        <table class="q-table">
+          <thead>
+            <tr><th>報價日期</th><th>Ask (賣方開價)</th><th>Bid (買方出價)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>November 11th</strong></td><td>$25.25</td><td>$25.20</td></tr>
+            <tr><td><strong>November 18th</strong></td><td>$26.00</td><td>$25.93</td></tr>
+          </tbody>
+        </table>
+        <small style="color: #64748b;">公會掌櫃口訣：<strong>「你想買，按 Ask 付錢；你想賣，按 Bid 拿錢！」</strong>（Ask 是造市商願意賣出的價格，Bid 是造市商願意買進的價格）。</small>
+      </div>
+
+      <!-- Q3 -->
+      <div class="q-card" id="qc-3">
+        <div class="q-top">
+          <span class="q-badge">第 3 題 (單選)</span>
+          <span class="q-meta">Ch 1.3 The Stock Market | Diff: 1</span>
+        </div>
+        <div class="q-text">How much would you have to pay to purchase 100 XYZ shares on November 18th? (在 11 月 18 日購買 100 股 XYZ 股票需支付多少金額？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q3" value="A"> A) $2,520</label>
+          <label class="opt-label"><input type="radio" name="q3" value="B"> B) $2,525</label>
+          <label class="opt-label"><input type="radio" name="q3" value="C"> C) $2,593</label>
+          <label class="opt-label"><input type="radio" name="q3" value="D"> D) $2,600</label>
+        </div>
+        <div class="breakdown-box" id="bb-3">
+          <div class="ans-line">✅ 正確解答：(D) $2,600</div>
+          <p><strong>【計算與思路】</strong> 投資人「購買（Purchase）」股票時，必須向市場支付造市商的賣方開價（Ask Price）。11 月 18 日的 $\text{Ask} = \$26.00$。<br>
+          總花費 = $100 \text{ 股} \times \$26.00 = \$2,600$。</p>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="q-card" id="qc-4">
+        <div class="q-top">
+          <span class="q-badge">第 4 題 (單選)</span>
+          <span class="q-meta">Ch 1.3 The Stock Market | Diff: 1</span>
+        </div>
+        <div class="q-text">How much would you receive if you sold 200 XYZ shares on November 11th? (在 11 月 11 日賣出 200 股 XYZ 股票能收到多少金額？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q4" value="A"> A) $5,050</label>
+          <label class="opt-label"><input type="radio" name="q4" value="B"> B) $5,040</label>
+          <label class="opt-label"><input type="radio" name="q4" value="C"> C) $5,186</label>
+          <label class="opt-label"><input type="radio" name="q4" value="D"> D) $5,200</label>
+        </div>
+        <div class="breakdown-box" id="bb-4">
+          <div class="ans-line">✅ 正確解答：(B) $5,040</div>
+          <p><strong>【計算與思路】</strong> 投資人「賣出（Sell）」股票時，市場造市商用買價（Bid Price）向你收購。11 月 11 日的 $\text{Bid} = \$25.20$。<br>
+          總收益 = $200 \text{ 股} \times \$25.20 = \$5,040$。</p>
+          <span class="pitfall-alert">⚠️ 陷阱提醒：千萬別乘錯成 Ask 價格（$200 \times 25.25 = 5,050$），造市商永遠賺取買賣價差（Bid-Ask Spread）！</span>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="q-card" id="qc-5">
+        <div class="q-top">
+          <span class="q-badge">第 5 題 (單選)</span>
+          <span class="q-meta">Ch 1.3 The Stock Market | Diff: 1</span>
+        </div>
+        <div class="q-text">What type of organisation trades on an organized stock exchange? (何種組織型態能在受監管的有組織證券交易所上市交易？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q5" value="A"> A) A limited liability partnership</label>
+          <label class="opt-label"><input type="radio" name="q5" value="B"> B) A private company</label>
+          <label class="opt-label"><input type="radio" name="q5" value="C"> C) A partnership</label>
+          <label class="opt-label"><input type="radio" name="q5" value="D"> D) A public company (公開上市公司)</label>
+        </div>
+        <div class="breakdown-box" id="bb-5">
+          <div class="ans-line">✅ 正確解答：(D) A public company</div>
+          <p><strong>【核心觀念拆解】</strong> 只有公開發行並上市的股份公司（Public Company）其股份才能在 NYSE、Nasdaq 等有組織的集中交易所供大眾自由撮合買賣；非公開私人公司（Private Company）股份無法公開自由掛牌。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 2：單一價格法則與套利 (Q6 - Q15) -->
+    <!-- ========================================== -->
+    <section id="sec-mod2">
+      <h2 class="module-title">⚖️ 模組 2：單一價格法則、套利與證券價值 (Ch03) <span class="tag">Q6 ~ Q15</span></h2>
+
+      <!-- Q6 & Q7 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>🛢️ 題組背景 (Q6 & Q7)：</strong> 原油提煉決策
+        <table class="q-table">
+          <thead>
+            <tr><th>原油品種</th><th>市場現貨進價</th><th>每桶可提煉之無鉛汽油產出價值</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>阿拉斯加北坡原油 (ANS)</strong></td><td>$71.75 / Bbl</td><td>$76.00 / Bbl</td></tr>
+            <tr><td><strong>西德州中級原油 (WTI)</strong></td><td>$73.06 / Bbl</td><td>$77.00 / Bbl (含硫量低)</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size: 0.88rem; color: #475569;">煉油廠手上目前持有 10,000 桶 WTI 原油現貨。</p>
+      </div>
+
+      <!-- Q6 -->
+      <div class="q-card" id="qc-6">
+        <div class="q-top">
+          <span class="q-badge">第 6 題 (單選)</span>
+          <span class="q-meta">Ch 3.1 Valuing Decisions | Diff: 2</span>
+        </div>
+        <div class="q-text">Assuming you currently have 10,000 Bbls of WTI crude, the added benefits to you if you were to sell the 10,000 Bbls of WTI crude and use the proceeds to purchase and refine ANS crude is closest to: (賣出手上的 10,000 桶 WTI，換買並提煉 ANS 原油，所帶來的額外效益 Added Benefits 最接近：)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q6" value="A"> A) $730,600</label>
+          <label class="opt-label"><input type="radio" name="q6" value="B"> B) $770,000</label>
+          <label class="opt-label"><input type="radio" name="q6" value="C"> C) $40,800</label>
+          <label class="opt-label"><input type="radio" name="q6" value="D"> D) $43,308</label>
+        </div>
+        <div class="breakdown-box" id="bb-6">
+          <div class="ans-line">✅ 正確解答：(D) $43,308</div>
+          <p><strong>【解剖精算步驟】</strong></p>
+          <ol>
+            <li>賣出 10,000 桶 WTI 現金收益 = $10,000 \times \$73.06 = \$730,600$。</li>
+            <li>將這筆錢全數購入 ANS 原油桶數 = $\frac{\$730,600}{\$71.75} \approx 10,182.578$ 桶。</li>
+            <li>提煉 ANS 產出的汽油總價值 = $10,182.578 \times \$76.00 = \$773,875.96$（若四捨五入取 10,183 桶，則 $10,183 \times \$76 = \$773,908$）。</li>
+            <li>對比投入的成本代價（放棄的 WTI 現金價值 $730,600$）：<br>
+            額外淨效益 = $\$773,908 - \$730,600 = \$43,308$！</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Q7 -->
+      <div class="q-card" id="qc-7">
+        <div class="q-top">
+          <span class="q-badge">第 7 題 (單選)</span>
+          <span class="q-meta">Ch 3.1 Valuing Decisions | Diff: 2</span>
+        </div>
+        <div class="q-text">Another oil refiner is offering to trade you 10,150 Bbls of ANS crude oil for 10,000 Bbls of WTI crude oil. Assuming you currently have 10,000 Bbls of WTI crude, what should you do? (另一家同業提議用 10,150 桶 ANS 來換你手上的 10,000 桶 WTI，你應該怎麼做？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q7" value="A"> A) Sell 10,000 Bbls WTI crude on the market and use proceeds to purchase and refine ANS crude.</label>
+          <label class="opt-label"><input type="radio" name="q7" value="B"> B) Do nothing, refine the 10,000 Bbls of WTI crude.</label>
+          <label class="opt-label"><input type="radio" name="q7" value="C"> C) Trade the 10,000 Bbls WTI crude with the other refiner and refine the 10,150 Bbls of ANS crude.</label>
+          <label class="opt-label"><input type="radio" name="q7" value="D"> D) Trade the 10,000 Bbls WTI crude with the other refiner and then sell the 10,150 Bbls of ANS crude.</label>
+        </div>
+        <div class="breakdown-box" id="bb-7">
+          <div class="ans-line">✅ 正確解答：(A) 拒絕對手提議，自己在公開市場賣掉 WTI 去買 ANS 提煉</div>
+          <p><strong>【策略邏輯】</strong> 由上一題可知，你在市場上賣掉 10,000 桶 WTI（得 $730,600）可以直接買到 <strong>10,182.58 桶</strong> 的 ANS 原油！<br>
+          那家同業只願拿 10,150 桶跟你換，等於坑了你 32.58 桶原油！因此<strong>絕不接受交換</strong>，自己在市場買賣才是最優決策。</p>
+        </div>
+      </div>
+
+      <!-- Q8 -->
+      <div class="q-card" id="qc-8">
+        <div class="q-top">
+          <span class="q-badge">第 8 題 (單選)</span>
+          <span class="q-meta">Ch 3.2 Interest Rates and Time Value | Diff: 1</span>
+        </div>
+        <div class="q-text">A project that you are considering today is expected to provide benefits worth $168,000 in one year. If the risk-free rate of interest ($r_f$) is 4.5%, then the value of the benefits of this project today are closest to: (一年後產生 $168,000 現金流，無風險利率 4.5%，今天現值為多少？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q8" value="A"> A) $160,440</label>
+          <label class="opt-label"><input type="radio" name="q8" value="B"> B) $160,766</label>
+          <label class="opt-label"><input type="radio" name="q8" value="C"> C) $168,000</label>
+          <label class="opt-label"><input type="radio" name="q8" value="D"> D) $175,560</label>
+        </div>
+        <div class="breakdown-box" id="bb-8">
+          <div class="ans-line">✅ 正確解答：(B) $160,766</div>
+          <p><strong>【公式計算】</strong> $PV = \frac{FV}{1 + r} = \frac{\$168,000}{1 + 0.045} = \frac{168,000}{1.045} \approx \$160,765.55 \approx \$160,766$。</p>
+        </div>
+      </div>
+
+      <!-- Q9 -->
+      <div class="q-card" id="qc-9">
+        <div class="q-top">
+          <span class="q-badge">第 9 題 (單選)</span>
+          <span class="q-meta">Ch 3.2 Interest Rates and Time Value | Diff: 1</span>
+        </div>
+        <div class="q-text">If the risk-free rate of interest ($r_f$) is 6%, then you should be indifferent between receiving $250 in one year or: (若無風險利率 6%，一年後拿 $250 等同於今天拿多少？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q9" value="A"> A) $235.85 today</label>
+          <label class="opt-label"><input type="radio" name="q9" value="B"> B) $250.00 today</label>
+          <label class="opt-label"><input type="radio" name="q9" value="C"> C) $265.00 today</label>
+          <label class="opt-label"><input type="radio" name="q9" value="D"> D) None of the above</label>
+        </div>
+        <div class="breakdown-box" id="bb-9">
+          <div class="ans-line">✅ 正確解答：(A) $235.85 today</div>
+          <p><strong>【公式計算】</strong> $PV = \frac{\$250}{1 + 0.06} = \frac{250}{1.06} \approx \$235.849 \approx \$235.85$。<br>
+          在無套利金融市場中，今天的 $235.85 與一年後的 $250 效用完全無差異（Indifferent）。</p>
+        </div>
+      </div>
+
+      <!-- Q10 -->
+      <div class="q-card" id="qc-10">
+        <div class="q-top">
+          <span class="q-badge">第 10 題 (單選)</span>
+          <span class="q-meta">Ch 3.4 Arbitrage and the Law of One Price | Diff: 2</span>
+        </div>
+        <div class="q-text">Which of the following statements regarding arbitrage is the most correct? (關於「套利 Arbitrage」的陳述，何者最為正確？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q10" value="A"> A) Any situation in which it is possible to make a profit without taking any risk is known as an arbitrage opportunity.</label>
+          <label class="opt-label"><input type="radio" name="q10" value="B"> B) Any situation in which it is possible to make a profit without making any investment is known as an arbitrage opportunity.</label>
+          <label class="opt-label"><input type="radio" name="q10" value="C"> C) We call a competitive market in which there are no arbitrage opportunities an arbitrage market.</label>
+          <label class="opt-label"><input type="radio" name="q10" value="D"> D) The practice of buying and selling equivalent goods in different markets to take advantage of a price difference is known as arbitrage.</label>
+        </div>
+        <div class="breakdown-box" id="bb-10">
+          <div class="ans-line">✅ 正確解答：(D) 在不同市場買賣等價商品以賺取價差之行為</div>
+          <p><strong>【觀念辨析】</strong> 標準套利定義包含兩大特徵：零成本且零風險賺取確定利潤。但教科書中對套利操作的嚴格行為定義是 (D)：「在不同市場中同時買進被低估、賣出被高估的等價商品以賺取價差」。(A) 缺了零投資條件，(B) 缺了零風險條件，(C) 無套利市場稱為正常市場而非套利市場。</p>
+        </div>
+      </div>
+
+      <!-- Q11 -->
+      <div class="q-card" id="qc-11">
+        <div class="q-top">
+          <span class="q-badge">第 11 題 (單選)</span>
+          <span class="q-meta">Ch 3.4 Arbitrage and the Law of One Price | Diff: 2</span>
+        </div>
+        <div class="q-text">Which of the following statements regarding the Law of One Price is INCORRECT? (關於「單一價格法則」的敘述，下列何者「錯誤」？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q11" value="A"> A) At any point in time, the price of two equivalent goods trading in different competitive markets will be the same.</label>
+          <label class="opt-label"><input type="radio" name="q11" value="B"> B) One useful consequence of the Law of One Price is that when evaluating costs and benefits to compute a net present value, we can use any competitive price to determine a cash value, without checking the price in all possible markets.</label>
+          <label class="opt-label"><input type="radio" name="q11" value="C"> C) If equivalent goods or securities trade simultaneously in different competitive markets, then they will trade for the same price in both markets.</label>
+          <label class="opt-label"><input type="radio" name="q11" value="D"> D) An important property of the Law of One Price is that it holds even in markets where arbitrage is not possible.</label>
+        </div>
+        <div class="breakdown-box" id="bb-11">
+          <div class="ans-line">✅ 正確解答：(D) 錯誤，單一價格法則必須依賴「套利力量」才能維持</div>
+          <p><strong>【深度剖析】</strong> 單一價格法則（Law of One Price）能夠成立的**物理機制**就是「套利者的存在」！一旦有價差，套利者立刻買低賣高將價格拉平；如果一個市場完全禁止套利（例如封閉邊境、禁止轉賣），價差就會永久存在，單一價格法則必然失效！因此 (D) 宣稱「即使無法套利的市場法則依然成立」是徹底錯誤的。</p>
+        </div>
+      </div>
+
+      <!-- Q12 -->
+      <div class="q-card" id="qc-12">
+        <div class="q-top">
+          <span class="q-badge">第 12 題 (單選)</span>
+          <span class="q-meta">Ch 3.5 No-Arbitrage and Security Prices | Diff: 1</span>
+        </div>
+        <div class="q-text">Suppose that Bondi Inc. is a holding company that owns both Pizza Hut and Kentucky Fried Chicken Franchised Restaurants. If the value of Bondi is $130 million, and the Pizza Hut Franchises are worth $70 million, then what is the value of the Kentucky Fried Chicken Franchises? (控股公司價值 1.3 億，其中必勝客值 7,000 萬，肯德基值多少？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q12" value="A"> A) $60 million</label>
+          <label class="opt-label"><input type="radio" name="q12" value="B"> B) $70 million</label>
+          <label class="opt-label"><input type="radio" name="q12" value="C"> C) $130 million</label>
+          <label class="opt-label"><input type="radio" name="q12" value="D"> D) Unable to determine with the information provided</label>
+        </div>
+        <div class="breakdown-box" id="bb-12">
+          <div class="ans-line">✅ 正確解答：(A) $60 million</div>
+          <p><strong>【價值可加性 Value Additivity】</strong> 資產組合的總價值等於其各組成部分價值之和：<br>
+          $V_{\text{Bondi}} = V_{\text{Pizza Hut}} + V_{\text{KFC}} \implies 130 = 70 + V_{\text{KFC}} \implies V_{\text{KFC}} = \$60\text{ million}$。</p>
+        </div>
+      </div>
+
+      <!-- Q13 -->
+      <div class="q-card" id="qc-13">
+        <div class="q-top">
+          <span class="q-badge">第 13 題 (單選)</span>
+          <span class="q-meta">Ch 3.5 No-Arbitrage and Security Prices | Diff: 3</span>
+        </div>
+        <div class="q-text">An American Depository Receipt (ADR) is a security issued by a U.S. bank and traded on a U.S. stock exchange that represents a specific number of shares of a foreign stock. Siemens AG has an ADR that trades on the NYSE and is equivalent to one share of Seimens AG trading on the Frankfurt Stock Exchange in Germany. If Seimens trades for $95.19 on the NYSE and for €64.10 on the Frankfurt Stock Exchange, then under the law of one price, the current exchange rate is closest to:</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q13" value="A"> A) $0.6744/€</label>
+          <label class="opt-label"><input type="radio" name="q13" value="B"> B) €0.6734/$</label>
+          <label class="opt-label"><input type="radio" name="q13" value="C"> C) €1.4850/$</label>
+          <label class="opt-label"><input type="radio" name="q13" value="D"> D) $1.5274/€</label>
+        </div>
+        <div class="breakdown-box" id="bb-13">
+          <div class="ans-line">✅ 正確解答：(B) €0.6734/$</div>
+          <p><strong>【匯率換算精算】</strong> 根據單一價格法則，美股掛牌價值必須等於德股掛牌價值：<br>
+          $\$95.19 = \text{€}64.10$。<br>
+          每 1 美元等值多少歐元：$\frac{\text{€}64.10}{\$95.19} \approx \text{€}0.67339 / \$ \approx \text{€}0.6734 / \$$！<br>
+          （若求每歐元等值多少美元，則為 $95.19 / 64.10 \approx \$1.485 / \text{€}$，注意選項 (C) 單位寫成 €/$\$$ 故錯誤）。</p>
+        </div>
+      </div>
+
+      <!-- Q14 -->
+      <div class="q-card" id="qc-14">
+        <div class="q-top">
+          <span class="q-badge">第 14 題 (單選)</span>
+          <span class="q-meta">Ch 3.5 No-Arbitrage and Security Prices | Diff: 2</span>
+        </div>
+        <div class="q-text">An ETF represents a portfolio: 2 shares of Apple ($200.23/sh), 1 share of Google ($570.51/sh), and 10 shares of Microsoft ($29.61/sh). In a normal market, the price per share of this ETF is closest to:</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q14" value="A"> A) $800</label>
+          <label class="opt-label"><input type="radio" name="q14" value="B"> B) $1,001</label>
+          <label class="opt-label"><input type="radio" name="q14" value="C"> C) $1,067</label>
+          <label class="opt-label"><input type="radio" name="q14" value="D"> D) $1,267</label>
+        </div>
+        <div class="breakdown-box" id="bb-14">
+          <div class="ans-line">✅ 正確解答：(D) $1,267</div>
+          <p><strong>【ETF 淨值定價】</strong><br>
+          $\text{ETF Price} = (2 \times 200.23) + (1 \times 570.51) + (10 \times 29.61) = 400.46 + 570.51 + 296.10 = \$1,267.07 \approx \$1,267$。</p>
+        </div>
+      </div>
+
+      <!-- Q15 -->
+      <div class="q-card" id="qc-15">
+        <div class="q-top">
+          <span class="q-badge">第 15 題 (單選)</span>
+          <span class="q-meta">Ch 3.5 No-Arbitrage and Security Prices | Diff: 1</span>
+        </div>
+        <div class="q-text">Suppose that a security with a risk-free cash flow of $1,000 in one year trades for $930 today. If there are no arbitrage opportunities, then the current risk-free rate is closest to: (一年後確定支付 $1,000 的無風險證券今天賣 $930，無風險利率為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q15" value="A"> A) 6.0%</label>
+          <label class="opt-label"><input type="radio" name="q15" value="B"> B) 6.5%</label>
+          <label class="opt-label"><input type="radio" name="q15" value="C"> C) 7.0%</label>
+          <label class="opt-label"><input type="radio" name="q15" value="D"> D) 7.5%</label>
+        </div>
+        <div class="breakdown-box" id="bb-15">
+          <div class="ans-line">✅ 正確解答：(D) 7.5%</div>
+          <p><strong>【報酬率推導】</strong> $1 + r = \frac{1,000}{930} \approx 1.075269 \implies r \approx 7.527\% \approx 7.5\%$。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 3：時間價值與年金現值 (Q16 - Q28) -->
+    <!-- ========================================== -->
+    <section id="sec-mod3">
+      <h2 class="module-title">⏳ 模組 3：時間軸、貨幣時間價值與年金實戰 (Ch04) <span class="tag">Q16 ~ Q28</span></h2>
+
+      <!-- Q16 -->
+      <div class="q-card" id="qc-16">
+        <div class="q-top">
+          <span class="q-badge">第 16 題 (單選)</span>
+          <span class="q-meta">Ch 4.1 The Timeline | Diff: 1</span>
+        </div>
+        <div class="q-text">Which of the following statements regarding timelines is FALSE? (關於「時間軸 Timeline」的敘述，何者「錯誤」？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q16" value="A"> A) Timelines are an important first step in organizing and then solving a financial problem.</label>
+          <label class="opt-label"><input type="radio" name="q16" value="B"> B) We refer to a series of cash flows lasting several periods as a stream of cash flows.</label>
+          <label class="opt-label"><input type="radio" name="q16" value="C"> C) Not every stream of cash flows can be represented on a timeline.</label>
+          <label class="opt-label"><input type="radio" name="q16" value="D"> D) A timeline is a linear representation of the timing of the (expected) cash flows.</label>
+        </div>
+        <div class="breakdown-box" id="bb-16">
+          <div class="ans-line">✅ 正確解答：(C) 錯誤，任何現金流皆可在時間軸上精確標示</div>
+          <p><strong>【觀念說明】</strong> 時間軸是財務學最通用的工具。無論是等額、非等額、遞延或永續，**任何現金流量（Any stream of cash flows）** 都可以在時間軸上清楚標註發生時間點與金額。因此 (C)「不是每種現金流都能畫」是錯誤的。</p>
+        </div>
+      </div>
+
+      <!-- Q17 & Q18 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>💰 題組背景 (Q17 & Q18)：</strong> 4 個現金流方案的價值排序比對
+        <ul style="margin-left: 1.5rem; font-size: 0.92rem; color: #334155;">
+          <li>方案 1：2 年後收到 $132</li>
+          <li>方案 2：5 年後收到 $160</li>
+          <li>方案 3：8 年後收到 $200</li>
+          <li>方案 4：10 年後收到 $220</li>
+        </ul>
+      </div>
+
+      <!-- Q17 -->
+      <div class="q-card" id="qc-17">
+        <div class="q-top">
+          <span class="q-badge">第 17 題 (單選)</span>
+          <span class="q-meta">Ch 4.2 Rules of Time Travel | Diff: 2</span>
+        </div>
+        <div class="q-text">The ranking of the four alternatives from most valuable to least valuable if the interest rate is 7% per year would be: (年利率 7% 時，現值由大到小的排序為何？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q17" value="A"> A) 1, 2, 3, 4</label>
+          <label class="opt-label"><input type="radio" name="q17" value="B"> B) 4, 3, 2, 1</label>
+          <label class="opt-label"><input type="radio" name="q17" value="C"> C) 3, 4, 2, 1</label>
+          <label class="opt-label"><input type="radio" name="q17" value="D"> D) 3, 1, 2, 4</label>
+        </div>
+        <div class="breakdown-box" id="bb-17">
+          <div class="ans-line">✅ 正確解答：(D) 3 > 1 > 2 > 4</div>
+          <p><strong>【利率 7% 時的 PV 精算表】</strong></p>
+          <table class="q-table">
+            <tr><th>方案</th><th>期數</th><th>金額</th><th>現值 PV ($r=7\%$)</th><th>排序</th></tr>
+            <tr><td>1</td><td>2</td><td>132</td><td>$132 / (1.07)^2 = \mathbf{115.29}$</td><td>第 2 名</td></tr>
+            <tr><td>2</td><td>5</td><td>160</td><td>$160 / (1.07)^5 = \mathbf{114.08}$</td><td>第 3 名</td></tr>
+            <tr><td>3</td><td>8</td><td>200</td><td>$200 / (1.07)^8 = \mathbf{116.40}$</td><td><strong>第 1 名</strong></td></tr>
+            <tr><td>4</td><td>10</td><td>220</td><td>$220 / (1.07)^{10} = \mathbf{111.84}$</td><td>第 4 名</td></tr>
+          </table>
+          <p>排序為：$3 > 1 > 2 > 4$。</p>
+        </div>
+      </div>
+
+      <!-- Q18 -->
+      <div class="q-card" id="qc-18">
+        <div class="q-top">
+          <span class="q-badge">第 18 題 (單選)</span>
+          <span class="q-meta">Ch 4.2 Rules of Time Travel | Diff: 2</span>
+        </div>
+        <div class="q-text">The ranking of the four alternatives from most valuable to least valuable if the interest rate is 6% per year would be: (年利率降至 6% 時，現值由大到小排序為何？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q18" value="A"> A) 1, 2, 3, 4</label>
+          <label class="opt-label"><input type="radio" name="q18" value="B"> B) 1, 3, 2, 4</label>
+          <label class="opt-label"><input type="radio" name="q18" value="C"> C) 4, 3, 1, 2</label>
+          <label class="opt-label"><input type="radio" name="q18" value="D"> D) 3, 4, 2, 1</label>
+        </div>
+        <div class="breakdown-box" id="bb-18">
+          <div class="ans-line">✅ 正確解答：(D) 3 > 4 > 2 > 1 (原考卷 Answer 標示 D，對應下方解析表格)</div>
+          <p><strong>【利率 6% 時的 PV 精算表】</strong> 利率下降，遠期現金流（8 年、10 年）的折現懲罰減輕，價值大幅飆升！</p>
+          <table class="q-table">
+            <tr><th>方案</th><th>期數</th><th>金額</th><th>現值 PV ($r=6\%$)</th><th>排序</th></tr>
+            <tr><td>1</td><td>2</td><td>132</td><td>$132 / (1.06)^2 = \mathbf{117.48}$</td><td>第 4 名</td></tr>
+            <tr><td>2</td><td>5</td><td>160</td><td>$160 / (1.06)^5 = \mathbf{119.56}$</td><td>第 3 名</td></tr>
+            <tr><td>3</td><td>8</td><td>200</td><td>$200 / (1.06)^8 = \mathbf{125.48}$</td><td><strong>第 1 名</strong></td></tr>
+            <tr><td>4</td><td>10</td><td>220</td><td>$220 / (1.06)^{10} = \mathbf{122.85}$</td><td>第 2 名</td></tr>
+          </table>
+          <p>排序為：$3 > 4 > 2 > 1$（最優是 3，其次是 4，再其次是 2，最後是 1）。</p>
+        </div>
+      </div>
+
+      <!-- Q19 -->
+      <div class="q-card" id="qc-19">
+        <div class="q-top">
+          <span class="q-badge">第 19 題 (單選)</span>
+          <span class="q-meta">Ch 4.4 Calculating Net Present Value | Diff: 2</span>
+        </div>
+        <div class="q-text">Wyatt oil considers drilling an oil well costing $1,000,000. It produces $100,000 worth of oil in year 1, declining by 2% per year forever. If interest rate is 8%, what is NPV? (油井成本 100 萬，第一年產出 10 萬，之後每年永久衰退 2%，利率 8%，淨現值 NPV 為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q19" value="A"> A) -$250,000</label>
+          <label class="opt-label"><input type="radio" name="q19" value="B"> B) $0</label>
+          <label class="opt-label"><input type="radio" name="q19" value="C"> C) $250,000</label>
+          <label class="opt-label"><input type="radio" name="q19" value="D"> D) $1,000,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-19">
+          <div class="ans-line">✅ 正確解答：(B) $0</div>
+          <p><strong>【成長型永續年金 Growing Perpetuity】</strong></p>
+          <div class="core-formula">
+            $$PV = \frac{C_1}{r - g}$$
+          </div>
+          <p>這裡「每年遞減 2%」，所以成長率是<strong>負數</strong>：$g = -2\% = -0.02$！<br>
+          $PV = \frac{100,000}{0.08 - (-0.02)} = \frac{100,000}{0.10} = \$1,000,000$。<br>
+          因此，$\text{NPV} = -1,000,000 + 1,000,000 = \$0$！</p>
+          <span class="pitfall-alert">⚠️ 陷阱提醒：負負得正！分母是 $0.08 - (-0.02) = 0.10$，千萬別算成 $0.08 - 0.02 = 0.06$！</span>
+        </div>
+      </div>
+
+      <!-- Q20 & Q21 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>🎓 題組背景 (Q20 & Q21)：</strong> 新生兒大學學費規劃
+        <p style="font-size: 0.9rem; color: #334155;">剛迎來新生兒，目前大學一年學費為 $12,500。學費歷史年增率（通膨）為 4%。孩子 18 歲入學。</p>
+      </div>
+
+      <!-- Q20 -->
+      <div class="q-card" id="qc-20">
+        <div class="q-top">
+          <span class="q-badge">第 20 題 (單選)</span>
+          <span class="q-meta">Ch 4.5 Perpetuities and Annuities | Diff: 2</span>
+        </div>
+        <div class="q-text">Assuming that costs continue to increase at 4% per year, tuition and other costs for ONE YEAR for this student in 18 years will be closest to: (18 年後第一年的大學學費是多少？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q20" value="A"> A) $12,500</label>
+          <label class="opt-label"><input type="radio" name="q20" value="B"> B) $21,500</label>
+          <label class="opt-label"><input type="radio" name="q20" value="C"> C) $320,568</label>
+          <label class="opt-label"><input type="radio" name="q20" value="D"> D) $25,323</label>
+        </div>
+        <div class="breakdown-box" id="bb-20">
+          <div class="ans-line">✅ 正確解答：(D) $25,323</div>
+          <p><strong>【複利終值計算】</strong> $FV = PV \times (1 + g)^N = \$12,500 \times (1.04)^{18} \approx 12,500 \times 2.025817 = \$25,322.71 \approx \$25,323$。</p>
+        </div>
+      </div>
+
+      <!-- Q21 -->
+      <div class="q-card" id="qc-21">
+        <div class="q-top">
+          <span class="q-badge">第 21 題 (單選)</span>
+          <span class="q-meta">Ch 4.5 Perpetuities and Annuities | Diff: 3</span>
+        </div>
+        <div class="q-text">Assuming tuition increases at 4% per year and savings account pays 7% interest, what amount must be available at age 18 to pay for ALL FOUR YEARS of undergraduate education? (在 18 歲時，帳戶必須準備多少資金才能完全付清四年的成長型學費？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q21" value="A"> A) $97,110</label>
+          <label class="opt-label"><input type="radio" name="q21" value="B"> B) $107,532</label>
+          <label class="opt-label"><input type="radio" name="q21" value="C"> C) $101,291</label>
+          <label class="opt-label"><input type="radio" name="q21" value="D"> D) $50,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-21">
+          <div class="ans-line">✅ 正確解答：(A) $97,110</div>
+          <p><strong>【成長型期初年金現值 Annuity Due】</strong><br>
+          18 歲當下立即要繳第一筆學費 $C_1 = \$25,322.71$，共 4 期，每年增長 $g = 4\%$，折現率 $r = 7\%$：<br>
+          $$PV = C_1 \times \frac{1}{r - g} \left[1 - \left(\frac{1 + g}{1 + r}\right)^N\right] \times (1 + r)$$
+          $$PV = 25,322.71 \times \frac{1}{0.07 - 0.04} \left[1 - \left(\frac{1.04}{1.07}\right)^4\right] \times 1.07$$
+          $$= 25,322.71 \times 33.3333 \times [1 - 0.89205] \times 1.07 \approx \$97,110.01$$</p>
+        </div>
+      </div>
+
+      <!-- Q22 -->
+      <div class="q-card" id="qc-22">
+        <div class="q-top">
+          <span class="q-badge">第 22 題 (單選)</span>
+          <span class="q-meta">Ch 4.5 Perpetuities and Annuities | Diff: 1</span>
+        </div>
+        <div class="q-text">The British government has a consol bond paying £100 in interest each year forever. If interest rate is 5% and first payment is one year from now, the value of the consol bond is: (英國政府統一公債每年發放 £100 永續利息，利率 5%，現值為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q22" value="A"> A) £1,000</label>
+          <label class="opt-label"><input type="radio" name="q22" value="B"> B) £1,100</label>
+          <label class="opt-label"><input type="radio" name="q22" value="C"> C) £2,100</label>
+          <label class="opt-label"><input type="radio" name="q22" value="D"> D) £2,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-22">
+          <div class="ans-line">✅ 正確解答：(D) £2,000</div>
+          <p><strong>【標準永續年金 Perpetuity】</strong> $PV = \frac{C}{r} = \frac{£100}{0.05} = £2,000$。</p>
+        </div>
+      </div>
+
+      <!-- Q23 -->
+      <div class="q-card" id="qc-23">
+        <div class="q-top">
+          <span class="q-badge">第 23 題 (單選)</span>
+          <span class="q-meta">Ch 4.5 Perpetuities and Annuities | Diff: 1</span>
+        </div>
+        <div class="q-text">Consider a growing perpetuity that pays $100 in one year, growing by 6% each year forever. If the interest rate is 11%, the value of this perpetuity is: (成長型永續年金第一年 $100，成長率 6%，折現率 11%，價值為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q23" value="A"> A) $1,667</label>
+          <label class="opt-label"><input type="radio" name="q23" value="B"> B) $588</label>
+          <label class="opt-label"><input type="radio" name="q23" value="C"> C) $2,000</label>
+          <label class="opt-label"><input type="radio" name="q23" value="D"> D) $909</label>
+        </div>
+        <div class="breakdown-box" id="bb-23">
+          <div class="ans-line">✅ 正確解答：(C) $2,000</div>
+          <p><strong>【公式計算】</strong> $PV = \frac{C}{r - g} = \frac{100}{0.11 - 0.06} = \frac{100}{0.05} = \$2,000$。</p>
+        </div>
+      </div>
+
+      <!-- Q24 -->
+      <div class="q-card" id="qc-24">
+        <div class="q-top">
+          <span class="q-badge">第 24 題 (單選)</span>
+          <span class="q-meta">Ch 4.5 Perpetuities and Annuities | Diff: 2</span>
+        </div>
+        <div class="q-text">Son starts kindergarten in private school. Current tuition is $12,000/yr, payable AT THE START of school year. Tuition increases 6% per year for next 13 years. Interest rate is 7%. What is PV?</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q24" value="A"> A) $332,300</label>
+          <label class="opt-label"><input type="radio" name="q24" value="B"> B) $137,900</label>
+          <label class="opt-label"><input type="radio" name="q24" value="C"> C) $155,800 (Closest, exam key noted flaw: exact $147,546)</label>
+          <label class="opt-label"><input type="radio" name="q24" value="D"> D) $156,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-24">
+          <div class="ans-line">✅ 正確解答：(C) $155,800（原試卷官方給分選項為 C，註明出題者選項有瑕疵）</div>
+          <p><strong>【考卷原題瑕疵透視】</strong></p>
+          <ul>
+            <li>普通期末年金算出的現值為：$\$12,000 \times \frac{1}{0.07 - 0.06} [1 - (\frac{1.06}{1.07})^{13}] = \$137,893$（對應選項 B）。</li>
+            <li>但題目明確說明「<strong>payable at the start of school year (期初年金 Annuity Due)</strong>」，必須再乘上 $(1 + r)$：<br>
+            $\text{PV}_{\text{due}} = \$137,893 \times 1.07 = \mathbf{\$147,546}$！</li>
+            <li>官方出題者在選項中失誤未列出 $147,546，原卷標註「Answer: C (closest answer, all answers given wrong)」。考試遇到時請選最接近的 C！</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Q25 -->
+      <div class="q-card" id="qc-25">
+        <div class="q-top">
+          <span class="q-badge">第 25 題 (單選)</span>
+          <span class="q-meta">Ch 4.6 Solving Problems with Calculator | Diff: 2</span>
+        </div>
+        <div class="q-text">An investment costs $10,000 today and pays $11,500 in two years. The IRR of this opportunity is closest to: (今天投資 10,000，兩年後拿 11,500，IRR 為何？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q25" value="A"> A) 7.25%</label>
+          <label class="opt-label"><input type="radio" name="q25" value="B"> B) 7.50%</label>
+          <label class="opt-label"><input type="radio" name="q25" value="C"> C) 10.00%</label>
+          <label class="opt-label"><input type="radio" name="q25" value="D"> D) 15.00%</label>
+        </div>
+        <div class="breakdown-box" id="bb-25">
+          <div class="ans-line">✅ 正確解答：(A) 7.25%</div>
+          <p><strong>【IRR 公式】</strong> $10,000 \times (1 + \text{IRR})^2 = 11,500 \implies (1 + \text{IRR}) = \sqrt{\frac{11,500}{10,000}} = \sqrt{1.15} \approx 1.07238 \implies \text{IRR} \approx 7.24\% \approx 7.25\%$。</p>
+        </div>
+      </div>
+
+      <!-- Q26 -->
+      <div class="q-card" id="qc-26">
+        <div class="q-top">
+          <span class="q-badge">第 26 題 (單選)</span>
+          <span class="q-meta">Ch 4.7 Non-Annual Cash Flows | Diff: 2</span>
+        </div>
+        <div class="q-text">Borrow $250,000 for a 15-year fixed rate mortgage (180 months) at 9% APR (0.75% month). Monthly mortgage payment will be closest to: (借 25 萬房貸，15 年期共 180 個月，月利率 0.75%，每月月供為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q26" value="A"> A) $2,585</label>
+          <label class="opt-label"><input type="radio" name="q26" value="B"> B) $660</label>
+          <label class="opt-label"><input type="radio" name="q26" value="C"> C) $2,535</label>
+          <label class="opt-label"><input type="radio" name="q26" value="D"> D) $1,390</label>
+        </div>
+        <div class="breakdown-box" id="bb-26">
+          <div class="ans-line">✅ 正確解答：(C) $2,535</div>
+          <p><strong>【房貸月供公式】</strong><br>
+          $$PMT = \frac{PV \times r}{1 - (1 + r)^{-N}} = \frac{250,000 \times 0.0075}{1 - (1.0075)^{-180}} = \frac{1,875}{1 - 0.26065} = \frac{1,875}{0.73935} \approx \$2,535.67$$</p>
+        </div>
+      </div>
+
+      <!-- Q27 -->
+      <div class="q-card" id="qc-27">
+        <div class="q-top">
+          <span class="q-badge">第 27 題 (單選)</span>
+          <span class="q-meta">Ch 4.9 Internal Rate of Return / Retirement | Diff: 3</span>
+        </div>
+        <div class="q-text">Retirement saving: need $2.5 million by age 65. Today is 30th birthday. Deposit same amount every birthday from today (age 30) up to age 65 (36 deposits total). Interest rate 5%. Annual deposit is:</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q27" value="A"> A) $71,430</label>
+          <label class="opt-label"><input type="radio" name="q27" value="B"> B) $27,680</label>
+          <label class="opt-label"><input type="radio" name="q27" value="C"> C) $26,100</label>
+          <label class="opt-label"><input type="radio" name="q27" value="D"> D) $26,260</label>
+        </div>
+        <div class="breakdown-box" id="bb-27">
+          <div class="ans-line">✅ 正確解答：(C) $26,100（精確值 $26,086）</div>
+          <p><strong>【退休金反求 PMT 經典題】</strong></p>
+          <ol>
+            <li>從 30 歲存到 65 歲，總共存了 $65 - 30 + 1 = 36$ 次！</li>
+            <li>將 65 歲目標 $2,500,000 折現到 29 歲（作為普通年金初始點）：<br>
+            $PV(\text{age 29}) = \frac{\$2,500,000}{(1.05)^{36}} \approx \$431,643.54$。</li>
+            <li>反推 36 期年金之每期付款額 PMT：<br>
+            $PMT = \frac{431,643.54}{\frac{1}{0.05}[1 - (1.05)^{-36}]} = \frac{431,643.54}{16.54685} \approx \mathbf{\$26,086} \approx \$26,100$。</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Q28 -->
+      <div class="q-card" id="qc-28">
+        <div class="q-top">
+          <span class="q-badge">第 28 題 (單選)</span>
+          <span class="q-meta">Ch 4.10 Solving for Number of Periods | Diff: 2</span>
+        </div>
+        <div class="q-text">Credit card balance of $8,000 at 12% APR (1% per month). If you can afford $100 per month, how many months will it take to pay off? (卡債 8,000，月息 1%，每月還 100，幾個月還清？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q28" value="A"> A) 170 months</label>
+          <label class="opt-label"><input type="radio" name="q28" value="B"> B) 14 months</label>
+          <label class="opt-label"><input type="radio" name="q28" value="C"> C) 162 months</label>
+          <label class="opt-label"><input type="radio" name="q28" value="D"> D) You will never get the card paid off at that rate.</label>
+        </div>
+        <div class="breakdown-box" id="bb-28">
+          <div class="ans-line">✅ 正確解答：(C) 162 months (精確值 161.75 個月)</div>
+          <p><strong>【期數 N 求解公式】</strong><br>
+          每月利息為 $\$8,000 \times 1\% = \$80$。因為你還 $\$100 > \$80$，每期能償還 $\$20$ 本金，所以**一定還得清**（排除 D）！<br>
+          $$PV = PMT \times \frac{1}{r} [1 - (1 + r)^{-N}] \implies 8000 = 100 \times \frac{1}{0.01} [1 - (1.01)^{-N}]$$
+          $$0.8 = 1 - (1.01)^{-N} \implies (1.01)^{-N} = 0.2 \implies -N \ln(1.01) = \ln(0.2)$$
+          $$N = \frac{-\ln(0.2)}{\ln(1.01)} = \frac{1.609438}{0.009950} \approx \mathbf{161.75\text{ 個月}} \approx 162\text{ 個月}$$</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 4：利率報價、貸款與殖利率曲線 (Q29 - Q35) -->
+    <!-- ========================================== -->
+    <section id="sec-mod4">
+      <h2 class="module-title">📈 模組 4：利率報價、攤銷貸款餘額與期限結構 (Ch05) <span class="tag">Q29 ~ Q35</span></h2>
+
+      <!-- Q29 -->
+      <div class="q-card" id="qc-29">
+        <div class="q-top">
+          <span class="q-badge">第 29 題 (單選)</span>
+          <span class="q-meta">Ch 5.1 Interest Rate Quotes | Diff: 1</span>
+        </div>
+        <div class="q-text">The effective annual rate (EAR) for a CD that pays 3.9% APR compounded monthly is closest to: (名目利率 APR 為 3.9%，按月複利，有效年利率 EAR 為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q29" value="A"> A) 3.83%</label>
+          <label class="opt-label"><input type="radio" name="q29" value="B"> B) 3.90%</label>
+          <label class="opt-label"><input type="radio" name="q29" value="C"> C) 3.97%</label>
+          <label class="opt-label"><input type="radio" name="q29" value="D"> D) 4.04%</label>
+        </div>
+        <div class="breakdown-box" id="bb-29">
+          <div class="ans-line">✅ 正確解答：(C) 3.97%</div>
+          <p><strong>【EAR 公式】</strong> $\text{EAR} = (1 + \frac{0.039}{12})^{12} - 1 = (1 + 0.00325)^{12} - 1 \approx 1.039705 - 1 = 3.97\%$。</p>
+        </div>
+      </div>
+
+      <!-- Q30 & Q31 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>🚗 題組背景 (Q30 & Q31)：</strong> SUV 汽車貸款
+        <p style="font-size: 0.9rem; color: #334155;">兩年前買新 SUV，辦理 60 個月期車貸，利率 5.9% APR（按月複利）。每月月供固定為 $617.16。你剛繳完第 24 期。</p>
+      </div>
+
+      <!-- Q30 -->
+      <div class="q-card" id="qc-30">
+        <div class="q-top">
+          <span class="q-badge">第 30 題 (單選)</span>
+          <span class="q-meta">Ch 5.1 Interest Rate Quotes and Adjustments | Diff: 2</span>
+        </div>
+        <div class="q-text">The amount of your ORIGINAL LOAN is closest to: (當初原始貸款總額最接近：)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q30" value="A"> A) $14,808</label>
+          <label class="opt-label"><input type="radio" name="q30" value="B"> B) $22,212</label>
+          <label class="opt-label"><input type="radio" name="q30" value="C"> C) $32,000</label>
+          <label class="opt-label"><input type="radio" name="q30" value="D"> D) $37,020</label>
+        </div>
+        <div class="breakdown-box" id="bb-30">
+          <div class="ans-line">✅ 正確解答：(C) $32,000</div>
+          <p><strong>【原始貸款本金現值】</strong> 月利率 $r = \frac{0.059}{12} \approx 0.0049167$。<br>
+          $$PV = 617.16 \times \frac{1}{0.0049167} [1 - (1 + 0.0049167)^{-60}] \approx \$31,999.86 \approx \$32,000$$</p>
+        </div>
+      </div>
+
+      <!-- Q31 -->
+      <div class="q-card" id="qc-31">
+        <div class="q-top">
+          <span class="q-badge">第 31 題 (單選)</span>
+          <span class="q-meta">Ch 5.1 Interest Rate Quotes and Adjustments | Diff: 2</span>
+        </div>
+        <div class="q-text">Assuming that you have made all of the first 24 payments on time, then the OUTSTANDING PRINCIPAL BALANCE on your SUV loan is closest to: (繳完第 24 期後，剩餘貸款本金餘額最接近：)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q31" value="A"> A) $14,808</label>
+          <label class="opt-label"><input type="radio" name="q31" value="B"> B) $20,300</label>
+          <label class="opt-label"><input type="radio" name="q31" value="C"> C) $22,212</label>
+          <label class="opt-label"><input type="radio" name="q31" value="D"> D) $32,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-31">
+          <div class="ans-line">✅ 正確解答：(B) $20,300 (精確值 $20,316.92)</div>
+          <p><strong>【前瞻法秒殺】</strong> 總共 60 期，剛繳完 24 期，還剩下 $60 - 24 = \mathbf{36\text{ 期}}$！<br>
+          直接將剩餘 36 期折現回第 24 期當下：<br>
+          $$\text{餘額} = 617.16 \times \frac{1}{0.0049167} [1 - (1 + 0.0049167)^{-36}] \approx \mathbf{\$20,316.92} \approx \$20,300$$</p>
+        </div>
+      </div>
+
+      <!-- Q32 -->
+      <div class="q-card" id="qc-32">
+        <div class="q-top">
+          <span class="q-badge">第 32 題 (單選)</span>
+          <span class="q-meta">Ch 5.3 Determinants of Interest Rates | Diff: 2</span>
+        </div>
+        <div class="q-text">Which of the following statements is FALSE? (關於殖利率曲線，下列何者「錯誤」？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q32" value="A"> A) The yield curve changes over time.</label>
+          <label class="opt-label"><input type="radio" name="q32" value="B"> B) The formulas for computing present values of annuities and perpetuities cannot be used in situations in which cash flows need to be discounted at different rates.</label>
+          <label class="opt-label"><input type="radio" name="q32" value="C"> C) We can use the term structure to compute the present and future values of a risk-free cash flow over different investment horizons.</label>
+          <label class="opt-label"><input type="radio" name="q32" value="D"> D) The yield curve tends to be inverted as the economy comes out of a recession.</label>
+        </div>
+        <div class="breakdown-box" id="bb-32">
+          <div class="ans-line">✅ 正確解答：(D) 錯誤，經濟剛走出衰退時曲線應為陡峭正斜率</div>
+          <p><strong>【景氣循環與曲線形態】</strong></p>
+          <ul>
+            <li>殖利率曲線倒掛（Inverted）是出現在<strong>「景氣擴張末期、經濟即將陷入衰退之前」</strong>！</li>
+            <li>當經濟剛走出衰退（comes out of a recession）時，央行維持極低利率刺激經濟，但市場預期未來景氣復甦升息，因此殖利率曲線是呈現<strong>「陡峭的正斜率（Steep upward sloping）」</strong>，絕非倒掛！故 (D) 錯誤。</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Q33 -->
+      <div class="q-card" id="qc-33">
+        <div class="q-top">
+          <span class="q-badge">第 33 題 (單選)</span>
+          <span class="q-meta">Ch 5.3 Determinants of Interest Rates | Diff: 1</span>
+        </div>
+        <div class="q-text">If an investment providing a nominal return of 12.25% only offers a real rate of return of 5.70%, then the inflation rate is closest to: (名目報酬率 12.25%，實質報酬率 5.70%，通膨率為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q33" value="A"> A) 5.70%</label>
+          <label class="opt-label"><input type="radio" name="q33" value="B"> B) 6.20%</label>
+          <label class="opt-label"><input type="radio" name="q33" value="C"> C) 6.55%</label>
+          <label class="opt-label"><input type="radio" name="q33" value="D"> D) 12.25%</label>
+        </div>
+        <div class="breakdown-box" id="bb-33">
+          <div class="ans-line">✅ 正確解答：(B) 6.20%</div>
+          <p><strong>【費雪效應逆推】</strong> $1 + i = \frac{1 + r}{1 + r_r} = \frac{1 + 0.1225}{1 + 0.0570} = \frac{1.1225}{1.0570} \approx 1.061968 \implies i \approx 6.20\%$！<br>
+          （注意：如果用粗糙近似法 $12.25\% - 5.70\% = 6.55\%$ 便是選項 C 陷阱！必須使用精確公式）。</p>
+        </div>
+      </div>
+
+      <!-- Q34 & Q35 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>📈 題組背景 (Q34 & Q35)：</strong> 零息國債期限結構 (Term Structure of Zero-Coupon Risk-Free Rates)
+        <table class="q-table">
+          <thead>
+            <tr><th>期限 Term</th><th>1 年期</th><th>2 年期</th><th>3 年期</th><th>5 年期</th><th>10 年期</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>利率 Rate</strong></td><td>2.25%</td><td>2.80%</td><td>3.20%</td><td>4.10%</td><td>6.30%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Q34 -->
+      <div class="q-card" id="qc-34">
+        <div class="q-top">
+          <span class="q-badge">第 34 題 (單選)</span>
+          <span class="q-meta">Ch 5.4 Risk and Taxes / Term Structure | Diff: 2</span>
+        </div>
+        <div class="q-text">The present value of an investment that pays $2,000 in one year and $3,000 in three years for certain is closest to: (1 年後拿 $2,000，3 年後拿 $3,000，無風險現值為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q34" value="A"> A) $4,707</label>
+          <label class="opt-label"><input type="radio" name="q34" value="B"> B) $4,685</label>
+          <label class="opt-label"><input type="radio" name="q34" value="C"> C) $4,729</label>
+          <label class="opt-label"><input type="radio" name="q34" value="D"> D) $5,000</label>
+        </div>
+        <div class="breakdown-box" id="bb-34">
+          <div class="ans-line">✅ 正確解答：(B) $4,685</div>
+          <p><strong>【依對應期限即期利率折現】</strong><br>
+          $$PV = \frac{\$2,000}{1 + r_1} + \frac{\$3,000}{(1 + r_3)^3} = \frac{2,000}{1.0225} + \frac{3,000}{(1.0320)^3} = 1,956.00 + 2,729.48 \approx \$4,685.48 \approx \$4,685$$</p>
+        </div>
+      </div>
+
+      <!-- Q35 -->
+      <div class="q-card" id="qc-35">
+        <div class="q-top">
+          <span class="q-badge">第 35 題 (單選)</span>
+          <span class="q-meta">Ch 5.4 Risk and Taxes / Term Structure | Diff: 2</span>
+        </div>
+        <div class="q-text">The present value of an investment that pays $1,000 in two years and $5,000 in ten years for certain is closest to: (2 年後拿 $1,000，10 年後拿 $5,000，現值為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q35" value="A"> A) $3,660</label>
+          <label class="opt-label"><input type="radio" name="q35" value="B"> B) $3,687</label>
+          <label class="opt-label"><input type="radio" name="q35" value="C"> C) $3,707</label>
+          <label class="opt-label"><input type="radio" name="q35" value="D"> D) $4,292</label>
+        </div>
+        <div class="breakdown-box" id="bb-35">
+          <div class="ans-line">✅ 正確解答：(A) $3,660</div>
+          <p><strong>【依對應期限即期利率折現】</strong> $r_2 = 2.80\%$, $r_{10} = 6.30\%$。<br>
+          $$PV = \frac{1,000}{(1.028)^2} + \frac{5,000}{(1.063)^{10}} = 946.27 + 2,714.17 \approx \$3,660.44 \approx \$3,660$$</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 5：債券現金流、定價與動態行為 (Q36 - Q40) -->
+    <!-- ========================================== -->
+    <section id="sec-mod5">
+      <h2 class="module-title">🛡️ 模組 5：債券現金流、定價與動態行為 (Ch06) <span class="tag">Q36 ~ Q40</span></h2>
+
+      <!-- Q36 -->
+      <div class="q-card" id="qc-36">
+        <div class="q-top">
+          <span class="q-badge">第 36 題 (單選)</span>
+          <span class="q-meta">Ch 6.1 Bond Cash Flows, Prices, and Yields | Diff: 2</span>
+        </div>
+        <div class="q-text">Suppose a 10-year bond with semiannual coupons has a price of $1,071.06 and YTM of 7%. This bond's coupon rate is closest to: (10 年期每半年付息債券，市價 $1,071.06，到期殖利率 7%，其票面利率 Coupon Rate 為？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q36" value="A"> A) 3.5%</label>
+          <label class="opt-label"><input type="radio" name="q36" value="B"> B) 6.0%</label>
+          <label class="opt-label"><input type="radio" name="q36" value="C"> C) 7.0%</label>
+          <label class="opt-label"><input type="radio" name="q36" value="D"> D) 8.0%</label>
+        </div>
+        <div class="breakdown-box" id="bb-36">
+          <div class="ans-line">✅ 正確解答：(D) 8.0%</div>
+          <p><strong>【每半年期債券反推 PMT】</strong></p>
+          <ul>
+            <li>總期數 $N = 10 \times 2 = 20$ 期。</li>
+            <li>半期殖利率 $I/Y = 7\% / 2 = 3.5\%$。</li>
+            <li>現值 $PV = -1,071.06$，面額 $FV = 1,000$。</li>
+            <li>求出每期配息 $PMT = \$40$。</li>
+            <li>全年票面利息 = $40 \times 2 = \$80$ $\implies$ 票面利率 = $\frac{80}{1,000} = \mathbf{8.0\%}$！</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Q37 -->
+      <div class="q-card" id="qc-37">
+        <div class="q-top">
+          <span class="q-badge">第 37 題 (單選)</span>
+          <span class="q-meta">Ch 6.2 Dynamic Behavior of Bond Prices | Diff: 2</span>
+        </div>
+        <div class="q-text">Which of the following statements is FALSE? (關於溢價債券，何者「錯誤」？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q37" value="A"> A) If a bond trades at a premium, its yield to maturity will exceed its coupon rate.</label>
+          <label class="opt-label"><input type="radio" name="q37" value="B"> B) A bond that trades at a premium is said to trade above par.</label>
+          <label class="opt-label"><input type="radio" name="q37" value="C"> C) When a coupon-paying bond is trading at a premium, an investor's return from the coupons is diminished by receiving a face value less than the price paid for the bond.</label>
+          <label class="opt-label"><input type="radio" name="q37" value="D"> D) Holding fixed the bond's yield to maturity, for a bond not trading at par, the present value of the bond's remaining cash flows changes as the time to maturity decreases.</label>
+        </div>
+        <div class="breakdown-box" id="bb-37">
+          <div class="ans-line">✅ 正確解答：(A) 錯誤，溢價債券的票面利率應大於到期殖利率</div>
+          <p><strong>【三大定價核心關係】</strong></p>
+          <ul>
+            <li><strong>溢價債券 (Premium Bond, Price > Par)</strong>：$\text{Coupon Rate} > \text{YTM}$。</li>
+            <li><strong>平價債券 (Par Bond, Price = Par)</strong>：$\text{Coupon Rate} = \text{YTM}$。</li>
+            <li><strong>折價債券 (Discount Bond, Price < Par)</strong>：$\text{Coupon Rate} < \text{YTM}$。</li>
+          </ul>
+          <p>(A) 宣稱溢價時殖利率超過票面利率，剛好顛倒！故為錯誤。</p>
+        </div>
+      </div>
+
+      <!-- Q38 & Q39 Context -->
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <strong>🏛️ 題組背景 (Q38 & Q39)：</strong> 20 年期公債跨期持有決策
+        <p style="font-size: 0.9rem; color: #334155;">10 年前以面額買進 20 年期、年息 6% 的美國公債。今天該債券的市場 YTM 飆升至 8%（EAR）。此時債券剛好還剩 10 年到期。</p>
+      </div>
+
+      <!-- Q38 -->
+      <div class="q-card" id="qc-38">
+        <div class="q-top">
+          <span class="q-badge">第 38 題 (單選)</span>
+          <span class="q-meta">Ch 6.2 Dynamic Behavior of Bond Prices | Diff: 2</span>
+        </div>
+        <div class="q-text">If you hold this bond to maturity, the internal rate of return you will earn on your investment will be closest to: (若繼續持有到期，你這 20 年整體投資的 IRR 為何？)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q38" value="A"> A) 5.0%</label>
+          <label class="opt-label"><input type="radio" name="q38" value="B"> B) 5.6%</label>
+          <label class="opt-label"><input type="radio" name="q38" value="C"> C) 6.0%</label>
+          <label class="opt-label"><input type="radio" name="q38" value="D"> D) 8.0%</label>
+        </div>
+        <div class="breakdown-box" id="bb-38">
+          <div class="ans-line">✅ 正確解答：(C) 6.0%</div>
+          <p><strong>【觀念穿透】</strong> 題目明確說明 10 年前是以「平價（At Par）」買進（買價 $1,000，票面利率 6%）。既然你持有至到期且無違約，拿滿 20 年每年 $60 配息並在第 20 年拿回 $1,000 本金，這筆 20 年投資的內生報酬率 IRR 毫無疑問**必然精確等於原始票面利率 6.0%**！中途市場利率怎麼震盪都完全不影響持有至到期的整體回報！</p>
+        </div>
+      </div>
+
+      <!-- Q39 -->
+      <div class="q-card" id="qc-39">
+        <div class="q-top">
+          <span class="q-badge">第 39 題 (單選)</span>
+          <span class="q-meta">Ch 6.2 Dynamic Behavior of Bond Prices | Diff: 3</span>
+        </div>
+        <div class="q-text">If you sell this bond NOW, the internal rate of return you will earn on your investment will be closest to: (若「今天」立刻在市場賣出，你這過去 10 年投資的年化 IRR 最接近：)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q39" value="A"> A) 5.0% (Closest, exact 4.92%)</label>
+          <label class="opt-label"><input type="radio" name="q39" value="B"> B) 5.6%</label>
+          <label class="opt-label"><input type="radio" name="q39" value="C"> C) 6.0%</label>
+          <label class="opt-label"><input type="radio" name="q39" value="D"> D) 8.0%</label>
+        </div>
+        <div class="breakdown-box" id="bb-39">
+          <div class="ans-line">✅ 正確解答：(A) 5.0%（精確值為 4.92%）</div>
+          <p><strong>【兩階段精算步驟】</strong></p>
+          <ol>
+            <li><strong>計算今天賣出市價：</strong> 還剩 10 年，目前市場殖利率 $YTM = 8\%$：<br>
+            $\text{Price}_{10} = 60 \times \frac{1}{0.08}[1 - (1.08)^{-10}] + \frac{1,000}{(1.08)^{10}} = 402.60 + 463.19 = \mathbf{\$865.80}$（因殖利率上升，債券折價）。</li>
+            <li><strong>計算過去 10 年持有期回報：</strong> 當初花 $\$1,000$，過去 10 年每年收 $\$60$，在第 10 年末以 $\$865.80$ 賣出：<br>
+            $1,000 = 60 \times \frac{1}{r}[1 - (1+r)^{-10}] + \frac{865.80}{(1+r)^{10}} \implies \mathbf{r = 4.92\%}$！</li>
+            <li>最接近 4.92% 的選項為 <strong>(A) 5.0%</strong>。</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Q40 -->
+      <div class="q-card" id="qc-40">
+        <div class="q-top">
+          <span class="q-badge">第 40 題 (單選)</span>
+          <span class="q-meta">Ch 6.2 Dynamic Behavior of Bond Prices | Diff: 2</span>
+        </div>
+        <div class="q-text">Consider a bond that pays annually an 8% coupon with 20 years to maturity. The amount that the price of the bond will change if its yield to maturity increases from 5% to 7% is closest to: (20 年期 8% 年息債券，當殖利率由 5% 升至 7% 時，債券價格變動金額最接近：)</div>
+        <div class="options-grid">
+          <label class="opt-label"><input type="radio" name="q40" value="A"> A) -$270 (精確變動 -$267.93)</label>
+          <label class="opt-label"><input type="radio" name="q40" value="B"> B) -$225</label>
+          <label class="opt-label"><input type="radio" name="q40" value="C"> C) -$310</label>
+          <label class="opt-label"><input type="radio" name="q40" value="D"> D) -$250</label>
+        </div>
+        <div class="breakdown-box" id="bb-40">
+          <div class="ans-line">✅ 正確解答：(A) -$270</div>
+          <p><strong>【兩價格差額精算】</strong></p>
+          <ul>
+            <li>當 $YTM = 5\%$ 時：$P_1 = 80 \times \frac{1}{0.05}[1 - (1.05)^{-20}] + \frac{1,000}{(1.05)^{20}} = 997.00 + 376.89 = \mathbf{\$1,373.87}$。</li>
+            <li>當 $YTM = 7\%$ 時：$P_2 = 80 \times \frac{1}{0.07}[1 - (1.07)^{-20}] + \frac{1,000}{(1.07)^{20}} = 847.52 + 258.42 = \mathbf{\$1,105.94}$。</li>
+            <li>價格變動值 = $P_2 - P_1 = 1,105.94 - 1,373.87 = \mathbf{-\$267.93} \approx -\$270$（價格下跌 $267.93）。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 6：手算簡答與繪圖大題 (SA1 - SA2) -->
+    <!-- ========================================== -->
+    <section id="sec-short-ans">
+      <h2 class="module-title">📝 SECTION B: 簡答與情境計算大題 <span class="tag">SHORT ANSWER</span></h2>
+
+      <!-- SA1 -->
+      <div class="q-card" id="qc-sa1">
+        <div class="q-top">
+          <span class="q-badge">簡答大題 1 (零息債券與殖利率曲線繪製)</span>
+          <span class="q-meta">Ch 6.1 Bond Yield Curve & Graphing | Diff: 3</span>
+        </div>
+        <div class="q-text">
+          <strong>題目背景：</strong> 下表總結了市場上 1 至 5 年期無違約零息債券（Zero-Coupon Bonds）的市價（以每 $100 面額報價）：
+          <table class="q-table">
+            <thead>
+              <tr><th>到期年限 Maturity (years)</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>市價 Price (per $100 face)</strong></td><td>$94.52</td><td>$89.68</td><td>$85.40</td><td>$81.65</td><td>$78.35</td></tr>
+            </tbody>
+          </table>
+          <p><strong>子題 a)</strong> 計算上述 5 檔零息債券各自的到期殖利率（YTM）。</p>
+          <p><strong>子題 b)</strong> 繪製出這 5 年期的零息債券殖利率曲線（Yield Curve），並說明其曲線形態與經濟意涵。</p>
+        </div>
+
+        <div class="breakdown-box" id="bb-sa1" style="display: block;">
+          <div class="ans-line">📜 官方標準手算步驟與圖形剖析</div>
+          <p><strong>子題 a) 殖利率計算公式：</strong></p>
+          <div class="core-formula">
+            $$YTM_n = \left(\frac{FV}{P}\right)^{1/n} - 1 = \left(\frac{100}{P}\right)^{1/n} - 1$$
+          </div>
+          <table class="q-table">
+            <thead>
+              <tr><th>年限 $n$</th><th>市價 $P$</th><th>計算過程</th><th>到期殖利率 YTM</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1 年</td><td>$94.52</td><td>$\frac{100}{94.52} - 1 = 1.05797 - 1$</td><td><strong>5.8%</strong></td></tr>
+              <tr><td>2 年</td><td>$89.68</td><td>$(\frac{100}{89.68})^{1/2} - 1 = (1.11508)^{0.5} - 1$</td><td><strong>5.6%</strong></td></tr>
+              <tr><td>3 年</td><td>$85.40</td><td>$(\frac{100}{85.40})^{1/3} - 1 = (1.17096)^{0.3333} - 1$</td><td><strong>5.4%</strong></td></tr>
+              <tr><td>4 年</td><td>$81.65</td><td>$(\frac{100}{81.65})^{1/4} - 1 = (1.22474)^{0.25} - 1$</td><td><strong>5.2%</strong></td></tr>
+              <tr><td>5 年</td><td>$78.35</td><td>$(\frac{100}{78.35})^{1/5} - 1 = (1.27632)^{0.2} - 1$</td><td><strong>5.0%</strong></td></tr>
+            </tbody>
+          </table>
+
+          <p style="margin-top: 1rem;"><strong>子題 b) 殖利率曲線繪製與形態判讀：</strong></p>
+          <div style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1.25rem; margin: 0.8rem 0; text-align: center;">
+            <svg width="420" height="200" viewBox="0 0 420 200">
+              <!-- 坐標軸 -->
+              <line x1="50" y1="20" x2="50" y2="160" stroke="#475569" stroke-width="2"/>
+              <line x1="50" y1="160" x2="380" y2="160" stroke="#475569" stroke-width="2"/>
+              <!-- Y 軸刻度標籤 -->
+              <text x="40" y="30" font-size="11" text-anchor="end" fill="#64748b">6.0%</text>
+              <text x="40" y="62" font-size="11" text-anchor="end" fill="#64748b">5.6%</text>
+              <text x="40" y="95" font-size="11" text-anchor="end" fill="#64748b">5.2%</text>
+              <text x="40" y="128" font-size="11" text-anchor="end" fill="#64748b">4.8%</text>
+              <!-- X 軸刻度標籤 -->
+              <text x="100" y="180" font-size="11" text-anchor="middle" fill="#64748b">1 yr</text>
+              <text x="160" y="180" font-size="11" text-anchor="middle" fill="#64748b">2 yr</text>
+              <text x="220" y="180" font-size="11" text-anchor="middle" fill="#64748b">3 yr</text>
+              <text x="280" y="180" font-size="11" text-anchor="middle" fill="#64748b">4 yr</text>
+              <text x="340" y="180" font-size="11" text-anchor="middle" fill="#64748b">5 yr</text>
+              <!-- 數據連線 (5.8%, 5.6%, 5.4%, 5.2%, 5.0%) -->
+              <!-- 映射: 6.0% -> y=30, 4.8% -> y=128 (1.2% -> 98px => 1% -> 81.67px) -->
+              <!-- 5.8% -> y = 30 + 0.2*81.67 = 46.3 -->
+              <!-- 5.6% -> y = 30 + 0.4*81.67 = 62.7 -->
+              <!-- 5.4% -> y = 30 + 0.6*81.67 = 79.0 -->
+              <!-- 5.2% -> y = 30 + 0.8*81.67 = 95.3 -->
+              <!-- 5.0% -> y = 30 + 1.0*81.67 = 111.7 -->
+              <polyline fill="none" stroke="#ef4444" stroke-width="3" points="100,46.3 160,62.7 220,79.0 280,95.3 340,111.7"/>
+              <circle cx="100" cy="46.3" r="4" fill="#ef4444"/>
+              <circle cx="160" cy="62.7" r="4" fill="#ef4444"/>
+              <circle cx="220" cy="79.0" r="4" fill="#ef4444"/>
+              <circle cx="280" cy="95.3" r="4" fill="#ef4444"/>
+              <circle cx="340" cy="111.7" r="4" fill="#ef4444"/>
+            </svg>
+            <p style="font-size: 0.88rem; color: #ef4444; font-weight: 600;">📉 倒掛型殖利率曲線 (Inverted Yield Curve)：利率由 1 年期的 5.8% 一路下滑至 5 年期的 5.0%！</p>
+          </div>
+          <p><strong>經濟意涵：</strong> 市場目前出現強烈的倒掛形態，反映投資大眾預期未來利率將走低，預示經濟未來可能陷入成長放緩或衰退（Recession）。</p>
+        </div>
+      </div>
+
+      <!-- SA2 -->
+      <div class="q-card" id="qc-sa2">
+        <div class="q-top">
+          <span class="q-badge">簡答大題 2 (不同借貸工具之稅後實質資金成本)</span>
+          <span class="q-meta">Ch 5.4 Taxes and Opportunity Cost | Diff: 3</span>
+        </div>
+        <div class="q-text">
+          <strong>題目背景：</strong> 假設你有下列四項貸款與投資部位，個人所得稅邊際稅率為 30%：
+          <table class="q-table">
+            <thead>
+              <tr><th>工具類型 Instrument</th><th>報價條款 Quoted Terms</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>信用卡 (Credit Card)</strong></td><td>14.90% APR (按月複利)</td></tr>
+              <tr><td><strong>汽車貸款 (Automobile Loan)</strong></td><td>5.90% APR (按月複利)</td></tr>
+              <tr><td><strong>房屋淨值貸款 (Home Equity Loan)</strong></td><td>8.25% APR (按月複利，利息可全額抵稅)</td></tr>
+              <tr><td><strong>貨幣市場基金 (Money Market Fund)</strong></td><td>5.10% EAR (利息收益需全額課稅)</td></tr>
+            </tbody>
+          </table>
+          <p><strong>子題 a)</strong> 若房屋淨值貸款的利息可以全額抵稅，其「稅後有效年利率（After-tax EAR）」最接近多少？</p>
+          <p><strong>子題 b)</strong> 貨幣市場基金在扣稅後的「稅後報酬率（After-tax return）」最接近多少？</p>
+          <p><strong>子題 c)</strong> 分別寫出這四種工具在考慮稅負之後的「稅後有效年回報率 / 成本率（After-tax EAR）」。</p>
+        </div>
+
+        <div class="breakdown-box" id="bb-sa2" style="display: block;">
+          <div class="ans-line">📜 官方標準手算步驟與決策解析</div>
+          
+          <p><strong>子題 a) 房屋淨值貸款稅後 EAR：</strong></p>
+          <ol>
+            <li>先求出稅前的有效年利率：<br>
+            $\text{EAR}_{\text{pre}} = \left(1 + \frac{0.0825}{12}\right)^{12} - 1 = (1.006875)^{12} - 1 \approx 8.569\%$。</li>
+            <li>房屋淨值貸款利息在法規中可抵稅（Deductible），因此稅後實質成本為：<br>
+            $$\text{After-tax EAR} = \text{EAR}_{\text{pre}} \times (1 - \tau) = 8.569\% \times (1 - 0.30) = 8.569\% \times 0.70 \approx \mathbf{5.998\%} \approx \mathbf{6.0\%}$$</li>
+          </ol>
+
+          <p style="margin-top: 0.8rem;"><strong>子題 b) 貨幣市場基金稅後回報：</strong></p>
+          <p>題目報價已經直接是 EAR（5.10%）。利息收入必須繳納 30% 所得稅：<br>
+          $$\text{After-tax Return} = 5.10\% \times (1 - 0.30) = 5.10\% \times 0.70 = \mathbf{3.57\%} \approx \mathbf{3.6\%}$$</p>
+
+          <p style="margin-top: 0.8rem;"><strong>子題 c) 四大工具之稅後有效年利率（EAR）完整橫向對比：</strong></p>
+          <table class="q-table">
+            <thead>
+              <tr><th>工具</th><th>抵稅性質</th><th>計算過程</th><th>最終稅後 EAR</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>信用卡</strong></td>
+                <td>不可抵稅 (Not deductible)</td>
+                <td>$(1 + \frac{0.149}{12})^{12} - 1$</td>
+                <td><strong style="color: #b91c1c;">15.96%</strong> (成本極高)</td>
+              </tr>
+              <tr>
+                <td><strong>汽車貸款</strong></td>
+                <td>不可抵稅 (Not deductible)</td>
+                <td>$(1 + \frac{0.059}{12})^{12} - 1$</td>
+                <td><strong>6.06%</strong></td>
+              </tr>
+              <tr>
+                <td><strong>房屋淨值貸款</strong></td>
+                <td><strong>可全額抵稅</strong></td>
+                <td>$[(1 + \frac{0.0825}{12})^{12} - 1] \times (1 - 0.30)$</td>
+                <td><strong>6.00%</strong> (抵稅後比車貸更便宜)</td>
+              </tr>
+              <tr>
+                <td><strong>貨幣市場基金</strong></td>
+                <td>收益需課稅</td>
+                <td>$5.10\% \times (1 - 0.30)$</td>
+                <td><strong>3.57%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 0.9rem; color: #047857;">💡 <strong>大掌櫃財務洞察：</strong>房屋淨值貸款的名目利率（8.25%）看似遠高於車貸（5.90%），但考慮<strong>「抵稅盾（Tax Shield）」</strong>後，房屋淨值貸款的稅後實際成本僅為 6.00%，反而比車貸的 6.06% 還要划算！這正是公司財務與個人理財中最關鍵的盲點！</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 模組 7：期中公式總覽 Cheat Sheet -->
+    <!-- ========================================== -->
+    <section id="formula-sheet">
+      <h2 class="module-title">📜 官方期中必備公式大全 (Midterm Formula Sheet)</h2>
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.5rem; margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+          <div>
+            <h4 style="color: #1e3a8a; margin-bottom: 0.4rem;">1. 單筆現金流與複利</h4>
+            <ul style="font-size: 0.88rem; line-height: 1.8;">
+              <li>$PV = \frac{FV}{(1 + i)^t}$</li>
+              <li>$FV = PV \times (1 + i)^t$</li>
+              <li>連續複利：$FV = PV \times e^{r t}$</li>
+              <li>$EAR = (1 + \frac{APR}{m})^m - 1$</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #1e3a8a; margin-bottom: 0.4rem;">2. 年金與永續年金</h4>
+            <ul style="font-size: 0.88rem; line-height: 1.8;">
+              <li>普通年金現值：$PV = \frac{C}{r} [1 - (1 + r)^{-N}]$</li>
+              <li>永續年金現值：$PV = \frac{C}{r}$</li>
+              <li>成長型永續年金：$PV = \frac{C_1}{r - g}$</li>
+              <li>期初年金：$PV_{\text{due}} = PV_{\text{ord}} \times (1 + r)$</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #1e3a8a; margin-bottom: 0.4rem;">3. 債券定價與收益率</h4>
+            <ul style="font-size: 0.88rem; line-height: 1.8;">
+              <li>$P = \sum_{t=1}^N \frac{C}{(1+y)^t} + \frac{FV}{(1+y)^N}$</li>
+              <li>零息債券殖利率：$YTM_n = (\frac{FV}{P})^{1/n} - 1$</li>
+              <li>當期收益率：$Current Yield = \frac{C}{P_0}$</li>
+              <li>信用利差：$Credit Spread = YTM_{\text{corp}} - YTM_{\text{treasury}}$</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #1e3a8a; margin-bottom: 0.4rem;">4. 投資組合與 WACC (後續進階)</h4>
+            <ul style="font-size: 0.88rem; line-height: 1.8;">
+              <li>CAPM: $k_i = k_{rf} + [k_m - k_{rf}] \beta_i$</li>
+              <li>WACC $= w_e k_e + w_d k_d(1 - T) + w_p k_p$</li>
+              <li>費雪公式：$1 + r_r = \frac{1 + r}{1 + i}$</li>
+              <li>稅後利率：$r_{\text{after-tax}} = r(1 - \tau)$</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 考核結果公告板 -->
+    <div id="score-board">
+      <div style="font-size: 1.4rem; font-weight: 700; color: #0f172a;">🏆 Mock Exam 測驗試煉報告</div>
+      <div class="score-grade" id="display-score">0 分</div>
+      <div class="score-comment" id="display-comment">評語加載中...</div>
+    </div>
+
+  </main>
+
+  <script>
+    // 官方標準答案對照表
+    const mockAnswers = {
+      q1: "C", q2: "A", q3: "D", q4: "B", q5: "D",
+      q6: "D", q7: "A", q8: "B", q9: "A", q10: "D",
+      q11: "D", q12: "A", q13: "B", q14: "D", q15: "D",
+      q16: "C", q17: "D", q18: "D", q19: "B", q20: "D",
+      q21: "A", q22: "D", q23: "C", q24: "C", q25: "A",
+      q26: "C", q27: "C", q28: "C", q29: "C", q30: "C",
+      q31: "B", q32: "D", q33: "B", q34: "B", q35: "A",
+      q36: "D", q37: "A", q38: "C", q39: "A", q40: "A"
+    };
+
+    // 智能批改單選題
+    function gradeAll() {
+      let score = 0;
+      let totalMCQ = 40;
+
+      for (let i = 1; i <= totalMCQ; i++) {
+        const key = 'q' + i;
+        const card = document.getElementById('qc-' + i);
+        const bb = document.getElementById('bb-' + i);
+        const selected = document.querySelector(`input[name="${key}"]:checked`);
+        
+        bb.classList.add('active');
+        if (selected && selected.value === mockAnswers[key]) {
+          score += 2; // 每題 2 分，單選滿分 80
+          card.classList.remove('incorrect');
+          card.classList.add('correct');
+        } else {
+          card.classList.remove('correct');
+          card.classList.add('incorrect');
+        }
+      }
+
+      // 展開手算題解析
+      document.getElementById('bb-sa1').classList.add('active');
+      document.getElementById('bb-sa2').classList.add('active');
+
+      const board = document.getElementById('score-board');
+      board.style.display = 'block';
+      document.getElementById('display-score').innerHTML = `${score} <span style="font-size: 1.4rem; color: #64748b;">/ 80 分 (選擇題得分，手算題佔 20 分)</span>`;
+      
+      let comment = "";
+      if (score >= 76) {
+        comment = "👑 【神級掌櫃】這份 Berk & DeMarzo 權威題庫被你完全碾壓！期中考試已無任何能難倒你的盲點！";
+      } else if (score >= 64) {
+        comment = "⚔️ 【高階精算師】實力非常堅強！僅在幾處複雜時間旅行（如 24 題期初年金或 39 題賣出 IRR）出現細微陷阱，閱讀展開思路即可登頂！";
+      } else if (score >= 48) {
+        comment = "🛡️ 【合格冒險官】核心架構過關，但對即期利率折現（34、35 題）與貸款餘額前瞻法（31 題）需要再加深熟練度！";
+      } else {
+        comment = "🌱 【見習學徒】不用擔心！這是一份高強度期中考題，每道題目的解題秘笈已在下方完整展開，認真研讀一遍便能脫胎換骨！";
+      }
+      document.getElementById('display-comment').innerHTML = comment;
+      board.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 略過：填入標準答案並展開全部解析
+    function autoFillAndReveal() {
+      for (let i = 1; i <= 40; i++) {
+        const key = 'q' + i;
+        const correctVal = mockAnswers[key];
+        const radio = document.querySelector(`input[name="${key}"][value="${correctVal}"]`);
+        if (radio) radio.checked = true;
+        const card = document.getElementById('qc-' + i);
+        card.classList.remove('incorrect');
+        card.classList.add('correct');
+        document.getElementById('bb-' + i).classList.add('active');
+      }
+
+      document.getElementById('bb-sa1').classList.add('active');
+      document.getElementById('bb-sa2').classList.add('active');
+
+      const board = document.getElementById('score-board');
+      board.style.display = 'block';
+      document.getElementById('display-score').innerHTML = `100 <span style="font-size: 1.4rem; color: #64748b;">/ 100 分 (真題秘笈模式)</span>`;
+      document.getElementById('display-comment').innerHTML = "⏩ 已為您自動填入全卷 40 題標準答案，並完整展開所有選擇與手算大題的解讀！請順暢研讀複習！";
+      board.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 一鍵切換全部解析展開/收合
+    let allExpanded = false;
+    function toggleAllBreakdowns() {
+      allExpanded = !allExpanded;
+      for (let i = 1; i <= 40; i++) {
+        const bb = document.getElementById('bb-' + i);
+        if (allExpanded) bb.classList.add('active');
+        else bb.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>
+'''
+
+def main():
+    target_filename = "財務管理期中Mock_Exam完整深度解析講義.html"
+
+    paths = [
+        os.path.join(r"收件苗圃", "學習講義合輯", target_filename),
+        os.path.join(r"C:\Users\閻星澄\Documents\WikiTree\收件苗圃\學習講義合集", target_filename),
+        os.path.join(r"C:\Users\閻星澄\Desktop\學習講義合集", target_filename)
+    ]
+
+    for p in paths:
+        dir_name = os.path.dirname(p)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(HTML_CONTENT)
+        print(f"✅ 成功生成講義至: {p} (大小: {os.path.getsize(p)} bytes)")
+
+if __name__ == "__main__":
+    main()
