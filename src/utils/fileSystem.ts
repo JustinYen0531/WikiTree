@@ -328,3 +328,54 @@ export async function renameEntry(
     throw new Error('Renaming directories is not supported in this browser version.');
   }
 }
+
+/** Move one file into another folder within the active workspace. */
+export async function moveFileToFolder(
+  rootHandle: FileSystemDirectoryHandle | string,
+  sourcePath: string,
+  destinationPath: string
+): Promise<void> {
+  const sourceParts = sourcePath.split('/').filter(Boolean);
+  const name = sourceParts.pop();
+  if (!name) throw new Error('找不到要移動的檔案。');
+  const sourceParentPath = sourceParts.join('/');
+  if (sourceParentPath === destinationPath) return;
+
+  if (typeof rootHandle === 'string') {
+    const response = await fetch(`${getCliUrl()}/api/workspace/move-file`, {
+      method: 'POST',
+      headers: cliWorkspaceHeaders(rootHandle),
+      body: JSON.stringify({ sourcePath, destinationPath }),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || '檔案移動失敗。');
+    }
+    return;
+  }
+
+  const sourceParent = await getDirectoryHandleByPath(rootHandle, sourceParentPath);
+  const destination = await getDirectoryHandleByPath(rootHandle, destinationPath);
+  try {
+    await destination.getFileHandle(name);
+    throw new Error('目標資料夾已有同名檔案，請先重新命名其中一個檔案。');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('同名檔案')) throw error;
+    if (!(error instanceof DOMException && error.name === 'NotFoundError')) {
+      throw new Error('目標資料夾已有同名項目，請先重新命名其中一個項目。');
+    }
+  }
+
+  const sourceFile = await sourceParent.getFileHandle(name);
+  const contents = await sourceFile.getFile();
+  const destinationFile = await destination.getFileHandle(name, { create: true });
+  try {
+    const writable = await destinationFile.createWritable();
+    await writable.write(contents);
+    await writable.close();
+    await sourceParent.removeEntry(name);
+  } catch (error) {
+    try { await destination.removeEntry(name); } catch {}
+    throw error;
+  }
+}

@@ -24,7 +24,8 @@ import {
   createDirectory,
   renameEntry,
   deleteEntry,
-  getDirectoryHandleByPath
+  getDirectoryHandleByPath,
+  moveFileToFolder
 } from './utils/fileSystem';
 
 import { 
@@ -705,6 +706,42 @@ function App() {
     }
   };
 
+  const handleMoveFile = async (sourcePath: string, destinationPath: string) => {
+    if (!rootHandle) return;
+    const sourceParentPath = sourcePath.split('/').slice(0, -1).join('/');
+    if (sourceParentPath === destinationPath) return;
+
+    setLocalSaveStatus('saving');
+    try {
+      await moveFileToFolder(rootHandle, sourcePath, destinationPath);
+      const updatedFiles = await getFilesRecursively(rootHandle);
+      setFiles(updatedFiles);
+
+      if (activeFile?.path === sourcePath) {
+        const movedPath = destinationPath ? `${destinationPath}/${sourcePath.split('/').pop()}` : sourcePath.split('/').pop()!;
+        const findNode = (nodes: FileNode[]): FileNode | null => {
+          for (const node of nodes) {
+            if (node.path === movedPath) return node;
+            if (node.children) {
+              const found = findNode(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const movedNode = findNode(updatedFiles);
+        if (movedNode) setActiveFile(movedNode);
+      }
+
+      setLocalSaveStatus('saved');
+      showToast(`已移動檔案至「${destinationPath || '我的 WikiTree'}」`);
+    } catch (error) {
+      console.error('Move file failed', error);
+      setLocalSaveStatus('failed');
+      showToast(error instanceof Error ? error.message : '檔案移動失敗。', 'error');
+    }
+  };
+
   // Create manual snapshot (version history check point)
   const handleCreateSnapshot = async () => {
     if (!rootHandle) return;
@@ -862,6 +899,7 @@ function App() {
         onCreateFolder={path => void runFileOperation(() => handleCreateFolder(path))}
         onRename={(node, name) => void runFileOperation(async () => { await handleRename(node, name); })}
         onDelete={node => void runFileOperation(() => handleDelete(node))}
+        onMoveFile={(sourcePath, destinationPath) => void runFileOperation(() => handleMoveFile(sourcePath, destinationPath))}
         activeTab={sidebarTab}
         setActiveTab={setSidebarTab}
         onQuickNewFile={() => void runFileOperation(handleQuickNewFile)}

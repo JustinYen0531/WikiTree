@@ -48,6 +48,7 @@ interface SidebarProps {
   onCreateFolder: (parentPath: string) => void;
   onRename: (node: FileNode, newName: string) => void;
   onDelete: (node: FileNode) => void;
+  onMoveFile: (sourcePath: string, destinationPath: string) => void;
   activeTab: 'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity';
   setActiveTab: (tab: 'explore' | 'skills' | 'exploration' | 'style' | 'files' | 'history' | 'publish' | 'antigravity') => void;
   onQuickNewFile?: () => void;
@@ -77,6 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCreateFolder,
   onRename,
   onDelete,
+  onMoveFile,
   activeTab,
   setActiveTab,
   onQuickNewFile,
@@ -91,6 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ node: FileNode; x: number; y: number } | null>(null);
+  const [dropTargetKey, setDropTargetKey] = useState<string | null>(null);
   const localSaveStatusColor = localSaveStatus === 'saved' ? '#27834d' : localSaveStatus === 'failed' ? '#c63e3e' : '#747a80';
   const isOrbitTab = activeTab === 'explore' || activeTab === 'skills' || activeTab === 'exploration' || activeTab === 'style';
   const isWorkshopTab = !isOrbitTab;
@@ -132,19 +136,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onCreateFolder(parentPath);
   };
 
-  const handleRenameClick = (node: FileNode, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleRenameNode = (node: FileNode) => {
     const newName = prompt(`請輸入「${node.name}」的新名稱：`, node.name);
     if (newName && newName !== node.name) {
       onRename(node, newName);
     }
   };
 
-  const handleDeleteClick = (node: FileNode, e: React.MouseEvent) => {
+  const handleRenameClick = (node: FileNode, e: React.MouseEvent) => {
     e.stopPropagation();
+    handleRenameNode(node);
+  };
+
+  const handleDeleteNode = (node: FileNode) => {
     if (confirm(`您確定要刪除「${node.name}」嗎？`)) {
       onDelete(node);
     }
+  };
+
+  const handleDeleteClick = (node: FileNode, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleDeleteNode(node);
   };
 
   // Helper to filter nodes recursively based on search query
@@ -185,23 +197,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const nodeKey = `${folder.id}:${node.path}`;
     const isExpanded = expandedPaths.has(nodeKey) || searchQuery !== '';
     const isActive = folder.id === activeWorkspaceId && activeFile?.path === node.path;
+    const canEditNode = folder.id === activeWorkspaceId && !workspaceBusy;
 
     return (
       <div key={node.path} className="file-tree-node">
         <div 
-          className={`tree-node-item ${isActive ? 'active' : ''}`}
+          className={`tree-node-item ${isActive ? 'active' : ''}${dropTargetKey === nodeKey ? ' drop-target' : ''}`}
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
           onClick={() => !isDirectory && !workspaceBusy && onSelectWorkspaceFile(folder, node)}
-          draggable={!isDirectory}
+          onContextMenu={event => {
+            if (!canEditNode) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const menuHeight = isDirectory ? 176 : 92;
+            setContextMenu({
+              node,
+              x: Math.max(8, Math.min(event.clientX, window.innerWidth - 220)),
+              y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 12)),
+            });
+          }}
+          draggable={!isDirectory && canEditNode}
           onDragStart={(e) => {
-            if (!isDirectory) {
+            if (!isDirectory && canEditNode) {
               const fileData = {
                 name: node.name,
                 path: node.path,
                 kind: node.kind,
+                workspaceId: folder.id,
               };
               e.dataTransfer.setData('application/json', JSON.stringify(fileData));
               e.dataTransfer.setData('text/plain', node.path);
+              e.dataTransfer.effectAllowed = 'move';
+            }
+          }}
+          onDragEnd={() => setDropTargetKey(null)}
+          onDragOver={event => {
+            if (!isDirectory || !canEditNode || !event.dataTransfer.types.includes('application/json')) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            setDropTargetKey(nodeKey);
+          }}
+          onDragLeave={() => setDropTargetKey(current => current === nodeKey ? null : current)}
+          onDrop={event => {
+            if (!isDirectory || !canEditNode) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setDropTargetKey(null);
+            try {
+              const source = JSON.parse(event.dataTransfer.getData('application/json')) as { path?: string; kind?: string; workspaceId?: string };
+              if (source.kind === 'file' && source.workspaceId === folder.id && source.path && source.path !== node.path) {
+                onMoveFile(source.path, node.path);
+              }
+            } catch {
+              // Ignore files dragged from outside the active WikiTree.
             }
           }}
         >
@@ -789,6 +837,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
       </div>
+      {contextMenu && (
+        <>
+          <div
+            className="file-context-menu-backdrop"
+            aria-hidden="true"
+            onClick={() => setContextMenu(null)}
+            onContextMenu={event => { event.preventDefault(); setContextMenu(null); }}
+          />
+          <div
+            className="file-context-menu"
+            role="menu"
+            aria-label={`${contextMenu.node.name} 的操作`}
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={event => event.stopPropagation()}
+            onKeyDown={event => { if (event.key === 'Escape') setContextMenu(null); }}
+          >
+            {contextMenu.node.kind === 'directory' && (
+              <>
+                <button className="file-context-menu-item" role="menuitem" onClick={() => { onCreateFile(contextMenu.node.path); setContextMenu(null); }}>
+                  <Plus size={14} /> 新增文件
+                </button>
+                <button className="file-context-menu-item" role="menuitem" onClick={() => { onCreateFolder(contextMenu.node.path); setContextMenu(null); }}>
+                  <FolderPlus size={14} /> 新增資料夾
+                </button>
+              </>
+            )}
+            <button className="file-context-menu-item" role="menuitem" onClick={() => { handleRenameNode(contextMenu.node); setContextMenu(null); }}>
+              <Edit size={14} /> 重新命名
+            </button>
+            <button className="file-context-menu-item danger" role="menuitem" onClick={() => { handleDeleteNode(contextMenu.node); setContextMenu(null); }}>
+              <Trash size={14} /> 刪除
+            </button>
+          </div>
+        </>
+      )}
     </aside>
   );
 };

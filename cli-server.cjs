@@ -1125,6 +1125,53 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Route: POST /api/workspace/move-file
+  if (req.url === '/api/workspace/move-file' && req.method === 'POST') {
+    getBody(req).then(payload => {
+      const sourceRelPath = payload.sourcePath;
+      const destinationRelPath = payload.destinationPath || '';
+      if (typeof sourceRelPath !== 'string' || !sourceRelPath.trim() || typeof destinationRelPath !== 'string') {
+        json(400, { error: 'Source and destination paths are required' });
+        return;
+      }
+
+      const workspaceRoot = path.resolve(currentWorkspace);
+      const sourcePath = path.resolve(workspaceRoot, sourceRelPath);
+      const destinationPath = path.resolve(workspaceRoot, destinationRelPath);
+      const staysInsideWorkspace = candidate => {
+        const relative = path.relative(workspaceRoot, candidate);
+        return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+      };
+
+      if (!staysInsideWorkspace(sourcePath) || !staysInsideWorkspace(destinationPath) || sourcePath === workspaceRoot) {
+        json(400, { error: 'File paths must stay inside the current workspace' });
+        return;
+      }
+
+      try {
+        if (!fs.existsSync(sourcePath) || !fs.existsSync(destinationPath)) throw new Error('來源檔案或目標資料夾不存在。');
+        if (fs.lstatSync(sourcePath).isSymbolicLink() || !fs.statSync(sourcePath).isFile()) throw new Error('只能移動一般檔案。');
+        if (!fs.statSync(destinationPath).isDirectory()) throw new Error('目標必須是資料夾。');
+        if (!staysInsideWorkspace(fs.realpathSync(sourcePath)) || !staysInsideWorkspace(fs.realpathSync(destinationPath))) {
+          throw new Error('檔案路徑必須留在目前工作區內。');
+        }
+
+        const targetPath = path.join(destinationPath, path.basename(sourcePath));
+        if (sourcePath === targetPath) {
+          json(200, { success: true, moved: false });
+          return;
+        }
+        if (fs.existsSync(targetPath)) throw new Error('目標資料夾已有同名檔案，請先重新命名其中一個檔案。');
+
+        fs.renameSync(sourcePath, targetPath);
+        json(200, { success: true, moved: true });
+      } catch (error) {
+        json(400, { error: error.message || '檔案移動失敗。' });
+      }
+    });
+    return;
+  }
+
   // Route: POST /api/workspace/snapshots/load
   if (req.url === '/api/workspace/snapshots/load' && req.method === 'POST') {
     const historyPath = path.join(currentWorkspace, '.notes_history', 'snapshots.json');
