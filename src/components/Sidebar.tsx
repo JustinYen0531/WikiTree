@@ -33,6 +33,7 @@ interface SidebarProps {
   workspaceFolders: WorkspaceFolder[];
   activeWorkspaceId: string | null;
   workspaceBusy: boolean;
+  localSaveStatus: 'saving' | 'saved' | 'failed' | null;
   onAddWorkspace: () => void;
   onExpandWorkspace: (folder: WorkspaceFolder) => void;
   onActivateWorkspace: (folder: WorkspaceFolder) => void;
@@ -61,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   workspaceFolders,
   activeWorkspaceId,
   workspaceBusy,
+  localSaveStatus,
   onAddWorkspace,
   onExpandWorkspace,
   onActivateWorkspace,
@@ -89,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePopover, setShowProfilePopover] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
+  const localSaveStatusColor = localSaveStatus === 'saved' ? '#27834d' : localSaveStatus === 'failed' ? '#c63e3e' : '#747a80';
   const isOrbitTab = activeTab === 'explore' || activeTab === 'skills' || activeTab === 'exploration' || activeTab === 'style';
   const isWorkshopTab = !isOrbitTab;
 
@@ -757,6 +760,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <LogIn size={14} />
               登入政大帳戶
             </button>
+          </div>
+        )}
+        {localSaveStatus && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              padding: user ? '2px 8px 0 46px' : '8px 4px 0',
+              fontSize: '10.5px',
+              color: localSaveStatusColor,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: '6px',
+                height: '6px',
+                flex: '0 0 6px',
+                borderRadius: '50%',
+                backgroundColor: localSaveStatusColor,
+              }}
+            />
+            {localSaveStatus === 'saving' ? '正在儲存至本機…' : localSaveStatus === 'saved' ? '已儲存至本機' : '儲存失敗'}
           </div>
         )}
       </div>

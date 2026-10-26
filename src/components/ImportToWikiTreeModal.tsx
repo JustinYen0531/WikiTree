@@ -7,9 +7,10 @@ type ImportToWikiTreeModalProps = {
   files: FileNode[];
   onClose: () => void;
   onImported: (result: LibraryImportResult) => void;
+  onLocalSaveStatus: (status: 'saving' | 'saved' | 'failed') => void;
 };
 
-export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWikiTreeModalProps) {
+export function ImportToWikiTreeModal({ files, onClose, onImported, onLocalSaveStatus }: ImportToWikiTreeModalProps) {
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
   const [selection, setSelection] = useState<File[]>([]);
@@ -31,10 +32,13 @@ export function ImportToWikiTreeModal({ files, onClose, onImported }: ImportToWi
     if (!supported.length || busy) return;
     setBusy(true);
     setError('');
+    onLocalSaveStatus('saving');
     try {
       const result = await importFilesToLibrary(selection, destination);
+      onLocalSaveStatus('saved');
       onImported(result);
     } catch (reason) {
+      onLocalSaveStatus('failed');
       setError(reason instanceof Error ? reason.message : '文件還沒能收進 WikiTree。');
     } finally {
       setBusy(false);

@@ -88,6 +88,7 @@ function App() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [managedLibrary, setManagedLibrary] = useState<LibraryInfo | null>(null);
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const [localSaveStatus, setLocalSaveStatus] = useState<'saving' | 'saved' | 'failed' | null>(null);
   const workspaceLock = useRef(false);
   const restoreAttempted = useRef(false);
   const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | string | null>(null);
@@ -360,6 +361,7 @@ function App() {
   const handleConvertHtmlCopy = async () => {
     if (!activeFile || !rootHandle || !isHtmlReading) return;
     if (!confirm('要建立可編輯的 Markdown 副本嗎？\n原 HTML 會保留；副本無法完整保留原排版與互動。')) return;
+    setLocalSaveStatus('saving');
     try {
         const { title, markdown } = notionHtmlToMarkdown(content);
         const baseName = title.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/[. ]+$/, '') || '匯入筆記';
@@ -381,9 +383,11 @@ function App() {
         setActiveFile({ name: mdName, path: fullPath(mdName), kind: 'file', handle: newHandle });
         setContent(markdown);
         setOriginalContent(markdown);
+        setLocalSaveStatus('saved');
         showToast(`已轉成 ${mdName}，原始 HTML 已保留`);
     } catch (e) {
       console.error('HTML conversion failed', e);
+      setLocalSaveStatus('failed');
       showToast('未能建立 Markdown 副本。', 'error');
     }
   };
@@ -393,6 +397,7 @@ function App() {
     if (!rootHandle || !activeFile || isHtmlReading) return;
     const targetContent = overrideContent !== undefined ? overrideContent : content;
 
+    setLocalSaveStatus('saving');
     try {
       await writeFileContent(activeFile.handle as FileSystemFileHandle, targetContent);
       setContent(targetContent);
@@ -400,11 +405,13 @@ function App() {
       // Reload workspace files to ensure state matches
       const fileList = await getFilesRecursively(rootHandle);
       setFiles(fileList);
+      setLocalSaveStatus('saved');
       if (overrideContent !== undefined) {
         showToast('💾 已自動保存至本地！', 'success');
       }
     } catch (e) {
       console.error('Save failed', e);
+      setLocalSaveStatus('failed');
       alert('儲存檔案失敗，請檢查資料夾的讀寫權限。');
     }
   };
@@ -442,6 +449,7 @@ function App() {
     const activeRoot = await ensureWorkspace();
     if (!activeRoot) return;
 
+    setLocalSaveStatus('saving');
     try {
       const currentFiles = await getFilesRecursively(activeRoot);
       const fileNames = new Set(currentFiles.map(f => f.name.toLowerCase()));
@@ -470,9 +478,11 @@ function App() {
 
       await openFile(newNode, activeRoot, true);
       setSidebarTab('files');
+      setLocalSaveStatus('saved');
       showToast(`✨ 已建立新文件：${targetName}`);
     } catch (e) {
       console.error('Create quick note failed', e);
+      setLocalSaveStatus('failed');
       showToast('建立新文件失敗', 'error');
     }
   };
@@ -493,6 +503,7 @@ function App() {
     const collectPaths = (nodes: FileNode[]) => nodes.forEach(node => { allPaths.add(node.path.toLowerCase()); if (node.children) collectPaths(node.children); });
     collectPaths(await getFilesRecursively(activeRoot));
     if (allPaths.has(relativePath.toLowerCase())) { showToast('同名葉片已存在，請換一個名稱。', 'error'); return; }
+    setLocalSaveStatus('saving');
     try {
       const parent = await getDirectoryHandleByPath(activeRoot, parentPath, { create: true });
       const handle = await createFile(parent, fileName);
@@ -501,9 +512,11 @@ function App() {
       setFiles(updated);
       await openFile({ name: fileName, path: relativePath, kind: 'file', handle }, activeRoot, true);
       setSidebarTab('files');
+      setLocalSaveStatus('saved');
       showToast(`🌱 正式葉片已建立：${relativePath}`);
     } catch (error) {
       console.error('Create generated note failed', error);
+      setLocalSaveStatus('failed');
       showToast('建立正式葉片失敗。', 'error');
     }
   };
@@ -530,6 +543,7 @@ function App() {
 
     const finalFileName = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
 
+    setLocalSaveStatus('saving');
     try {
       // getDirectoryHandleByPath will recursively create the directory path parts if they don't exist
       const parentDir = await getDirectoryHandleByPath(activeRoot, finalParentPath, { create: true });
@@ -550,8 +564,10 @@ function App() {
 
       // Open new file
       await openFile(newNode);
+      setLocalSaveStatus('saved');
     } catch (e) {
       console.error('Create file failed', e);
+      setLocalSaveStatus('failed');
       alert('建立檔案失敗。');
     }
   };
@@ -567,6 +583,7 @@ function App() {
     // Combine parentPath and nameInput
     const finalPath = parentPath ? `${parentPath}/${nameInput}` : nameInput;
 
+    setLocalSaveStatus('saving');
     try {
       // getDirectoryHandleByPath will recursively create all folder levels in finalPath
       await getDirectoryHandleByPath(activeRoot, finalPath, { create: true });
@@ -574,18 +591,21 @@ function App() {
       // Reload workspace
       const fileList = await getFilesRecursively(activeRoot);
       setFiles(fileList);
+      setLocalSaveStatus('saved');
     } catch (e) {
       console.error('Create folder failed', e);
+      setLocalSaveStatus('failed');
       alert('建立資料夾失敗。');
     }
   };
 
   // Rename file/folder
-  const handleRename = async (node: FileNode, newName: string) => {
-    if (!rootHandle) return;
+  const handleRename = async (node: FileNode, newName: string): Promise<boolean> => {
+    if (!rootHandle) return false;
     if (node.kind === 'file' && isHtmlNote(node.name)) newName = renamedNoteName(node.name, newName);
 
     try {
+      setLocalSaveStatus('saving');
       const parts = node.path.split('/');
       const oldName = parts.pop()!;
       const parentPath = parts.join('/');
@@ -619,9 +639,13 @@ function App() {
           setActiveFile(updatedNode);
         }
       }
+      setLocalSaveStatus('saved');
+      return true;
     } catch (e: any) {
       console.error('Rename failed', e);
+      setLocalSaveStatus('failed');
       alert(`重命名失敗: ${e.message || '未知錯誤'}`);
+      return false;
     }
   };
 
@@ -646,8 +670,7 @@ function App() {
     }
     setIsEditingFileName(false);
     await runFileOperation(async () => {
-      await handleRename(activeFile, finalName);
-      showToast(`✨ 已將筆記更名為：${finalName}`);
+      if (await handleRename(activeFile, finalName)) showToast(`✨ 已將筆記更名為：${finalName}`);
     });
   };
 
@@ -655,6 +678,7 @@ function App() {
   const handleDelete = async (node: FileNode) => {
     if (!rootHandle) return;
 
+    setLocalSaveStatus('saving');
     try {
       const parts = node.path.split('/');
       const name = parts.pop()!;
@@ -673,8 +697,10 @@ function App() {
       // Refresh workspace
       const fileList = await getFilesRecursively(rootHandle);
       setFiles(fileList);
+      setLocalSaveStatus('saved');
     } catch (e) {
       console.error('Delete failed', e);
+      setLocalSaveStatus('failed');
       alert('刪除失敗。');
     }
   };
@@ -686,6 +712,7 @@ function App() {
     const message = prompt('請輸入此版本快照的說明備註：');
     if (message === null) return; // cancel click
 
+    setLocalSaveStatus('saving');
     try {
       const newSnap = await createSnapshot(rootHandle, files, message);
       if (newSnap) {
@@ -694,8 +721,10 @@ function App() {
       } else {
         alert('未檢測到任何修改。本地工作區檔案已是最新狀態。');
       }
+      setLocalSaveStatus('saved');
     } catch (e) {
       console.error('Snapshot creation failed', e);
+      setLocalSaveStatus('failed');
       alert('儲存版本快照失敗。');
     }
   };
@@ -704,6 +733,7 @@ function App() {
   const handleRestoreSnapshot = async (snapshotId: string) => {
     if (!rootHandle) return;
 
+    setLocalSaveStatus('saving');
     try {
       await restoreSnapshot(rootHandle, snapshotId, files);
       
@@ -737,8 +767,10 @@ function App() {
           setOriginalContent('');
         }
       }
+      setLocalSaveStatus('saved');
     } catch (e) {
       console.error('Restore failed', e);
+      setLocalSaveStatus('failed');
       alert('還原版本快照失敗。');
     }
   };
@@ -812,6 +844,7 @@ function App() {
         workspaceFolders={workspaceFolders}
         activeWorkspaceId={activeWorkspaceId}
         workspaceBusy={workspaceBusy}
+        localSaveStatus={localSaveStatus}
         onAddWorkspace={() => setShowLibraryImport(true)}
         onExpandWorkspace={loadFolderTree}
         onActivateWorkspace={folder => { void activateFolder(folder); }}
@@ -827,7 +860,7 @@ function App() {
         onSelectFile={file => void runFileOperation(() => openFile(file))}
         onCreateFile={path => void runFileOperation(() => handleCreateFile(path))}
         onCreateFolder={path => void runFileOperation(() => handleCreateFolder(path))}
-        onRename={(node, name) => void runFileOperation(() => handleRename(node, name))}
+        onRename={(node, name) => void runFileOperation(async () => { await handleRename(node, name); })}
         onDelete={node => void runFileOperation(() => handleDelete(node))}
         activeTab={sidebarTab}
         setActiveTab={setSidebarTab}
@@ -844,6 +877,7 @@ function App() {
           files={files}
           onClose={() => setShowLibraryImport(false)}
           onImported={handleLibraryImported}
+          onLocalSaveStatus={setLocalSaveStatus}
         />
       )}
 
@@ -1024,7 +1058,10 @@ function App() {
               <Editor
                 key={`${activeWorkspaceId}:${activeFile.path}`}
                 content={content}
-                onChange={setContent}
+                onChange={nextContent => {
+                  setContent(nextContent);
+                  setLocalSaveStatus(null);
+                }}
                 onSave={(overrideContent) => void runFileOperation(() => handleSaveFile(overrideContent))}
                 isSaved={isSaved}
                 viewMode={viewMode}
